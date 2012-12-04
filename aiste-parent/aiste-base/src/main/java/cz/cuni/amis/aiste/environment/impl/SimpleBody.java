@@ -16,30 +16,24 @@
  */
 package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.IAgentBody;
-import cz.cuni.amis.aiste.environment.IModelLessRepresentableEnvironment;
-import cz.cuni.amis.aiste.environment.IPercept;
+import cz.cuni.amis.aiste.environment.IAgentType;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class AbstractModelLessRepresentableSynchronizedEnvironment<BODY extends IAgentBody, ACTION extends IAction, PERCEPT  extends IPercept>
-    extends AbstractSynchronizedEnvironment<BODY, ACTION> implements IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT>
-{
-    Class<PERCEPT> perceptClass;
+public class SimpleBody implements IAgentBody{
 
-    public AbstractModelLessRepresentableSynchronizedEnvironment(Class<BODY> bodyClass, Class<ACTION> actionClass, Class<PERCEPT> perceptClass) {
-        super(bodyClass, actionClass);
-        this.perceptClass = perceptClass;
-    }
-   
-    @Override
-    public Class<PERCEPT> getPerceptClass() {
-        return perceptClass;
-    }
+    private IAgentType type;
 
+    public SimpleBody(IAgentType type) {
+        this.type = type;
+    }        
     
+    @Override
+    public IAgentType getType() {
+        return type;
+    }
     
 }

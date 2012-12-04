@@ -14,12 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment;
+package cz.cuni.amis.aiste.simulations.examples;
+
+import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
 
 /**
- * Parent interface for all actions in the environment
+ *
  * @author Martin Cerny
  */
-public interface IAction {
-    String getLoggableRepresentation();
+public class Test {
+    public static void main(String args[]){
+        MultiArmedBandit b = new MultiArmedBandit(2, new int [] {5, 10});
+        RandomModelLessController c = new RandomModelLessController();
+        
+        SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
+        executor.setEnvironment(b);
+        executor.addAgentController(b.theType, c);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(100);
+        System.out.println("Result: " + result.getAgentResults().get(0).getTotalReward());
+    }
 }

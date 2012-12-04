@@ -17,29 +17,26 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
-import cz.cuni.amis.aiste.environment.IModelLessRepresentableEnvironment;
-import cz.cuni.amis.aiste.environment.IPercept;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class AbstractModelLessRepresentableSynchronizedEnvironment<BODY extends IAgentBody, ACTION extends IAction, PERCEPT  extends IPercept>
-    extends AbstractSynchronizedEnvironment<BODY, ACTION> implements IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT>
-{
-    Class<PERCEPT> perceptClass;
+public class SimpleAction<T> implements IAction {
+    private T command;
 
-    public AbstractModelLessRepresentableSynchronizedEnvironment(Class<BODY> bodyClass, Class<ACTION> actionClass, Class<PERCEPT> perceptClass) {
-        super(bodyClass, actionClass);
-        this.perceptClass = perceptClass;
+    public SimpleAction(T command) {
+        this.command = command;
     }
-   
+
+    public T getCommand() {
+        return command;
+    }
+        
     @Override
-    public Class<PERCEPT> getPerceptClass() {
-        return perceptClass;
+    public String getLoggableRepresentation() {
+        return command.toString();
     }
-
     
     
 }

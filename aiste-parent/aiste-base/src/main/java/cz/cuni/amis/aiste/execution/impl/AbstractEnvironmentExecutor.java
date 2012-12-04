@@ -36,7 +36,7 @@ import java.util.Map;
  * @author Martin Cerny
  */
 public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecutor{
-    private IEnvironment environment;
+    private IEnvironment environment = null;
     private Map<IAgentBody, IAgentController> bodyToControllers = new HashMap<IAgentBody, IAgentController>();
     private List<IAgentController> controllers = new ArrayList<IAgentController>();
     private long stepDelay;
@@ -52,7 +52,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
      */
     @Override
     public void setEnvironment(IEnvironment environment) {
-        if(environment != null){
+        if(this.environment != null){
             throw new AisteException("Environment may be set only once");
         }
         this.environment = environment;

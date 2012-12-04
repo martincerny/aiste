@@ -14,12 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment;
+package cz.cuni.amis.aiste.environment.impl;
 
 /**
- * Parent interface for all actions in the environment
+ *
  * @author Martin Cerny
  */
-public interface IAction {
-    String getLoggableRepresentation();
+public class IntegerPercept extends SimplePercept<Integer> {
+
+    public IntegerPercept(Integer command) {
+        super(command);
+    }            
 }
