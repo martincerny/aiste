@@ -26,14 +26,14 @@ import cz.cuni.amis.aiste.IEnvironment;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION> implements IAgentController<BODY, ACTION> {
+public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION, ENVIRONMENT extends IEnvironment<BODY, ACTION>> implements IAgentController<BODY, ACTION, ENVIRONMENT> {
 
-    protected IEnvironment<BODY, ACTION> environment;
-    protected BODY body;
-    protected long stepDelay;
+    private ENVIRONMENT environment;
+    private BODY body;
+    private long stepDelay;
     
     @Override
-    public void init(IEnvironment<BODY, ACTION> environment, BODY body, long stepDelay) {
+    public void init(ENVIRONMENT environment, BODY body, long stepDelay) {
         
         if(this.environment != null){
             throw new AisteException("A controller may be initialized only once");
@@ -55,4 +55,18 @@ public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION> i
     public void start() {
     }
 
+    public BODY getBody() {
+        return body;
+    }
+
+    public ENVIRONMENT getEnvironment() {
+        return environment;
+    }
+
+    public long getStepDelay() {
+        return stepDelay;
+    }
+
+  
+    
 }

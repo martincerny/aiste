@@ -16,17 +16,19 @@
  */
 package cz.cuni.amis.aiste;
 
+import cz.cuni.amis.aiste.impl.AbstractSynchronizedEnvironment;
 import java.util.List;
 import java.util.Map;
 
 /**
- * An abstract ancestor for all environemnts. A specific environemt should inherit
- * one or more IXXXXRepresentableEnvironment interfaces.
+ * An abstract ancestor for all environments. A specific environment should inherit
+ * one or more IXXXXRepresentableEnvironment interfaces. In a typical scenario environments
+ * should inherit from {@link AbstractSynchronizedEnvironment} ore one of its descendants.
  * @author Martin Cerny
  */
 public interface IEnvironment<BODY extends IAgentBody, ACTION> {
     /**
-     * Get information about possible agent types that may by instantied
+     * Get information about possible agent types that may by instantiated
      * @return 
      */
     Map<IAgentType, IAgentInstantiationDescriptor> getInstantiationDescriptors();
@@ -70,7 +72,7 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION> {
      * Returns the number of steps that were simulated.
      * @return 
      */
-    int getTimeStep();
+    long getTimeStep();
     
     /**
      * Gets the sum of all rewards gained by specified agent during the whole course of the simulation
@@ -85,4 +87,6 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION> {
      */
     boolean isFinished();
     
+    Class<BODY> getBodyClass();
+    Class<ACTION> getActionClass();
 }
