@@ -17,11 +17,11 @@
 package cz.cuni.amis.aiste;
 
 /**
- * An abstract agent controller. Specific implementations should inherit
- * one of IXXXAgentController subinterfaces instead.
+ * An abstract agent controller. To be compatible with default execution and matchmaking
+ * all concrete implementing classes should provide a no-argument constructor.
  * @author Martin Cerny
  */
-public interface IAgentController<BODY extends IAgentBody, ACTION> {
+public interface IAgentController<BODY extends IAgentBody, ACTION, ENVIRONMENT extends IEnvironment<BODY, ACTION>> {
 
     /**
      * Check whether this agent controller may control agents in given environment.
@@ -29,21 +29,21 @@ public interface IAgentController<BODY extends IAgentBody, ACTION> {
      * @param environment
      * @return 
      */
-    boolean isApplicable(IEnvironment<BODY, ACTION> environment);
+    boolean isApplicable(ENVIRONMENT environment);
     
     /**
      * Initialize the agent for specific body in a specific environment.
-     * Agent should initialize any resources neccessary for execution in this mehtod. 
+     * Agent should initialize any resources necessary for execution in this method. 
      * It is forbidden to issue any actions in this method or at any time prior to call
      * of {@link #start() }
      * @param environment
      * @param body
-     * @param stepDelay an informative delay in miliseconds between succesive simulation step (e. g. to set a time limit for deliberation)
+     * @param stepDelay an informative delay in milliseconds between successive simulation step (e. g. to set a time limit for deliberation)
      */
-    void init(IEnvironment<BODY, ACTION> environment, BODY body, long stepDelay);
+    void init(ENVIRONMENT environment, BODY body, long stepDelay);
     
     /**
-     * Called once, when the simulation starts. If the agent has its own thread of exection,
+     * Called once, when the simulation starts. If the agent has its own thread of execution,
      * it should be started here.
      */
     void start();
