@@ -14,30 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
-
-import cz.cuni.amis.aiste.IAgentBody;
-import cz.cuni.amis.aiste.IModelLessRepresentableEnvironment;
+package cz.cuni.amis.aiste.environment;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class AbstractModelLessRepresentableSynchronizedEnvironment<BODY extends IAgentBody, ACTION, PERCEPT>
-    extends AbstractSynchronizedEnvironment<BODY, ACTION> implements IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT>
-{
-    Class<PERCEPT> perceptClass;
-
-    public AbstractModelLessRepresentableSynchronizedEnvironment(Class<BODY> bodyClass, Class<ACTION> actionClass, Class<PERCEPT> perceptClass) {
-        super(bodyClass, actionClass);
-        this.perceptClass = perceptClass;
-    }
-   
-    @Override
-    public Class<PERCEPT> getPerceptClass() {
-        return perceptClass;
-    }
-
-    
-    
+public interface IAgentBody {
+    IAgentType getType();
 }

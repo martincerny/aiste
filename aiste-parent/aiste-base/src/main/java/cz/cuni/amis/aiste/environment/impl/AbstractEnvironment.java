@@ -14,9 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.*;
+import cz.cuni.amis.aiste.SimulationException;
+import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
+import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IAgentType;
+import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentInstantiationException;
+import cz.cuni.amis.aiste.environment.IAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,14 +32,14 @@ import java.util.Map;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION> implements IEnvironment<BODY, ACTION> {
+public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extends IAction> implements IEnvironment<BODY, ACTION> {
     private Class<BODY> bodyClass;
     private Class<ACTION> actionClass;
 
-    private boolean finished = false;
-    private List<BODY> bodies = new ArrayList<BODY>();
-    private long timeStep = 0;
-    private Map<BODY, Double> totalRewards = new HashMap<BODY, Double>();
+    private boolean finished;
+    private List<BODY> bodies;
+    private long timeStep;
+    private Map<BODY, Double> totalRewards;
 
     private Map<IAgentType, Integer> instanceCount = new HashMap<IAgentType,Integer>();
 
@@ -86,6 +92,21 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION> imple
     
     protected abstract BODY createAgentBodyInternal(IAgentType type);
 
+    @Override
+    public void init() {
+        finished = false;
+        bodies = new ArrayList<BODY>();
+        timeStep = 0;
+        totalRewards = new HashMap<BODY, Double>();
+    }
+
+    @Override
+    public void stop() {
+        finished = true;
+    }
+
+    
+    
     @Override
     public List<BODY> getAllBodies() {
         return bodies;

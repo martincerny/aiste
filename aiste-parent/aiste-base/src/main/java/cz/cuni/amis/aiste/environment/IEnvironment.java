@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste;
+package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.aiste.impl.AbstractSynchronizedEnvironment;
+import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import java.util.List;
 import java.util.Map;
 
@@ -24,9 +24,22 @@ import java.util.Map;
  * An abstract ancestor for all environments. A specific environment should inherit
  * one or more IXXXXRepresentableEnvironment interfaces. In a typical scenario environments
  * should inherit from {@link AbstractSynchronizedEnvironment} ore one of its descendants.
+ * The environment should be reusable - i. e. after call to {@link #stop() } and {@link #init()} it
+ * should be able to start afresh (without keeping the registered executors).
  * @author Martin Cerny
  */
-public interface IEnvironment<BODY extends IAgentBody, ACTION> {
+public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
+    
+    /**
+     * Initializes the environment for use.
+     */
+    void init();
+    
+    /**
+     * Shutdowns the environment and prepares it to be reused.
+     */
+    void stop();
+    
     /**
      * Get information about possible agent types that may by instantiated
      * @return 

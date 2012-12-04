@@ -14,14 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment;
 
 /**
  *
  * @author Martin Cerny
  */
-public class ExactAgentInstantiationDescriptor extends AgentInstantiationDescriptor{
-    public ExactAgentInstantiationDescriptor(int count){
-        super(count,count);
-    }
+public interface IAgentInstantiationDescriptor {
+    public int getMinInstances();
+    public int getMaxInstances();
 }

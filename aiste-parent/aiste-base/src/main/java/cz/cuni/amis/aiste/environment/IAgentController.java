@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste;
+package cz.cuni.amis.aiste.environment;
 
 /**
  * An abstract agent controller. To be compatible with default execution and matchmaking
  * all concrete implementing classes should provide a no-argument constructor.
  * @author Martin Cerny
  */
-public interface IAgentController<BODY extends IAgentBody, ACTION, ENVIRONMENT extends IEnvironment<BODY, ACTION>> {
+public interface IAgentController<BODY extends IAgentBody, ACTION extends IAction, ENVIRONMENT extends IEnvironment<BODY, ACTION>> {
 
     /**
      * Check whether this agent controller may control agents in given environment.
@@ -61,5 +61,11 @@ public interface IAgentController<BODY extends IAgentBody, ACTION, ENVIRONMENT e
      * @param reward 
      */
     void onSimulationStep(double reward);
+    
+    /**
+     * Gets the body this controller works with.
+     * @return 
+     */
+    BODY getBody();
     
 }

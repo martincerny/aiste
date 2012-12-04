@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.execution.impl;
 
-import cz.cuni.amis.aiste.IAgentController;
-import cz.cuni.amis.aiste.IAgentExecutionDescriptor;
-import cz.cuni.amis.aiste.IAgentType;
+import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
+import cz.cuni.amis.aiste.environment.IAgentType;
 
 /**
  *
