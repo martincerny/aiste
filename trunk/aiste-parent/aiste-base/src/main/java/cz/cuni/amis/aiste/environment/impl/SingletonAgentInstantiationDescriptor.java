@@ -14,33 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.IAgentInstantiationDescriptor;
+import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 
 /**
  *
  * @author Martin Cerny
  */
-public class AgentInstantiationDescriptor implements IAgentInstantiationDescriptor{
-    private int minInstances;
-    private int maxInstances;
-
-    public AgentInstantiationDescriptor(int minInstances, int maxInstances) {
-        this.minInstances = minInstances;
-        this.maxInstances = maxInstances;
-    }
+public class SingletonAgentInstantiationDescriptor implements IAgentInstantiationDescriptor{
 
     @Override
     public int getMaxInstances() {
-        return maxInstances;
+        return 1;
     }
 
     @Override
     public int getMinInstances() {
-        return minInstances;
+        return 1;
     }
-    
-    
     
 }

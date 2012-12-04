@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste;
+package cz.cuni.amis.aiste.environment;
 
 import java.util.Collection;
 
@@ -25,7 +25,7 @@ import java.util.Collection;
  * same actions are possible for a specific agent type at all simulation steps.
  * @author Martin Cerny
  */
-public interface IModelLessRepresentableEnvironment<BODY extends IAgentBody, ACTION, PERCEPT>
+public interface IModelLessRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction, PERCEPT>
 extends IEnvironment<BODY, ACTION> {    
     
     /**

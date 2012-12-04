@@ -14,7 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste;
+package cz.cuni.amis.aiste.execution;
+
+import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.IAgentType;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 
 /**
  * Interface for classes that execute environments and agent controllers. 
@@ -31,6 +35,12 @@ public interface IEnvironmentExecutor {
      */
     void setEnvironment(IEnvironment environment);
     
+    /**
+     * Adds a controller to the list of managed controllers and calls {@link IAgentController#init(cz.cuni.amis.aiste.environment.IEnvironment, cz.cuni.amis.aiste.environment.IAgentBody, long) }
+     * for it.
+     * @param type
+     * @param controller 
+     */
     void addAgentController(IAgentType type, IAgentController controller);
     
     /**

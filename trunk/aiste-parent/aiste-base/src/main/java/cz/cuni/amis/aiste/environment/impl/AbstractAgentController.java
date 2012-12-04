@@ -15,18 +15,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.AisteException;
-import cz.cuni.amis.aiste.IAgentBody;
-import cz.cuni.amis.aiste.IAgentController;
-import cz.cuni.amis.aiste.IEnvironment;
+import cz.cuni.amis.aiste.environment.IAction;
+import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION, ENVIRONMENT extends IEnvironment<BODY, ACTION>> implements IAgentController<BODY, ACTION, ENVIRONMENT> {
+public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION extends IAction, ENVIRONMENT extends IEnvironment<BODY, ACTION>> implements IAgentController<BODY, ACTION, ENVIRONMENT> {
 
     private ENVIRONMENT environment;
     private BODY body;
@@ -55,6 +56,7 @@ public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION, E
     public void start() {
     }
 
+    @Override
     public BODY getBody() {
         return body;
     }

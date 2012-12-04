@@ -14,43 +14,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.IAgentController;
-import cz.cuni.amis.aiste.IAgentExecutionResult;
-import cz.cuni.amis.aiste.IAgentType;
+import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 
 /**
  *
  * @author Martin Cerny
  */
-public class AgentExecutionResult implements IAgentExecutionResult{
-    
-    private IAgentType agentType;
-    private IAgentController controller;
-    private double totalReward;
+public class AgentInstantiationDescriptor implements IAgentInstantiationDescriptor{
+    private int minInstances;
+    private int maxInstances;
 
-    public AgentExecutionResult(IAgentType agentType, IAgentController controller, double totalReward) {
-        this.agentType = agentType;
-        this.controller = controller;
-        this.totalReward = totalReward;
-    }
-    
-    
-    
-    @Override
-    public IAgentType getAgentType() {
-        return agentType;
+    public AgentInstantiationDescriptor(int minInstances, int maxInstances) {
+        this.minInstances = minInstances;
+        this.maxInstances = maxInstances;
     }
 
     @Override
-    public IAgentController getController() {
-        return controller;
+    public int getMaxInstances() {
+        return maxInstances;
     }
 
     @Override
-    public double getTotalReward() {
-        return totalReward;
+    public int getMinInstances() {
+        return minInstances;
     }
+    
+    
     
 }

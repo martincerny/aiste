@@ -14,32 +14,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.execution.impl;
 
-import cz.cuni.amis.aiste.IAgentType;
+import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
+import cz.cuni.amis.aiste.environment.IAgentType;
 
 /**
  *
  * @author Martin Cerny
  */
-public class SimpleAgentType implements IAgentType{
-    private String name;
+public class AgentExecutionResult implements IAgentExecutionResult{
+    
+    private IAgentType agentType;
+    private IAgentController controller;
+    private double totalReward;
 
-    public SimpleAgentType(String name) {
-        this.name = name;
+    public AgentExecutionResult(IAgentType agentType, IAgentController controller, double totalReward) {
+        this.agentType = agentType;
+        this.controller = controller;
+        this.totalReward = totalReward;
+    }
+    
+    
+    
+    @Override
+    public IAgentType getAgentType() {
+        return agentType;
     }
 
     @Override
-    public String getName() {
-        return name;
+    public IAgentController getController() {
+        return controller;
     }
 
     @Override
-    public String toString() {
-        return "SimpleAgentType{" + "name=" + name + '}';
+    public double getTotalReward() {
+        return totalReward;
     }
-    
-    
-    
     
 }

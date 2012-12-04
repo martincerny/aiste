@@ -14,28 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste;
+package cz.cuni.amis.aiste.environment.impl;
+
+import cz.cuni.amis.aiste.environment.IAgentType;
 
 /**
- * Information needed to execute an agent in an environment.
- * This interface is deliberately not generic, as there is no benefit of it.
+ *
  * @author Martin Cerny
  */
-public interface IAgentExecutionDescriptor {
-    /**
-     * Get the (environment specific) type of the agent 
-     */
-    IAgentType getAgentType();
+public class SimpleAgentType implements IAgentType{
+    private String name;
+
+    public SimpleAgentType(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return "SimpleAgentType{" + "name=" + name + '}';
+    }
     
-    /**
-     * Get the class of the controller to be instantiated
-     * @return 
-     */
-    Class<IAgentController> getControllerClass();
     
-    /**
-     * Get number of agents to be instantiated
-     * @return 
-     */
-    int getCount();
+    
+    
 }

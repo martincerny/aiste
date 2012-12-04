@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.IAgentBody;
+import cz.cuni.amis.aiste.environment.IAgentBody;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,6 +66,24 @@ public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, A
         return true;
     }
 
+    @Override
+    public void init() {
+        super.init();
+        synchronized(mutex){
+            actionsForNextStep = new HashMap<BODY, ACTION>();
+        }
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        synchronized(mutex){
+            actionsForNextStep.clear();
+        }
+    }
+
+    
+    
     /**
      * Test, whether the action is recognized. This is useful to get return value for {@link #act(cz.cuni.amis.aiste.IAgentBody, java.lang.Object) }
      * @param agentBody

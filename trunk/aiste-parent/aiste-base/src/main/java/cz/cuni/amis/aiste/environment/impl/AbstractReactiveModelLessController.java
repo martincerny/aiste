@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.IAgentBody;
-import cz.cuni.amis.aiste.IEnvironment;
-import cz.cuni.amis.aiste.IModelLessRepresentableEnvironment;
+import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IModelLessRepresentableEnvironment;
 
 /**
  * A controller for model-less environments that deliberates instantly and does

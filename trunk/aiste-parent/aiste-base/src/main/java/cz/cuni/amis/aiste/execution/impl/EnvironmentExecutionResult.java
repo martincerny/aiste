@@ -14,15 +14,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste;
+package cz.cuni.amis.aiste.execution.impl;
 
+import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
+import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import java.util.List;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface IEnvironmentExecutionResult {
-    List<IAgentExecutionResult> getAgentResults();
-    long getNumberOfStepsElapsed();
+public class EnvironmentExecutionResult implements IEnvironmentExecutionResult {
+    List<IAgentExecutionResult> agentResults;
+    long numberOfStepsElapsed;
+
+    public EnvironmentExecutionResult(List<IAgentExecutionResult> agentResults, long numberOfStepsElapsed) {
+        this.agentResults = agentResults;
+        this.numberOfStepsElapsed = numberOfStepsElapsed;
+    }
+    
+    @Override
+    public List<IAgentExecutionResult> getAgentResults() {
+        return agentResults;
+    }
+
+    @Override
+    public long getNumberOfStepsElapsed() {
+        return numberOfStepsElapsed;
+    }
+    
+    
 }

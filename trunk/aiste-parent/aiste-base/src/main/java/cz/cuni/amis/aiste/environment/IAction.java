@@ -14,24 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
-
-import cz.cuni.amis.aiste.IAgentInstantiationDescriptor;
+package cz.cuni.amis.aiste.environment;
 
 /**
  *
  * @author Martin Cerny
  */
-public class SingletonAgentInstantiationDescriptor implements IAgentInstantiationDescriptor{
-
-    @Override
-    public int getMaxInstances() {
-        return 1;
-    }
-
-    @Override
-    public int getMinInstances() {
-        return 1;
-    }
-    
+public interface IAction {
 }

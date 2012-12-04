@@ -14,34 +14,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.impl;
+package cz.cuni.amis.aiste.execution;
 
-import cz.cuni.amis.aiste.IAgentExecutionResult;
-import cz.cuni.amis.aiste.IEnvironmentExecutionResult;
-import java.util.List;
+import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.IAgentType;
 
 /**
- *
+ * Information needed to execute an agent in an environment.
+ * This interface is deliberately not generic, as there is no benefit of it.
  * @author Martin Cerny
  */
-public class EnvironmentExecutionResult implements IEnvironmentExecutionResult {
-    List<IAgentExecutionResult> agentResults;
-    long numberOfStepsElapsed;
-
-    public EnvironmentExecutionResult(List<IAgentExecutionResult> agentResults, long bumberOfStepsElapsed) {
-        this.agentResults = agentResults;
-        this.numberOfStepsElapsed = bumberOfStepsElapsed;
-    }
+public interface IAgentExecutionDescriptor {
+    /**
+     * Get the (environment specific) type of the agent 
+     */
+    IAgentType getAgentType();
     
-    @Override
-    public List<IAgentExecutionResult> getAgentResults() {
-        return agentResults;
-    }
-
-    @Override
-    public long getNumberOfStepsElapsed() {
-        return numberOfStepsElapsed;
-    }
+    /**
+     * Get the class of the controller to be instantiated
+     * @return 
+     */
+    Class<IAgentController> getControllerClass();
     
-    
+    /**
+     * Get number of agents to be instantiated
+     * @return 
+     */
+    int getCount();
 }
