@@ -17,9 +17,9 @@
 package cz.cuni.amis.aiste.environment;
 
 /**
- * Parent interface for all actions in the environment
+ *
  * @author Martin Cerny
  */
-public interface IAction {
+public interface IPercept {
     String getLoggableRepresentation();
 }

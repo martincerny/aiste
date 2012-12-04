@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>cz.cuni.amis.aiste</groupId>
-    <artifactId>aiste-simulations</artifactId>
+    <artifactId>aiste-examples</artifactId>
     <version>1.0-SNAPSHOT</version>
     <parent>
         <groupId>cz.cuni.amis.aiste</groupId>
@@ -11,7 +11,7 @@
     </parent>    
 
     <packaging>jar</packaging>
-    <name>AiSTe - Simulations</name>
+    <name>AiSTe - Examples</name>
     
     <dependencies>
         <dependency>
@@ -19,6 +19,11 @@
             <artifactId>junit</artifactId>
             <version>4.8.2</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>cz.cuni.amis.aiste</groupId>
+            <artifactId>aiste-base</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>

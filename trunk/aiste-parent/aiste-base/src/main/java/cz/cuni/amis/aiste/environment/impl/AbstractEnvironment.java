@@ -84,8 +84,9 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
         BODY newBody = createAgentBodyInternal(type);
                 
         instanceCount.put(type, instancesSoFar + 1);
-        bodies.add(newBody);        
-        
+        bodies.add(newBody);     
+        totalRewards.put(newBody, 0d);
+                
         return newBody;
         
     }

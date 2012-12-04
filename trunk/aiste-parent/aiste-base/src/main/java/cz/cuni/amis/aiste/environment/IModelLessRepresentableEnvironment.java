@@ -25,7 +25,7 @@ import java.util.Collection;
  * same actions are possible for a specific agent type at all simulation steps.
  * @author Martin Cerny
  */
-public interface IModelLessRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction, PERCEPT>
+public interface IModelLessRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction, PERCEPT extends IPercept>
 extends IEnvironment<BODY, ACTION> {    
     
     /**

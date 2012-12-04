@@ -16,6 +16,7 @@
  */
 package cz.cuni.amis.aiste.environment.impl;
 
+import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.IAgentBody;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.Map;
  * the last one is taken.
  * @author Martin Cerny
  */
-public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, ACTION> extends AbstractEnvironment<BODY, ACTION>{
+public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, ACTION extends IAction> extends AbstractEnvironment<BODY, ACTION>{
     
     
     private Map<BODY, ACTION> actionsForNextStep = new HashMap<BODY, ACTION>();

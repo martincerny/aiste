@@ -14,35 +14,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment.impl;
+package cz.cuni.amis.aiste.simulations.examples;
 
 import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.IAgentBody;
-import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.IModelLessRepresentableEnvironment;
 import cz.cuni.amis.aiste.environment.IPercept;
+import cz.cuni.amis.aiste.environment.impl.AbstractReactiveModelLessController;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
- * A controller for model-less environments that deliberates instantly and does
- * not have its own thread of execution.
+ *
  * @author Martin Cerny
- * @see IModelLessRepresentableEnvironment
  */
-public abstract class AbstractReactiveModelLessController<BODY extends IAgentBody, ACTION extends IAction, PERCEPT  extends IPercept> extends AbstractAgentController<BODY, ACTION, IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT>> {
+public class RandomModelLessController extends AbstractReactiveModelLessController<IAgentBody, IAction, IPercept> {
+
+    List<IAction> possibleActions;
+    
+    Random rnd;
 
     @Override
-    public boolean isApplicable(IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT> environment) {
-        return environment instanceof IModelLessRepresentableEnvironment;
+    public void init(IModelLessRepresentableEnvironment<IAgentBody, IAction, IPercept> environment, IAgentBody body, long stepDelay) {
+        super.init(environment, body, stepDelay);
+        possibleActions = new ArrayList<IAction>(environment.getPossibleActions(body.getType()));
+        rnd = new Random();
     }
-
+    
+    
+    
     @Override
-    public void onSimulationStep(double reward) {
-        super.onSimulationStep(reward);
-        ACTION nextAction = getActionForPercept(getEnvironment().getPercept(getBody()));
-        getEnvironment().act(getBody(), nextAction);        
+    protected IAction getActionForPercept(IPercept percept) {
+        return possibleActions.get(rnd.nextInt(possibleActions.size()));
     }
-    
-    protected abstract ACTION getActionForPercept(PERCEPT percept);
 
-    
 }
