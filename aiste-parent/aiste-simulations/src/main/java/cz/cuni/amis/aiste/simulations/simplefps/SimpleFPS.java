@@ -51,8 +51,7 @@ public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnv
         
         //TODO: prostredi se musi umet reprezentovat pomoci sady state variables, to jsou vlastne pary jmeno-hodnota
         //protoze prostredi je obecne, budes je muset mit v nejakych kolekcich, asi listech nebo mapach, jak se ti to bude hodit
-        //je na tobe, jestli budes pro simulaci pouzivat primo tyhle promenne, nebo jestli si budes stav udrzovat jinak 
-        //a do promennych budes ten stav pri simulaci mirrorovat
+        //promenne pro veci jako zdravi nebo naboje je potreba pro tuhle reprezentaci diskretizovat (napr. DEAD, LOW, INJURED, HEALTHY)
         itemsAtLocations = new ArrayList<IStateVariable>();
         EnumStateVariable newVariable = new EnumStateVariable("ItemAtLocation1", ItemType.class); //jsou tez IntegerStateVariable, pripadne si muzes udelat i vlastni typy
         itemsAtLocations.add(newVariable);
