@@ -22,7 +22,7 @@
   
     <modules>
         <module>aiste-base</module>
-        <module>aiste-simulations</module>
+        <module>aiste-examples</module>
     </modules>
   
     <organization>
