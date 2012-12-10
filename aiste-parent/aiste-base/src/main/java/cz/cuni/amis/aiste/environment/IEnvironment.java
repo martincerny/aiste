@@ -44,7 +44,7 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
      * Get information about possible agent types that may by instantiated
      * @return 
      */
-    Map<IAgentType, IAgentInstantiationDescriptor> getInstantiationDescriptors();
+    Map<? extends IAgentType,? extends IAgentInstantiationDescriptor> getInstantiationDescriptors();
     
     /**
      * Instantiate a new agent body of specified type
