@@ -44,6 +44,14 @@ public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION ex
         this.stepDelay = stepDelay;
     }
 
+    /**
+     * Act for this agent's body.
+     * @param action 
+     */
+    protected void act(ACTION action){
+        getEnvironment().act(body, action);
+    }
+    
     @Override
     public void onSimulationStep(double reward) {
     }
