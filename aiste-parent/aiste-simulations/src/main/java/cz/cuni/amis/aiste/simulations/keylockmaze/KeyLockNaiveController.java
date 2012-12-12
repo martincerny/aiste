@@ -16,7 +16,6 @@
  */
 package cz.cuni.amis.aiste.simulations.keylockmaze;
 
-import cz.cuni.amis.aiste.simulations.simplefps.*;
 import cz.cuni.amis.aiste.environment.impl.AbstractAgentController;
 import cz.cuni.amis.utils.astar.AStar;
 
@@ -40,7 +39,7 @@ public class KeyLockNaiveController extends AbstractAgentController<KeyLockAgent
     @Override
     public void onSimulationStep(double reward) {
         super.onSimulationStep(reward);
-        //zde proved logiku agenta, muzes pouzivat libovolne vereje metody SimpleFPS - tvuj agent nemusi byt vubec obecny
+        //zde proved logiku agenta, muzes pouzivat libovolne vereje metody KeyLockMaze - tvuj agent nemusi byt vubec obecny
         //reward je odmena za posledni provedeny tah
         //akce se provadi takto:
         act(new KeyLockAction(/*Tady si asi budes chtit predat nejake info*/));
