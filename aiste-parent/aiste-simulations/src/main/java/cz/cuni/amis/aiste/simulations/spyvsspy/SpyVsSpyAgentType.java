@@ -14,40 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment.impl;
+package cz.cuni.amis.aiste.simulations.spyvsspy;
 
-import cz.cuni.amis.aiste.environment.IAgentBody;
-import cz.cuni.amis.aiste.environment.IAgentType;
+import cz.cuni.amis.aiste.environment.impl.SimpleAgentType;
 
 /**
- *
- * @author Martin Cerny
+ * SpyVsSpy has only one agent type, this one.
+ * @author 
  */
-public class SimpleBody implements IAgentBody{
+public class SpyVsSpyAgentType extends SimpleAgentType {
 
-    private int id;
+    private static SpyVsSpyAgentType instance = new SpyVsSpyAgentType();
     
-    private IAgentType type;
-
-    public SimpleBody(IAgentType type) {
-        this.type = type;
+    private SpyVsSpyAgentType() {
+        super("DefaultSpyVspyAgent");
     }
 
-    public SimpleBody(int id, IAgentType type) {
-        this.id = id;
-        this.type = type;
-    }
-    
-    
-    
-    @Override
-    public IAgentType getType() {
-        return type;
-    }
-
-    @Override
-    public int getId() {
-        return id;
+    public static SpyVsSpyAgentType getInstance() {
+        return instance;
     }
     
     
