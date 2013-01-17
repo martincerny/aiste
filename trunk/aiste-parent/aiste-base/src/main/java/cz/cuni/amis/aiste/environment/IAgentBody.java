@@ -22,4 +22,5 @@ package cz.cuni.amis.aiste.environment;
  */
 public interface IAgentBody {
     IAgentType getType();
+    int getId();
 }
