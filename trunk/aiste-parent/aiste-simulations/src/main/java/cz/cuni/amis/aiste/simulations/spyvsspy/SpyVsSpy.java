@@ -17,10 +17,18 @@
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
+import cz.cuni.amis.aiste.environment.IAgentBody;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
+import cz.cuni.amis.aiste.environment.IPDDLRepresentableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
+import cz.cuni.amis.planning4j.ActionDescription;
+import cz.cuni.amis.planning4j.pddl.PDDLConstant;
+import cz.cuni.amis.planning4j.pddl.PDDLDomain;
+import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
+import cz.cuni.amis.planning4j.pddl.PDDLType;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -28,7 +36,9 @@ import org.apache.log4j.Logger;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvironment<SpyVsSpyAgentBody, SpyVsSpyAction> {
+public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvironment<SpyVsSpyAgentBody, SpyVsSpyAction> 
+    implements IPDDLRepresentableEnvironment<SpyVsSpyAgentBody, SpyVsSpyAction>
+{
 
     private final Logger logger = Logger.getLogger(SpyVsSpy.class);
 
@@ -95,6 +105,20 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
 
     Random rand;
 
+    /* 
+     * PDDL generating stuf
+     */
+    
+    PDDLType itemType;
+    PDDLType locationType;
+    PDDLType trapTypes;
+    PDDLType trapRemoverTypes;
+    
+    PDDLConstant[] itemConstants;
+    PDDLConstant[] locationConstants;
+    PDDLConstant[] trapConstants;
+    PDDLConstant[] trapRemoverConstants;
+    
     public SpyVsSpy() {
         super(SpyVsSpyAgentBody.class, SpyVsSpyAction.class);
         numTrapTypes = 2;
@@ -360,6 +384,24 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
         return Collections.singletonMap(SpyVsSpyAgentType.getInstance(), new AgentInstantiationDescriptor(1, maxPlayers));
     }
 
+    @Override
+    public PDDLDomain getDomain(SpyVsSpyAgentBody body) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public PDDLProblem getProblem(SpyVsSpyAgentBody body) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public List<SpyVsSpyAction> convertPlanToActions(List<ActionDescription> planFromPlanner) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    
+    
+    
     public static class MapNode {
 
         /**
