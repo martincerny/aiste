@@ -86,10 +86,12 @@ public class Test {
                 + ")"),
                 new PDDLStringProblemProvider("(define (problem jug-test)"
                 + "(:domain jug-pouring)"
-                + "(:objects j - jug)"
+                + "(:objects j j2 - jug)"
                 + "(:init "
                  + "(= (amount j) 10)"
                  + "(= (capacity j) 30)"
+                 + "(= (amount j2) 10)"
+                 + "(= (capacity j2) 30)"
                  + ")"
                 + "(:goal (= (amount j) 0)))")
                 );

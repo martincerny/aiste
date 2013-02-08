@@ -16,6 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
+import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentBody;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
@@ -24,10 +25,15 @@ import cz.cuni.amis.aiste.environment.IPDDLRepresentableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.planning4j.ActionDescription;
+import cz.cuni.amis.planning4j.pddl.PDDLAction;
 import cz.cuni.amis.planning4j.pddl.PDDLConstant;
 import cz.cuni.amis.planning4j.pddl.PDDLDomain;
+import cz.cuni.amis.planning4j.pddl.PDDLOperators;
+import cz.cuni.amis.planning4j.pddl.PDDLParameter;
+import cz.cuni.amis.planning4j.pddl.PDDLPredicate;
 import cz.cuni.amis.planning4j.pddl.PDDLProblem;
 import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
+import cz.cuni.amis.planning4j.pddl.PDDLSimpleAction;
 import cz.cuni.amis.planning4j.pddl.PDDLType;
 import java.util.*;
 import org.apache.log4j.Logger;
@@ -118,7 +124,14 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
     PDDLConstant[] locationConstants;
     PDDLConstant[] trapConstants;
     PDDLConstant[] trapRemoverConstants;
-    
+
+    PDDLPredicate atPredicate;
+    protected PDDLPredicate adjacentPredicate;
+    PDDLSimpleAction moveAction;
+        
+    public static final String LOCATION_PREFIX = "location";
+    public static final String SEPARATOR = "_";
+
     public SpyVsSpy() {
         super(SpyVsSpyAgentBody.class, SpyVsSpyAction.class);
         numTrapTypes = 2;
@@ -150,6 +163,24 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
         attackSuccessProbability = 0.3;
 
         rand = new Random();
+        
+        itemType = new PDDLType("item");
+        locationType = new PDDLType("location");
+        
+        locationConstants = new PDDLConstant[nodes.size()];
+        for(int i = 0; i < nodes.size(); i++){
+            locationConstants[i] = new PDDLConstant(LOCATION_PREFIX + SEPARATOR  + i, locationType);
+        }
+        
+        atPredicate = new PDDLPredicate("at", new PDDLParameter("loc", locationType));
+        adjacentPredicate = new PDDLPredicate("adjacent", new PDDLParameter("loc1", locationType), new PDDLParameter("loc2", locationType));
+        moveAction = new PDDLSimpleAction("move", new PDDLParameter("from", locationType), new PDDLParameter("to", locationType));
+        moveAction.setPreconditionList(
+                atPredicate.stringAfterSubstitution("?from"),
+                adjacentPredicate.stringAfterSubstitution("?from", "?to"));
+        moveAction.setPositiveEffects(atPredicate.stringAfterSubstitution("?to"));
+        moveAction.setNegativeEffects(atPredicate.stringAfterSubstitution("?from"));
+        
     }
 
     /**
@@ -386,18 +417,56 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
 
     @Override
     public PDDLDomain getDomain(SpyVsSpyAgentBody body) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        PDDLDomain domain = new PDDLDomain("SpyVsSpy", EnumSet.of(PDDLRequirement.TYPING, PDDLRequirement.STRIPS));
+        domain.addType(itemType);
+        domain.addType(locationType);
+        for(int i = 0; i < nodes.size(); i++){
+            domain.addConstant(locationConstants[i]);
+        }
+        domain.addPredicate(atPredicate);        
+        domain.addPredicate(adjacentPredicate);
+        
+        
+        
+        domain.addAction(moveAction);
+        return domain;
     }
 
     @Override
     public PDDLProblem getProblem(SpyVsSpyAgentBody body) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        PDDLProblem problem = new PDDLProblem("problem", "SpyVsSpy");
+        List<String> initialLiterals = new ArrayList<String>();
+        initialLiterals.add(atPredicate.stringAfterSubstitution(locationConstants[body.locationIndex].getName()));
+        for(MapNode n : nodes){
+            for(Integer neighbourIndex : neighbours.get(n.index)){
+                initialLiterals.add(adjacentPredicate.stringAfterSubstitution(locationConstants[n.index].getName(), locationConstants[neighbourIndex].getName()));
+            }
+        }
+        problem.setInitialLiterals(initialLiterals);
+        problem.setGoalCondition(atPredicate.stringAfterSubstitution(locationConstants[destination].getName()));
+        return problem;
     }
 
     @Override
-    public List<SpyVsSpyAction> convertPlanToActions(List<ActionDescription> planFromPlanner) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public List<? extends SpyVsSpyAction> convertPlanToActions(List<ActionDescription> planFromPlanner) {
+        List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(planFromPlanner.size());
+        for(ActionDescription desc : planFromPlanner){
+            if(desc.getName().equalsIgnoreCase(moveAction.getName())){
+                int targetLocation = Integer.parseInt(desc.getParameters().get(1).substring(LOCATION_PREFIX.length() + SEPARATOR.length()));
+                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
+            } else {
+                throw new AisteException("Unrecognized action name: " + desc.getName());
+            }
+        }
+        return actions;
     }
+
+    @Override
+    public boolean checkPlanValidity(List<? extends SpyVsSpyAction> plan) {
+        return true;
+    }
+    
+    
     
     
     

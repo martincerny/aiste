@@ -28,5 +28,12 @@ import java.util.List;
 public interface IPDDLRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction> extends IEnvironment<BODY, ACTION> {
     public PDDLDomain getDomain(BODY body);
     public PDDLProblem getProblem(BODY body);
-    public List<ACTION> convertPlanToActions(List<ActionDescription> planFromPlanner);
+    public List<? extends ACTION> convertPlanToActions(List<ActionDescription> planFromPlanner);
+    
+    /**
+     * Checks validity of a plan
+     * @param plan
+     * @return true, if given actions lead to the goal from current world situation
+     */
+    public boolean checkPlanValidity(List<? extends ACTION> plan);
 }
