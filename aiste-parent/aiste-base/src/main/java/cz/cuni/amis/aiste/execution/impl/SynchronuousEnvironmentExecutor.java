@@ -16,26 +16,32 @@
  */
 package cz.cuni.amis.aiste.execution.impl;
 
+import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
+import java.util.concurrent.Executor;
+import org.apache.log4j.Logger;
 
 /**
- * A simple executor, that runs the agent controllers and environment synchronously, one step after other.
- * This executor is mainly for testing purposes and should be used only when agent controllers
- * do not rely on a specific simulation speed.
+ * A simple executor, that runs the agent controllers and environment
+ * synchronously, one step after other. This executor is mainly for testing
+ * purposes and should be used only when agent controllers do not rely on a
+ * specific simulation speed.
+ *
  * @author Martin Cerny
  */
 public class SynchronuousEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
+    private final Logger logger = Logger.getLogger(SynchronuousEnvironmentExecutor.class);
+
     public SynchronuousEnvironmentExecutor() {
         super(1);
-    }    
-    
+    }
+
     @Override
     public IEnvironmentExecutionResult executeEnvironment(long maxSteps) {
         this.startSimulation();
         long step = 0;
-        while(!getEnvironment().isFinished() && (maxSteps == 0 || step < maxSteps)){
+        while (!getEnvironment().isFinished() && (maxSteps == 0 || step < maxSteps)) {
             performSimulationStep();
             step++;
         }
@@ -43,6 +49,15 @@ public class SynchronuousEnvironmentExecutor extends AbstractEnvironmentExecutor
         stopSimulation();
         return result;
     }
-    
-    
+
+    @Override
+    protected void notifyControllerOfSimulationStep(IAgentController controller, double reward) {
+        //we run controllers synchronously
+        try {
+            controller.onSimulationStep(reward);
+        } catch (Exception ex) {
+            logger.info("Controller " + controller + " has raised exception during onSimulationStep(). It has been stopped.", ex);
+            controllerFailed(controller);
+        }
+    }
 }

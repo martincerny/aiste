@@ -61,6 +61,9 @@ public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, A
         if(!isActionRecognized(agentBody, action)){
             return false;
         }
+        if(getRemovedBodies().contains(agentBody)){
+            return false;
+        }
         synchronized(mutex){
             actionsForNextStep.put(agentBody, action);
         }

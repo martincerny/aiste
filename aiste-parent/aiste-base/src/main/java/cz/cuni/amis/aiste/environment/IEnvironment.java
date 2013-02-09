@@ -73,6 +73,12 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
      * @return 
      */
     List<BODY> getAllBodies();
+
+    /**
+     * Get all agent bodies present in the environment that have not yet been removed.
+     * @return 
+     */
+    List<BODY> getActiveBodies();
     
     /**
      * Runs one step of the simulation.
@@ -102,4 +108,17 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
     
     Class<BODY> getBodyClass();
     Class<ACTION> getActionClass();
+    
+    /**
+     * A shorthand for {@link #removeAgentBody(double) } with 0 reward.
+     */
+    void removeAgentBody(BODY body);    
+
+    /**
+     * Removes agent body from the simulation and gives it a specified reward.
+     * Useful especially to remove bodies of agents that performed some sort of illegal operation
+     * (e. g. exception in agent logic).
+     * @param reward 
+     */
+    void removeAgentBody(BODY body, double reward);
 }

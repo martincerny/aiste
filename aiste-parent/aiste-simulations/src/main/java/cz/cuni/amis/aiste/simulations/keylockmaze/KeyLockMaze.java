@@ -16,19 +16,14 @@
  */
 package cz.cuni.amis.aiste.simulations.keylockmaze;
 
-import cz.cuni.amis.aiste.simulations.simplefps.*;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IStateVariable;
 import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
-import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
-import cz.cuni.amis.aiste.environment.impl.EnumStateVariable;
 import cz.cuni.amis.aiste.environment.impl.IntegerStateVariable;
 import cz.cuni.amis.aiste.environment.impl.SingletonAgentInstantiationDescriptor;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 /**

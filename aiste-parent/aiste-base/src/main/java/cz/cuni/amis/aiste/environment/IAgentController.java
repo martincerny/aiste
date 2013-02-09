@@ -44,7 +44,7 @@ public interface IAgentController<BODY extends IAgentBody, ACTION extends IActio
     
     /**
      * Called once, when the simulation starts. If the agent has its own thread of execution,
-     * it should be started here.
+     * it should be started here. The simulation does not start before this method returns. Time taken 
      */
     void start();
 
@@ -56,7 +56,8 @@ public interface IAgentController<BODY extends IAgentBody, ACTION extends IActio
     
     /**
      * Notifies the agent that a simulation step has happened and that it received a reward.
-     * This method is called even if the invocation on previous simulation step has not yet returned.
+     * If execution of this method takes more time than a single simulation step,
+     * it may be called again even if the invocation on previous simulation step has not yet returned.
      * Calls to this method are not synchronized with the environment.
      * @param reward 
      */
