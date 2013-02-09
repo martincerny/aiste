@@ -23,10 +23,7 @@ import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IAgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAction;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -40,6 +37,17 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     private List<BODY> bodies;
     private long timeStep;
     private Map<BODY, Double> totalRewards;
+
+
+    /**
+     * Bodies that are active - ie. have been added and not yet removed.
+     */
+    private List<BODY> activeBodies;
+    
+    /**
+     * Bodies that should no longer be active
+     */
+    private Set<BODY> removedBodies;
 
     private Map<IAgentType, Integer> instanceCount = new HashMap<IAgentType,Integer>();
 
@@ -55,7 +63,10 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
         }
         Map<BODY, Double> result = simulateOneStepInternal();
         for(Map.Entry<BODY, Double> rewardEntry : result.entrySet() ){
-            totalRewards.put(rewardEntry.getKey(), totalRewards.get(rewardEntry.getKey()) + rewardEntry.getValue());
+            if(!removedBodies.contains(rewardEntry.getKey())){
+                //removed bodies no longer receive rewards
+                totalRewards.put(rewardEntry.getKey(), totalRewards.get(rewardEntry.getKey()) + rewardEntry.getValue());
+            }
         }
         timeStep++;
         return result;
@@ -85,6 +96,7 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
                 
         instanceCount.put(type, instancesSoFar + 1);
         bodies.add(newBody);     
+        activeBodies.add(newBody);
         totalRewards.put(newBody, 0d);
                 
         return newBody;
@@ -97,6 +109,8 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     public void init() {
         finished = false;
         bodies = new ArrayList<BODY>();
+        activeBodies = new ArrayList<BODY>();
+        removedBodies =  new HashSet<BODY>();
         timeStep = 0;
         totalRewards = new HashMap<BODY, Double>();
     }
@@ -112,9 +126,18 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     public List<BODY> getAllBodies() {
         return bodies;
     }
+
+    @Override
+    public List<BODY> getActiveBodies() {
+        return activeBodies;
+    }
+
+    protected Set<BODY> getRemovedBodies() {
+        return removedBodies;
+    }
     
 
-    
+   
     
     @Override
     public long getTimeStep() {
@@ -147,6 +170,18 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     public Class<BODY> getBodyClass() {
         return bodyClass;
     }
+
+    @Override
+    public void removeAgentBody(BODY body) {
+        removeAgentBody(body, 0);        
+    }
+
+    @Override
+    public void removeAgentBody(BODY body, double reward) {
+        removedBodies.add(body);
+        totalRewards.put(body,  totalRewards.get(body) + reward);
+    }
+    
     
     
     

@@ -16,16 +16,20 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
-import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.IPlanner;
-import cz.cuni.amis.planning4j.IPlanningResult;
+import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.impl.Planning4JController;
+import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
+import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutor;
+import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
+import cz.cuni.amis.planning4j.IAsyncPlanner;
 import cz.cuni.amis.planning4j.external.ExternalPlanner;
 import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerExecutor;
 import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerInformation;
 import cz.cuni.amis.planning4j.external.impl.itsimple.PlannerListManager;
 import cz.cuni.amis.planning4j.external.plannerspack.PlannersPackUtils;
-import cz.cuni.amis.planning4j.impl.PDDLStringDomainProvider;
-import cz.cuni.amis.planning4j.impl.PDDLStringProblemProvider;
+import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
+import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
 import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
 import cz.cuni.amis.planning4j.utils.Planning4JUtils;
 import java.io.File;
@@ -45,66 +49,21 @@ public class Test {
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
         plannerManager.extractAndPreparePlanner(plannersDirectory, info);
 
-        IPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info,plannersDirectory));  
+        IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info,plannersDirectory));  
         
-         IPlanningResult result = Planning4JUtils.plan(planner, 
-/*                new PDDLStringDomainProvider("(define (domain jug-pouring)"
-                + "(:requirements :typing :fluents)"
-                + "(:types jug)"
-                + "(:functors"
-                + "(amount ?j - jug)"
-                + "(capacity ?j - jug)"
-                + "- (fluent number))"
-                + "(:action empty"
-                + ":parameters (?jug1 ?jug2 - jug)"
-                + ":precondition (fluent-test"
-                + "(>= (- (capacity ?jug2) (amount ?jug2))"
-                + "(amount ?jug1)))"
-                + ":effect (and (change (amount ?jug1)"
-                + "0)"
-                + "(change (amount ?jug2)"
-                + "(+ (amount ?jug2)"
-                + "(amount ?jug1)))))"
-                + ")"),*/
-                new PDDLStringDomainProvider("(define (domain jug-pouring)"
-                + "(:requirements :typing :fluents)"
-                + "(:types jug)"
-                + "(:functions"
-                + "     (amount ?j - jug)"
-                + "     (capacity ?j - jug)"
-                + ")"
-                + "(:action empty"
-                + "     :parameters (?jug1 ?jug2 - jug)"
-                + ":precondition "
-                + "(>= (- (capacity ?jug2) (amount ?jug2))"
-                + "(amount ?jug1))"
-                + ":effect (and (assign (amount ?jug1)"
-                + "0)"
-                + "(assign (amount ?jug2)"
-                + ""
-                + "(amount ?jug1))))"
-                + ")"),
-                new PDDLStringProblemProvider("(define (problem jug-test)"
-                + "(:domain jug-pouring)"
-                + "(:objects j j2 - jug)"
-                + "(:init "
-                 + "(= (amount j) 10)"
-                 + "(= (capacity j) 30)"
-                 + "(= (amount j2) 10)"
-                 + "(= (capacity j2) 30)"
-                 + ")"
-                + "(:goal (= (amount j) 0)))")
-                );
-        
-            if (!result.isSuccess()) {
-                System.out.println("No solution found.");
-                return;
-            } else {
-                System.out.println("Found solution. The plan is:");
-                for (ActionDescription action : result.getPlan()) {
-                    System.out.println(action.getName());
-                }
-            }
+ 
+        SpyVsSpy b = new SpyVsSpy();
+        IAgentController player1 = new Planning4JController(Planning4JUtils.getTranslatingAsyncPlanner(planner, PDDLObjectDomainProvider.class, PDDLObjectProblemProvider.class));        
+
+        IEnvironmentExecutor executor = new DefaultEnvironmentExecutor(100);
+        executor.setEnvironment(b);
+        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
+
+        IEnvironmentExecutionResult result = executor.executeEnvironment(10);
+
+        System.out.println("Results: ");
+        System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());
+         
 
         /*
         SpyVsSpy b = new SpyVsSpy();

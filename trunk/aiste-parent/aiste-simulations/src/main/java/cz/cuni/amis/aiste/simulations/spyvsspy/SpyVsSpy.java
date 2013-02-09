@@ -18,17 +18,14 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
-import cz.cuni.amis.aiste.environment.IAgentBody;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IPDDLRepresentableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.PDDLAction;
-import cz.cuni.amis.planning4j.pddl.PDDLConstant;
+import cz.cuni.amis.planning4j.pddl.PDDLObjectInstance;
 import cz.cuni.amis.planning4j.pddl.PDDLDomain;
-import cz.cuni.amis.planning4j.pddl.PDDLOperators;
 import cz.cuni.amis.planning4j.pddl.PDDLParameter;
 import cz.cuni.amis.planning4j.pddl.PDDLPredicate;
 import cz.cuni.amis.planning4j.pddl.PDDLProblem;
@@ -120,10 +117,10 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
     PDDLType trapTypes;
     PDDLType trapRemoverTypes;
     
-    PDDLConstant[] itemConstants;
-    PDDLConstant[] locationConstants;
-    PDDLConstant[] trapConstants;
-    PDDLConstant[] trapRemoverConstants;
+    PDDLObjectInstance[] itemConstants;
+    PDDLObjectInstance[] locationConstants;
+    PDDLObjectInstance[] trapConstants;
+    PDDLObjectInstance[] trapRemoverConstants;
 
     PDDLPredicate atPredicate;
     protected PDDLPredicate adjacentPredicate;
@@ -167,9 +164,9 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
         itemType = new PDDLType("item");
         locationType = new PDDLType("location");
         
-        locationConstants = new PDDLConstant[nodes.size()];
+        locationConstants = new PDDLObjectInstance[nodes.size()];
         for(int i = 0; i < nodes.size(); i++){
-            locationConstants[i] = new PDDLConstant(LOCATION_PREFIX + SEPARATOR  + i, locationType);
+            locationConstants[i] = new PDDLObjectInstance(LOCATION_PREFIX + SEPARATOR  + i, locationType);
         }
         
         atPredicate = new PDDLPredicate("at", new PDDLParameter("loc", locationType));
@@ -420,9 +417,6 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
         PDDLDomain domain = new PDDLDomain("SpyVsSpy", EnumSet.of(PDDLRequirement.TYPING, PDDLRequirement.STRIPS));
         domain.addType(itemType);
         domain.addType(locationType);
-        for(int i = 0; i < nodes.size(); i++){
-            domain.addConstant(locationConstants[i]);
-        }
         domain.addPredicate(atPredicate);        
         domain.addPredicate(adjacentPredicate);
         
@@ -434,7 +428,10 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
 
     @Override
     public PDDLProblem getProblem(SpyVsSpyAgentBody body) {
-        PDDLProblem problem = new PDDLProblem("problem", "SpyVsSpy");
+        PDDLProblem problem = new PDDLProblem("SpyVsSpyProblem", "SpyVsSpy");
+        for(int i = 0; i < nodes.size(); i++){
+            problem.addObject(locationConstants[i]);
+        }
         List<String> initialLiterals = new ArrayList<String>();
         initialLiterals.add(atPredicate.stringAfterSubstitution(locationConstants[body.locationIndex].getName()));
         for(MapNode n : nodes){
