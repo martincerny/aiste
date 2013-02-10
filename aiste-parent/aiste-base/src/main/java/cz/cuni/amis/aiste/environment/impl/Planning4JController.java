@@ -23,6 +23,7 @@ import cz.cuni.amis.planning4j.*;
 import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
 import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 import org.apache.log4j.Logger;
 
@@ -78,9 +79,25 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
                 case FUTURE_IS_READY: {
                     IPlanningResult planningResult = planFuture.get();
                     if (planningResult.isSuccess()) {
-                        currentPlan = new ArrayDeque<IAction>(getEnvironment().convertPlanToActions(planningResult.getPlan()));
+                        if(logger.isTraceEnabled()){
+                            StringBuilder planSB = new StringBuilder("Plan before conversion: ");
+                            for(ActionDescription act : planningResult.getPlan()){
+                                planSB.append(" ").append(act.toString()).append("");
+                            }
+                            logger.trace(planSB.toString());
+                        }
+                        
+                        List<? extends IAction> convertedPlan = getEnvironment().convertPlanToActions(planningResult.getPlan());
+                        currentPlan = new ArrayDeque<IAction>(convertedPlan);
                         if (logger.isDebugEnabled()) {
                             logger.debug("Planning succesful, found plan of length " + currentPlan.size());
+                            if(logger.isTraceEnabled()){
+                                StringBuilder planSB = new StringBuilder("Plan: ");
+                                for(IAction act : convertedPlan){
+                                    planSB.append(" [").append(act.getLoggableRepresentation() + "]");
+                                }
+                                logger.trace(planSB.toString());
+                            }
                         }
                     } else {
                         if (logger.isDebugEnabled()) {
