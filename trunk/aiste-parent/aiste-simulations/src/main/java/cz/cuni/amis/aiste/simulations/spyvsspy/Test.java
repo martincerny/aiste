@@ -43,7 +43,7 @@ public class Test {
     public static void main(String args[]) {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
         
-        ItSimplePlannerInformation info = plannerManager.suggestPlanners(PDDLRequirement.FLUENTS).get(0);
+        ItSimplePlannerInformation info = plannerManager.suggestPlanners(PDDLRequirement.ADL).get(0);
         
         File plannersDirectory = new File("target");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
@@ -55,11 +55,12 @@ public class Test {
         SpyVsSpy b = new SpyVsSpy();
         IAgentController player1 = new Planning4JController(Planning4JUtils.getTranslatingAsyncPlanner(planner, PDDLObjectDomainProvider.class, PDDLObjectProblemProvider.class));        
 
-        IEnvironmentExecutor executor = new DefaultEnvironmentExecutor(100);
+        DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(100);
+        executor.setDebugMode(true);
         executor.setEnvironment(b);
         executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(10);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(30);
 
         System.out.println("Results: ");
         System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());
