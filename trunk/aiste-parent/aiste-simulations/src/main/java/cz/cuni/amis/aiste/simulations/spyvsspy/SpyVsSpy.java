@@ -24,14 +24,7 @@ import cz.cuni.amis.aiste.environment.IPDDLRepresentableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.PDDLObjectInstance;
-import cz.cuni.amis.planning4j.pddl.PDDLDomain;
-import cz.cuni.amis.planning4j.pddl.PDDLParameter;
-import cz.cuni.amis.planning4j.pddl.PDDLPredicate;
-import cz.cuni.amis.planning4j.pddl.PDDLProblem;
-import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
-import cz.cuni.amis.planning4j.pddl.PDDLSimpleAction;
-import cz.cuni.amis.planning4j.pddl.PDDLType;
+import cz.cuni.amis.planning4j.pddl.*;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -112,21 +105,31 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
      * PDDL generating stuf
      */
     
+    PDDLType interactiveObjectType;
     PDDLType itemType;
     PDDLType locationType;
-    PDDLType trapTypes;
-    PDDLType trapRemoverTypes;
+    PDDLType trapType;
+    PDDLType trapRemoverType;
     
     PDDLObjectInstance[] itemConstants;
     PDDLObjectInstance[] locationConstants;
-    PDDLObjectInstance[] trapConstants;
-    PDDLObjectInstance[] trapRemoverConstants;
 
-    PDDLPredicate atPredicate;
-    protected PDDLPredicate adjacentPredicate;
+    PDDLPredicate playerAtPredicate;
+    PDDLPredicate adjacentPredicate;
+    PDDLPredicate objectAtPredicate;
+    PDDLPredicate carryingObjectPredicate;
+    PDDLPredicate trapSetPredicate;
+    PDDLPredicate removesTrapPredicate;
+            
     PDDLSimpleAction moveAction;
+    PDDLSimpleAction takeObjectAction;
+    PDDLSimpleAction removeTrapAction;
+    PDDLSimpleAction setTrapAction;
         
     public static final String LOCATION_PREFIX = "location";
+    public static final String ITEM_PREFIX = "item";
+    public static final String TRAP_PREFIX = "trap";
+    public static final String REMOVER_PREFIX = "trapRemover";
     public static final String SEPARATOR = "_";
 
     public SpyVsSpy() {
@@ -143,7 +146,7 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
         //id                     traps                   items               trap removers
         nodes.add(new MapNode(0, Collections.EMPTY_SET, Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
         nodes.add(new MapNode(1, Collections.EMPTY_SET, Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-        nodes.add(new MapNode(2, Collections.EMPTY_SET, Collections.singleton(0), Collections.singleton(1), numTrapTypes));
+        nodes.add(new MapNode(2, Collections.singleton(0), Collections.singleton(0), Collections.singleton(1), numTrapTypes));
         nodes.add(new MapNode(3, Collections.EMPTY_SET, Collections.singleton(1), Collections.singleton(0), numTrapTypes));
 
         rewardDeath = -50;
@@ -161,7 +164,16 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
 
         rand = new Random();
         
-        itemType = new PDDLType("item");
+        /*
+         * Declare global PDDL objects
+         */
+        
+        interactiveObjectType = new PDDLType("interactiveObject");
+        itemType = new PDDLType("item", interactiveObjectType);
+        trapType = new PDDLType("trap", interactiveObjectType);
+        trapRemoverType = new PDDLType("trapRemover", interactiveObjectType);
+        
+                
         locationType = new PDDLType("location");
         
         locationConstants = new PDDLObjectInstance[nodes.size()];
@@ -169,16 +181,205 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
             locationConstants[i] = new PDDLObjectInstance(LOCATION_PREFIX + SEPARATOR  + i, locationType);
         }
         
-        atPredicate = new PDDLPredicate("at", new PDDLParameter("loc", locationType));
+        playerAtPredicate = new PDDLPredicate("playerAt", new PDDLParameter("loc", locationType));
         adjacentPredicate = new PDDLPredicate("adjacent", new PDDLParameter("loc1", locationType), new PDDLParameter("loc2", locationType));
+        objectAtPredicate = new PDDLPredicate("objectAt", new PDDLParameter("obj", interactiveObjectType), new PDDLParameter("loc", locationType));
+        carryingObjectPredicate = new PDDLPredicate("carrying", new PDDLParameter("obj", interactiveObjectType));
+        trapSetPredicate = new PDDLPredicate("trapSet", new PDDLParameter("trap", trapType), new PDDLParameter("loc", locationType));
+        removesTrapPredicate = new PDDLPredicate("removesTrap", new PDDLParameter("remover", trapRemoverType), new PDDLParameter("trap", trapType));
+                
         moveAction = new PDDLSimpleAction("move", new PDDLParameter("from", locationType), new PDDLParameter("to", locationType));
         moveAction.setPreconditionList(
-                atPredicate.stringAfterSubstitution("?from"),
+                playerAtPredicate.stringAfterSubstitution("?from"),
                 adjacentPredicate.stringAfterSubstitution("?from", "?to"));
-        moveAction.setPositiveEffects(atPredicate.stringAfterSubstitution("?to"));
-        moveAction.setNegativeEffects(atPredicate.stringAfterSubstitution("?from"));
+        moveAction.setPositiveEffects(playerAtPredicate.stringAfterSubstitution("?to"));
+        moveAction.setNegativeEffects(playerAtPredicate.stringAfterSubstitution("?from"));
+
+        takeObjectAction = new PDDLSimpleAction("take", new PDDLParameter("obj", interactiveObjectType), new PDDLParameter("loc", locationType));
+        takeObjectAction.setPreconditionList(
+                playerAtPredicate.stringAfterSubstitution("?loc"),
+                objectAtPredicate.stringAfterSubstitution("?obj", "?loc"),
+                "not (exists (?t - " + trapType.getTypeName() + ") (" + trapSetPredicate.stringAfterSubstitution("?t", "?loc") + ") )"
+                );
+        takeObjectAction.setPositiveEffects(carryingObjectPredicate.stringAfterSubstitution("?obj"));
+        takeObjectAction.setNegativeEffects(objectAtPredicate.stringAfterSubstitution("?obj", "?loc"));
         
+        removeTrapAction = new PDDLSimpleAction("removeTrap", new PDDLParameter("remover", trapRemoverType), new PDDLParameter("trap", trapType), new PDDLParameter("loc", locationType));
+        removeTrapAction.setPreconditionList(
+                playerAtPredicate.stringAfterSubstitution("?loc"),
+                objectAtPredicate.stringAfterSubstitution("?trap", "?loc"),
+                carryingObjectPredicate.stringAfterSubstitution("?remover"),
+                removesTrapPredicate.stringAfterSubstitution("?remover","?trap")
+                );
+        removeTrapAction.setNegativeEffects(
+                objectAtPredicate.stringAfterSubstitution("?trap", "?loc"),
+                carryingObjectPredicate.stringAfterSubstitution("?remover")
+                );
+        
+        setTrapAction = new PDDLSimpleAction("setTrap", new PDDLParameter("trap", trapType), new PDDLParameter("loc", locationType));
+        setTrapAction.setPreconditionList(
+                playerAtPredicate.stringAfterSubstitution("?loc"),
+                carryingObjectPredicate.stringAfterSubstitution("?trap")
+            );
+        setTrapAction.setPositiveEffects(objectAtPredicate.stringAfterSubstitution("?trap", "?loc"));
+        setTrapAction.setNegativeEffects(carryingObjectPredicate.stringAfterSubstitution("?trap"));
+        
+        itemConstants = new PDDLObjectInstance[numItemTypes];
+        for(int i = 0; i < numItemTypes; i++){
+            itemConstants[i] = new PDDLObjectInstance(ITEM_PREFIX + SEPARATOR + i, itemType);
+        }
     }
+
+    
+    @Override
+    public PDDLDomain getDomain(SpyVsSpyAgentBody body) {
+        PDDLDomain domain = new PDDLDomain("SpyVsSpy", EnumSet.of(PDDLRequirement.TYPING, PDDLRequirement.STRIPS));
+        domain.addType(locationType);
+        domain.addType(interactiveObjectType);
+        domain.addType(itemType);
+        domain.addType(trapType);
+        domain.addType(trapRemoverType);        
+        
+        domain.addPredicate(playerAtPredicate);        
+        domain.addPredicate(adjacentPredicate);
+        domain.addPredicate(trapSetPredicate);
+        domain.addPredicate(objectAtPredicate);
+        domain.addPredicate(carryingObjectPredicate);
+        domain.addPredicate(removesTrapPredicate);
+        
+        
+        domain.addAction(moveAction);
+        domain.addAction(takeObjectAction);
+        domain.addAction(setTrapAction);
+        domain.addAction(removeTrapAction);        
+        return domain;
+    }
+
+    @Override
+    public PDDLProblem getProblem(SpyVsSpyAgentBody body) {
+        PDDLProblem problem = new PDDLProblem("SpyVsSpyProblem", "SpyVsSpy");
+        for(int i = 0; i < nodes.size(); i++){
+            problem.addObject(locationConstants[i]);
+        }
+        for(int i = 0; i < numItemTypes; i++){
+            problem.addObject(itemConstants[i]);
+        }
+        
+        List<List<PDDLObjectInstance>> trapInstances = new ArrayList<List<PDDLObjectInstance>>();         //first index is the trap type
+        List<List<PDDLObjectInstance>> trapRemoverInstances = new ArrayList<List<PDDLObjectInstance>>();         
+        for(int i = 0; i < numTrapTypes; i++){
+            trapInstances.add(new ArrayList<PDDLObjectInstance>());
+            trapRemoverInstances.add(new ArrayList<PDDLObjectInstance>());
+        }
+        
+        List<String> initialLiterals = new ArrayList<String>();
+        initialLiterals.add(playerAtPredicate.stringAfterSubstitution(locationConstants[body.locationIndex]));
+        for(MapNode n : nodes){
+            PDDLObjectInstance nodeInstance = locationConstants[n.index];
+            for(Integer neighbourIndex : neighbours.get(n.index)){
+                initialLiterals.add(adjacentPredicate.stringAfterSubstitution(nodeInstance, locationConstants[neighbourIndex]));
+            }
+            for(Integer item : n.items){
+                initialLiterals.add(objectAtPredicate.stringAfterSubstitution(itemConstants[item], nodeInstance));
+            }
+            for(Integer newTrapType : n.traps){
+                PDDLObjectInstance newTrapInstance = addTrap(trapInstances, newTrapType, problem);
+                
+                initialLiterals.add(objectAtPredicate.stringAfterSubstitution(nodeInstance, newTrapInstance));
+            }
+
+            for(int newTrapRemoverType = 0 ; newTrapRemoverType < numTrapTypes; newTrapRemoverType++){
+                for(int i = 0; i < n.numTrapRemovers[newTrapRemoverType]; i++){
+                    PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, newTrapRemoverType, problem);
+
+                    initialLiterals.add(objectAtPredicate.stringAfterSubstitution(nodeInstance, newTrapRemoverInstance));
+                }
+            }            
+        }
+        
+        for(int carriedItemType : body.itemsCarried){
+            initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(itemConstants[carriedItemType]));
+        }
+        
+        for(int trapTypeIndex = 0; trapTypeIndex < numTrapTypes; trapTypeIndex++){
+            for(int i = 0; i < body.numTrapsCarried[trapTypeIndex]; i++){
+                PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
+                initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapInstance));
+            }
+            for(int i = 0; i < body.numTrapRemoversCarried[trapTypeIndex]; i++){
+                PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, trapTypeIndex, problem);
+                initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapRemoverInstance));
+            }
+        }
+
+        /* 
+         * Generate removesTrap predicat
+         */
+        for(int trapTypeIndex = 0; trapTypeIndex < numTrapTypes; trapTypeIndex++){
+            for(PDDLObjectInstance trapRemover : trapRemoverInstances.get(trapTypeIndex)){
+                for(PDDLObjectInstance trap : trapInstances.get(trapTypeIndex)){
+                    initialLiterals.add(removesTrapPredicate.stringAfterSubstitution(trapRemover, trap));
+                }
+            }
+        }
+        
+        problem.setInitialLiterals(initialLiterals);
+        
+        List<String> goalConditions = new ArrayList<String>();
+        goalConditions.add(playerAtPredicate.stringAfterSubstitution(locationConstants[destination]));
+        for(PDDLObjectInstance item : itemConstants){
+            goalConditions.add(carryingObjectPredicate.stringAfterSubstitution(item));
+        }
+        
+        problem.setGoalCondition(PDDLOperators.makeAnd(goalConditions));
+        return problem;
+    }
+
+    protected PDDLObjectInstance addTrapRemover(List<List<PDDLObjectInstance>> trapRemoverInstances, int newTrapRemoverType, PDDLProblem problem) {
+        int newRemoverIndex = trapRemoverInstances.get(newTrapRemoverType).size();
+        String newTrapRemoverName = REMOVER_PREFIX + SEPARATOR + newTrapRemoverType + SEPARATOR + "instance" + SEPARATOR + newRemoverIndex;
+        PDDLObjectInstance newTrapRemoverInstance = new PDDLObjectInstance(newTrapRemoverName, trapRemoverType);
+        problem.addObject(newTrapRemoverInstance);
+        trapRemoverInstances.get(newTrapRemoverType).add(newTrapRemoverInstance);
+        return newTrapRemoverInstance;
+    }
+
+    protected PDDLObjectInstance addTrap(List<List<PDDLObjectInstance>> trapInstances, Integer newTrapType, PDDLProblem problem) {
+        int newTrapIndex = trapInstances.get(newTrapType).size();
+        String newTrapName = TRAP_PREFIX + SEPARATOR + newTrapType + SEPARATOR + "instance" + SEPARATOR + newTrapIndex;
+        PDDLObjectInstance newTrapInstance = new PDDLObjectInstance(newTrapName, trapType);
+        problem.addObject(newTrapInstance);
+        trapInstances.get(newTrapType).add(newTrapInstance);
+        return newTrapInstance;
+    }
+    
+    protected int extractActionParameter(ActionDescription desc, int parameterIndex, String typePrefix)  {
+        return Integer.parseInt(desc.getParameters().get(parameterIndex).substring(typePrefix.length() + SEPARATOR.length()));
+    }
+    
+
+    @Override
+    public List<? extends SpyVsSpyAction> convertPlanToActions(List<ActionDescription> planFromPlanner) {
+        List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(planFromPlanner.size());
+        for(ActionDescription desc : planFromPlanner){
+            if(desc.getName().equalsIgnoreCase(moveAction.getName())){
+                int targetLocation = extractActionParameter(desc, 1, LOCATION_PREFIX);
+                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
+            } else if(desc.getName().equalsIgnoreCase(takeObjectAction.getName())) {
+                int targetItem = extractActionParameter(desc, 0, ITEM_PREFIX);
+                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));
+            } else {
+                throw new AisteException("Unrecognized action name: " + desc.getName());
+            }
+        }
+        return actions;
+    }
+
+    @Override
+    public boolean checkPlanValidity(List<? extends SpyVsSpyAction> plan) {
+        return true;
+    }
+    
 
     /**
      * Kills an agent - i.e. moves it to a starting another location, drops all
@@ -412,56 +613,6 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
         return Collections.singletonMap(SpyVsSpyAgentType.getInstance(), new AgentInstantiationDescriptor(1, maxPlayers));
     }
 
-    @Override
-    public PDDLDomain getDomain(SpyVsSpyAgentBody body) {
-        PDDLDomain domain = new PDDLDomain("SpyVsSpy", EnumSet.of(PDDLRequirement.TYPING, PDDLRequirement.STRIPS));
-        domain.addType(itemType);
-        domain.addType(locationType);
-        domain.addPredicate(atPredicate);        
-        domain.addPredicate(adjacentPredicate);
-        
-        
-        
-        domain.addAction(moveAction);
-        return domain;
-    }
-
-    @Override
-    public PDDLProblem getProblem(SpyVsSpyAgentBody body) {
-        PDDLProblem problem = new PDDLProblem("SpyVsSpyProblem", "SpyVsSpy");
-        for(int i = 0; i < nodes.size(); i++){
-            problem.addObject(locationConstants[i]);
-        }
-        List<String> initialLiterals = new ArrayList<String>();
-        initialLiterals.add(atPredicate.stringAfterSubstitution(locationConstants[body.locationIndex].getName()));
-        for(MapNode n : nodes){
-            for(Integer neighbourIndex : neighbours.get(n.index)){
-                initialLiterals.add(adjacentPredicate.stringAfterSubstitution(locationConstants[n.index].getName(), locationConstants[neighbourIndex].getName()));
-            }
-        }
-        problem.setInitialLiterals(initialLiterals);
-        problem.setGoalCondition(atPredicate.stringAfterSubstitution(locationConstants[destination].getName()));
-        return problem;
-    }
-
-    @Override
-    public List<? extends SpyVsSpyAction> convertPlanToActions(List<ActionDescription> planFromPlanner) {
-        List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(planFromPlanner.size());
-        for(ActionDescription desc : planFromPlanner){
-            if(desc.getName().equalsIgnoreCase(moveAction.getName())){
-                int targetLocation = Integer.parseInt(desc.getParameters().get(1).substring(LOCATION_PREFIX.length() + SEPARATOR.length()));
-                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
-            } else {
-                throw new AisteException("Unrecognized action name: " + desc.getName());
-            }
-        }
-        return actions;
-    }
-
-    @Override
-    public boolean checkPlanValidity(List<? extends SpyVsSpyAction> plan) {
-        return true;
-    }
     
     
     
