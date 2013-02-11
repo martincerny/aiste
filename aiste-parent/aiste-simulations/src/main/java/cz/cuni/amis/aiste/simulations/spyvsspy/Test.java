@@ -19,19 +19,16 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
 import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutor;
-import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
 import cz.cuni.amis.planning4j.IAsyncPlanner;
+import cz.cuni.amis.planning4j.IValidator;
 import cz.cuni.amis.planning4j.external.ExternalPlanner;
 import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerExecutor;
 import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerInformation;
 import cz.cuni.amis.planning4j.external.impl.itsimple.PlannerListManager;
 import cz.cuni.amis.planning4j.external.plannerspack.PlannersPackUtils;
-import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
-import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
 import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
-import cz.cuni.amis.planning4j.utils.Planning4JUtils;
+import cz.cuni.amis.planning4j.validation.external.ValValidator;
 import java.io.File;
 
 /**
@@ -50,17 +47,19 @@ public class Test {
         plannerManager.extractAndPreparePlanner(plannersDirectory, info);
 
         IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info,plannersDirectory));  
-        
+
+        ValValidator.extractAndPrepareValidator(plannersDirectory);        
+        IValidator validator = new ValValidator(plannersDirectory);
  
         SpyVsSpy b = new SpyVsSpy();
-        IAgentController player1 = new Planning4JController(Planning4JUtils.getTranslatingAsyncPlanner(planner, PDDLObjectDomainProvider.class, PDDLObjectProblemProvider.class));        
+        IAgentController player1 = new Planning4JController(planner, validator);        
 
         DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(100);
         executor.setDebugMode(true);
         executor.setEnvironment(b);
         executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(30);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(10);
 
         System.out.println("Results: ");
         System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());

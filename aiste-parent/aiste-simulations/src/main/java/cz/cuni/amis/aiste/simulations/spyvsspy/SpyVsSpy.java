@@ -104,47 +104,36 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
      * PDDL generating stuf
      */
     PDDLType interactiveObjectType;
-
     PDDLType itemType;
-
     PDDLType locationType;
-
     PDDLType trapType;
-
     PDDLType trapRemoverType;
-
+    PDDLType oponentType;
+    
     PDDLObjectInstance[] itemConstants;
-
     PDDLObjectInstance[] locationConstants;
-
+    
     PDDLPredicate playerAtPredicate;
-
     PDDLPredicate adjacentPredicate;
-
     PDDLPredicate objectAtPredicate;
-
+    PDDLPredicate oponentAtPredicate;    
     PDDLPredicate carryingObjectPredicate;
-
+    PDDLPredicate oponentCarryingObjectPredicate;
     PDDLPredicate trapSetPredicate;
-
     PDDLPredicate removesTrapPredicate;
+    PDDLPredicate attackedOponent;
+    PDDLPredicate metOponent;
 
     PDDLSimpleAction moveAction;
-
     PDDLSimpleAction takeObjectAction;
-
     PDDLSimpleAction removeTrapAction;
-
     PDDLSimpleAction setTrapAction;
+    PDDLSimpleAction attackAction;
 
     public static final String LOCATION_PREFIX = "location";
-
     public static final String ITEM_PREFIX = "item";
-
     public static final String TRAP_PREFIX = "trap";
-
     public static final String REMOVER_PREFIX = "remover";
-
     public static final String SEPARATOR = "_";
 
     public SpyVsSpy() {
