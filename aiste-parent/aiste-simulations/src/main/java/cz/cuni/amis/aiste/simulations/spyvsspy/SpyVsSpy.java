@@ -358,36 +358,34 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
     }
 
     @Override
-    public List<? extends SpyVsSpyAction> convertPlanToActions(List<ActionDescription> planFromPlanner) {
-        List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(planFromPlanner.size());
-        for (ActionDescription desc : planFromPlanner) {
-            if (desc.getName().equalsIgnoreCase(moveAction.getName())) {
-                int targetLocation = extractActionParameter(desc, 1, LOCATION_PREFIX);
-                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
+    public List<? extends SpyVsSpyAction> translateAction(ActionDescription actionFromPlanner) {
+        List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(1);
+        if (actionFromPlanner.getName().equalsIgnoreCase(moveAction.getName())) {
+            int targetLocation = extractActionParameter(actionFromPlanner, 1, LOCATION_PREFIX);
+            actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
 
-            } else if (desc.getName().equalsIgnoreCase(takeObjectAction.getName())) {
-                String objectParameter = desc.getParameters().get(0).toLowerCase();
-                if (objectParameter.startsWith(REMOVER_PREFIX.toLowerCase())) {
-                    int targetRemover = extractActionParameter(desc, 0, REMOVER_PREFIX);
-                    actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, targetRemover));
-                } else if (objectParameter.startsWith(ITEM_PREFIX.toLowerCase())) {
-                    int targetItem = extractActionParameter(desc, 0, ITEM_PREFIX);
-                    actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));
-                } else {
-                    throw new AisteException("Unrecognized item to pickup: " + objectParameter);
-                }
-
-            } else if (desc.getName().equalsIgnoreCase(removeTrapAction.getName())) {
-                int targetTrap = extractActionParameter(desc, 1, TRAP_PREFIX);
-                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, targetTrap));
-                
-            } else if (desc.getName().equalsIgnoreCase(setTrapAction.getName())) {
-                int targetTrap = extractActionParameter(desc, 0, TRAP_PREFIX);                
-                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.SET_TRAP, targetTrap));
-                
+        } else if (actionFromPlanner.getName().equalsIgnoreCase(takeObjectAction.getName())) {
+            String objectParameter = actionFromPlanner.getParameters().get(0).toLowerCase();
+            if (objectParameter.startsWith(REMOVER_PREFIX.toLowerCase())) {
+                int targetRemover = extractActionParameter(actionFromPlanner, 0, REMOVER_PREFIX);
+                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, targetRemover));
+            } else if (objectParameter.startsWith(ITEM_PREFIX.toLowerCase())) {
+                int targetItem = extractActionParameter(actionFromPlanner, 0, ITEM_PREFIX);
+                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));
             } else {
-                throw new AisteException("Unrecognized action name: " + desc.getName());
+                throw new AisteException("Unrecognized item to pickup: " + objectParameter);
             }
+
+        } else if (actionFromPlanner.getName().equalsIgnoreCase(removeTrapAction.getName())) {
+            int targetTrap = extractActionParameter(actionFromPlanner, 1, TRAP_PREFIX);
+            actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, targetTrap));
+
+        } else if (actionFromPlanner.getName().equalsIgnoreCase(setTrapAction.getName())) {
+            int targetTrap = extractActionParameter(actionFromPlanner, 0, TRAP_PREFIX);                
+            actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.SET_TRAP, targetTrap));
+
+        } else {
+            throw new AisteException("Unrecognized action name: " + actionFromPlanner.getName());
         }
         return actions;
     }
