@@ -28,7 +28,7 @@ import java.util.List;
 public interface IPDDLRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction> extends IEnvironment<BODY, ACTION> {
     public PDDLDomain getDomain(BODY body);
     public PDDLProblem getProblem(BODY body);
-    public List<? extends ACTION> convertPlanToActions(List<ActionDescription> planFromPlanner);
+    public List<? extends ACTION> translateAction(ActionDescription actionFromPlanner);
     
     /**
      * Checks validity of a plan

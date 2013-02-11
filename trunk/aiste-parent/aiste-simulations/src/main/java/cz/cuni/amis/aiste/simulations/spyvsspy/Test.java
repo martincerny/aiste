@@ -59,7 +59,7 @@ public class Test {
         executor.setEnvironment(b);
         executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(10);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(30);
 
         System.out.println("Results: ");
         System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());
