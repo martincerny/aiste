@@ -22,6 +22,7 @@ import cz.cuni.amis.aiste.environment.IPDDLRepresentableEnvironment;
 import cz.cuni.amis.planning4j.*;
 import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
 import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
+import cz.cuni.amis.planning4j.utils.Planning4JUtils;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
@@ -32,19 +33,27 @@ import org.apache.log4j.Logger;
  * @author Martin
  */
 public class Planning4JController extends AbstractAgentController<IAgentBody, IAction, IPDDLRepresentableEnvironment<IAgentBody, IAction>> {
+    protected List<ActionDescription> currentUnprocessedPlan;
 
     private final Logger logger = Logger.getLogger(Planning4JController.class);
 
     protected PDDLObjectDomainProvider domainProvider;
 
     IAsyncPlanner<IPDDLObjectDomainProvider, IPDDLObjectProblemProvider> planner;
+    
+    /**
+     * Validator that validates the plans throughout execution, whether they still
+     * lead to goal state. If null, no validation is performed.
+     */
+    IValidator<IPDDLObjectDomainProvider, IPDDLObjectProblemProvider> validator;
 
     IPlanFuture planFuture = null;
 
     Queue<IAction> currentPlan;
 
-    public Planning4JController(IAsyncPlanner<IPDDLObjectDomainProvider, IPDDLObjectProblemProvider> planner) {
-        this.planner = planner;
+    public Planning4JController(IAsyncPlanner planner, IValidator validator) {
+        this.planner = Planning4JUtils.getTranslatingAsyncPlanner(planner, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
+        this.validator = Planning4JUtils.getTranslatingValidator(validator, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
         currentPlan = new ArrayDeque<IAction>();
     }
 
@@ -86,8 +95,9 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
                             }
                             logger.trace(planSB.toString());
                         }
+                        currentUnprocessedPlan = planningResult.getPlan();
                         
-                        List<? extends IAction> convertedPlan = getEnvironment().convertPlanToActions(planningResult.getPlan());
+                        List<? extends IAction> convertedPlan = getEnvironment().convertPlanToActions(currentUnprocessedPlan);
                         currentPlan = new ArrayDeque<IAction>(convertedPlan);
                         if (logger.isDebugEnabled()) {
                             logger.debug("Planning succesful, found plan of length " + currentPlan.size());
@@ -118,8 +128,31 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
                 startPlanning();
             }
         } else {
-            IAction nextAction = currentPlan.poll();
-            getEnvironment().act(getBody(), nextAction);
+            /*
+             * Validate current state of plan
+             */
+            if(validator != null){
+                try {
+                    long validationStart = System.currentTimeMillis();
+                    IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(getEnvironment().getProblem(getBody())), currentUnprocessedPlan );
+                    logger.debug("Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
+                    if(!validationResult.isValid()){
+                        logger.info("Plan invalidated.");
+                        if(logger.isDebugEnabled()){
+                            logger.debug("Validation output:\n" + validationResult.getValidationOutput());
+                        }
+                        currentPlan.clear();
+                        startPlanning();
+                    }
+                } catch (ValidationException ex){
+                    logger.error("Exception in validating plan." + ex );
+                }
+            }
+            
+            if(!currentPlan.isEmpty()){
+                IAction nextAction = currentPlan.poll();
+                getEnvironment().act(getBody(), nextAction);
+            }
         }
     }
 

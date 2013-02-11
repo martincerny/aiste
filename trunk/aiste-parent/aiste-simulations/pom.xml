@@ -12,6 +12,8 @@
 
     <packaging>jar</packaging>
     <name>AiSTe - Simulations</name>
+
+    
     
     <dependencies>
         <dependency>
@@ -44,8 +46,8 @@
         </dependency>
         <dependency>
             <groupId>cz.cuni.amis.planning4j.external</groupId>
-            <artifactId>external-planners-executor</artifactId>
-        </dependency>
+            <artifactId>external-validation</artifactId>
+        </dependency>            
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>

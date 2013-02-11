@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import org.apache.log4j.Logger;
 
@@ -43,7 +44,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     private IEnvironment environment = null;
     private Map<IAgentBody, IAgentController> bodyToControllers = new HashMap<IAgentBody, IAgentController>();
     private List<IAgentController> controllers = new ArrayList<IAgentController>();
-    private List<IAgentController> activeControllers = new ArrayList<IAgentController>();
+    private List<IAgentController> activeControllers = new CopyOnWriteArrayList<IAgentController>();
     private long stepDelay;
     /**
      * The reward given to agents that somehow fail (logic fails to finish on time, execution exception).
@@ -92,7 +93,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
      * Descendants may call this method to start all controllers.
      */
     protected void startSimulation(){
-        for(IAgentController controller : activeControllers){
+        for(IAgentController controller :   activeControllers){
             try {
                 controller.start();
             } catch (Exception ex){
