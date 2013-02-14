@@ -136,33 +136,21 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
     public static final String REMOVER_PREFIX = "remover";
     public static final String SEPARATOR = "_";
 
-    public SpyVsSpy() {
+    public SpyVsSpy(List<MapNode> nodes, int maxPlayers, List<Integer> startingLocations, Map<Integer, List<Integer>> neighbours, int numTrapTypes, int[]trapCounts, int numItemTypes, int destination) {
         super(SpyVsSpyAgentBody.class, SpyVsSpyAction.class);
-        numTrapTypes = 2;
-        trapCounts = new int[]{1, 1};
-        numItemTypes = 2;
 
-        destination = 3;
-
-        maxPlayers = 2;
-
-        nodes = new ArrayList<MapNode>();
-        //id                     traps                   items               trap removers
-        nodes.add(new MapNode(0, Collections.EMPTY_SET, Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-        nodes.add(new MapNode(1, Collections.EMPTY_SET, Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-        nodes.add(new MapNode(2, Collections.singleton(0), Collections.singleton(0), Collections.singleton(1), numTrapTypes));
-        nodes.add(new MapNode(3, Collections.EMPTY_SET, Collections.singleton(1), Collections.singleton(0), numTrapTypes));
-
+        this.nodes = nodes;
+        this.maxPlayers = maxPlayers;
+        this.startingLocations = startingLocations;
+        this.neighbours = neighbours;
+        this.numTrapTypes = numTrapTypes;
+        this.trapCounts = trapCounts;
+        this.numItemTypes = numItemTypes;
+        this.destination = destination;
+        
         rewardDeath = -50;
         rewardNothing = -1;
         rewardReachGoal = 150;
-        startingLocations = Arrays.asList(new Integer[]{0, 1});
-
-        neighbours = new HashMap<Integer, List<Integer>>();
-        neighbours.put(0, Arrays.asList(new Integer[]{1, 2, 3}));
-        neighbours.put(1, Arrays.asList(new Integer[]{0, 2}));
-        neighbours.put(2, Arrays.asList(new Integer[]{0, 1}));
-        neighbours.put(3, Arrays.asList(new Integer[]{0}));
 
         attackSuccessProbability = 0.3;
 
@@ -669,6 +657,23 @@ public class SpyVsSpy extends AbstractStateVariableRepresentableSynchronizedEnvi
             this.items = new HashSet<Integer>();
             numTrapRemovers = new int[numTraps];
         }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public Set<Integer> getItems() {
+            return items;
+        }
+
+        public int[] getNumTrapRemovers() {
+            return numTrapRemovers;
+        }
+
+        public Set<Integer> getTraps() {
+            return traps;
+        }
+                
 
         @Override
         public String toString() {

@@ -49,17 +49,18 @@ public class Test {
         IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info,plannersDirectory));  
 
         ValValidator.extractAndPrepareValidator(plannersDirectory);        
-        IValidator validator = new ValValidator(plannersDirectory);
+ //       IValidator validator = new ValValidator(plannersDirectory);
+        IValidator validator = null;
  
-        SpyVsSpy b = new SpyVsSpy();
+        SpyVsSpy b = new SpyVsSpyGenerator(2,8,3,4,3).generateEnvironment();
         IAgentController player1 = new Planning4JController(planner, validator);        
 
-        DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(100);
+        DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(200);
         executor.setDebugMode(true);
         executor.setEnvironment(b);
         executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(30);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(100);
 
         System.out.println("Results: ");
         System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());

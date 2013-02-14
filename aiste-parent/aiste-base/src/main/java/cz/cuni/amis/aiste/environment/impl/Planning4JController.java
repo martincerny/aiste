@@ -54,7 +54,12 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
     
     public Planning4JController(IAsyncPlanner planner, IValidator validator) {
         this.planner = Planning4JUtils.getTranslatingAsyncPlanner(planner, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
-        this.validator = Planning4JUtils.getTranslatingValidator(validator, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
+        if(validator != null){
+            this.validator = Planning4JUtils.getTranslatingValidator(validator, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
+        } else {
+            this.validator = null;
+        }
+    
         currentPlan = new ArrayDeque<ActionDescription>();
         actionsToPerform = new ArrayDeque<IAction>();
     }
