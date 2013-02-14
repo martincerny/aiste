@@ -57,5 +57,10 @@
             <artifactId>jgrapht</artifactId>
             <version>0.8.3</version>
         </dependency>
+        <dependency>
+            <groupId>ca.umontreal.iro</groupId>
+            <artifactId>ssj</artifactId>
+            <version>2.5</version>
+        </dependency>
     </dependencies>
 </project>

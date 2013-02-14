@@ -24,12 +24,16 @@ import cz.cuni.amis.aiste.environment.IAgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAction;
 import java.util.*;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author Martin Cerny
  */
 public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extends IAction> implements IEnvironment<BODY, ACTION> {
+
+    private final Logger logger = Logger.getLogger(AbstractEnvironment.class);
+    
     private Class<BODY> bodyClass;
     private Class<ACTION> actionClass;
 
@@ -61,6 +65,12 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
         if(isFinished()){
             throw new SimulationException("Trying to simulate a finished environment");
         }
+        if(activeBodies.isEmpty()){
+            logger.info("No more active bodies, finishign simulation");            
+            this.setFinished(true);
+            return Collections.EMPTY_MAP;
+        }
+        
         Map<BODY, Double> result = simulateOneStepInternal();
         for(Map.Entry<BODY, Double> rewardEntry : result.entrySet() ){
             if(!removedBodies.contains(rewardEntry.getKey())){
