@@ -85,7 +85,7 @@ public interface IEnvironment<ACTION extends IAction> {
      * @return rewards earned by all agents in the simulation
      * @throws SimulationException if an unexpected event occurs
      */
-    Map<AgentBody, Double> simulateOneStep();
+    Map<AgentBody, Double> nextStep();
     
     /**
      * Returns the number of steps that were simulated.

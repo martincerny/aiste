@@ -16,10 +16,25 @@
  */
 package cz.cuni.amis.aiste.environment;
 
+import java.util.Map;
+
 /**
- * 
+ * An environment that is capable of creating copies of itself for search and simulation purposes.
  * @author Martin Cerny
  */
-public interface IRepresentationWithModel<ACTION extends IAction> extends IEnvironmentRepresentation{
-    IEnvironmentModel<ACTION> getModel();
+public interface ISimulableEnvironment<ACTION extends IAction> extends IEnvironment<ACTION> {
+    /**
+     * Clones this environment for search. Should only actually clone
+     * the data that changes while acting.
+     * @return 
+     */
+    ISimulableEnvironment<ACTION> cloneForSimulation();
+    
+    /**
+     * Runs one step of the simulation for search purposes.
+     * @return rewards earned by all agents in the simulation
+     * @throws SimulationException if an unexpected event occurs
+     */
+    Map<AgentBody, Double> simulateOneStep(Map<AgentBody, ACTION> actions);
+        
 }

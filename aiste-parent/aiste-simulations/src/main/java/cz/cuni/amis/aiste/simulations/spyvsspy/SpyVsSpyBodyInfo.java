@@ -40,6 +40,16 @@ public class SpyVsSpyBodyInfo  {
     Set<Integer> itemsCarried;
     
     int[] numTrapRemoversCarried;
+
+    public SpyVsSpyBodyInfo(SpyVsSpyBodyInfo original) {
+        this.body = original.body;
+        this.locationIndex = original.locationIndex;
+        this.numTrapsCarried = Arrays.copyOf(original.numTrapsCarried, original.numTrapsCarried.length);
+        this.numTrapRemoversCarried = Arrays.copyOf(original.numTrapRemoversCarried, original.numTrapRemoversCarried.length);
+        this.itemsCarried = new HashSet<Integer>(original.itemsCarried);        
+    }
+    
+    
     
     SpyVsSpyBodyInfo(AgentBody body, int initialLocation, int numTraps, int[] numTrapsCarried) {
         this.body = body;

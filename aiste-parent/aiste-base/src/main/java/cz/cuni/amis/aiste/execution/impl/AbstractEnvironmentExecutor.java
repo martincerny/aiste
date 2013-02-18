@@ -107,7 +107,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
      * is not thread safe.
      */
     protected void performSimulationStep(){
-        Map<AgentBody, Double> stepResult = environment.simulateOneStep();
+        Map<AgentBody, Double> stepResult = environment.nextStep();
         for(IAgentController controller : activeControllers){
             Double reward = stepResult.get(controller.getBody());
             if(reward == null){

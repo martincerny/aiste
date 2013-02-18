@@ -71,7 +71,7 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
     
 
     @Override
-    protected Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, IntegerAction> actionsToPerform) {
+    protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, IntegerAction> actionsToPerform) {
         IntegerAction action = actionsToPerform.get(theBody);
         double reward;
         if(action == null){

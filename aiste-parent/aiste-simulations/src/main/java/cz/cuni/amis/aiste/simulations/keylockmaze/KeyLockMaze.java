@@ -53,7 +53,7 @@ public class KeyLockMaze extends AbstractStateVariableRepresentableSynchronizedE
     
     
     @Override
-    protected Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, KeyLockAction> actionsToPerform) {
+    protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, KeyLockAction> actionsToPerform) {
         //krok simulace vraci reward, ktery dostali agenti za provedene akce
         //v nasem pripade je reward +100 za dojiti do cile oponenta, jinak -1 za kazdy krok (aby to motivovalo k rychlemu reseni)
         throw new UnsupportedOperationException("Not supported yet.");

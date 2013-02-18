@@ -18,7 +18,7 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.IRandomizable;
-import cz.cuni.amis.aiste.simulations.spyvsspy.SpyVsSpy.MapNode;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
 import cz.cuni.amis.planning4j.IPlanner;
 import cz.cuni.amis.planning4j.IPlanningResult;
@@ -87,22 +87,22 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
         generateCycle: for (int trial = 0; trial < MAX_GENERATOR_ROUNDS; trial++) {
 
-            RandomGraphGenerator<SpyVsSpy.MapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpy.MapNode, Object>(numNodes, (int) (numNodes * meanNodeDegree));
-            UndirectedGraph<SpyVsSpy.MapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpy.MapNode, Object>(new EdgeFactory<SpyVsSpy.MapNode, Object>() {
+            RandomGraphGenerator<SpyVsSpyMapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpyMapNode, Object>(numNodes, (int) (numNodes * meanNodeDegree));
+            UndirectedGraph<SpyVsSpyMapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpyMapNode, Object>(new EdgeFactory<SpyVsSpyMapNode, Object>() {
 
                 @Override
-                public Object createEdge(MapNode v, MapNode v1) {
+                public Object createEdge(SpyVsSpyMapNode v, SpyVsSpyMapNode v1) {
                     return new Object();
                 }
             });
 
-            final List<SpyVsSpy.MapNode> nodes = new ArrayList<SpyVsSpy.MapNode>();
+            final List<SpyVsSpyMapNode> nodes = new ArrayList<SpyVsSpyMapNode>();
 
-            graphGenerator.generateGraph(nodeGraph, new VertexFactory<MapNode>() {
+            graphGenerator.generateGraph(nodeGraph, new VertexFactory<SpyVsSpyMapNode>() {
 
                 @Override
-                public MapNode createVertex() {
-                    MapNode newNode = new MapNode(nodes.size(), numTrapTypes);
+                public SpyVsSpyMapNode createVertex() {
+                    SpyVsSpyMapNode newNode = new SpyVsSpyMapNode(nodes.size(), numTrapTypes);
                     nodes.add(newNode);
                     return newNode;
                 }
@@ -110,21 +110,21 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
             Map<Integer, List<Integer>> neighbours = new HashMap<Integer, List<Integer>>();
             for (int i = 0; i < numNodes; i++) {
-                List<Integer> nodeNeighbours = new ArrayList<Integer>();
+                List<Integer> nodeneighbours = new ArrayList<Integer>();
                 for (Object e : nodeGraph.edgesOf(nodes.get(i))) {
-                    nodeNeighbours.add(nodeGraph.getEdgeTarget(e).getIndex());
+                    nodeneighbours.add(nodeGraph.getEdgeTarget(e).getIndex());
                 }
-                neighbours.put(i, nodeNeighbours);
+                neighbours.put(i, nodeneighbours);
             }
             //id                     traps                   items               trap removers
 /*
-             * nodes.add(new SpyVsSpy.MapNode(0, Collections.EMPTY_SET,
+             * nodes.add(new SpyVsSpyMapNode(0, Collections.EMPTY_SET,
              * Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-             * nodes.add(new SpyVsSpy.MapNode(1, Collections.EMPTY_SET,
+             * nodes.add(new SpyVsSpyMapNode(1, Collections.EMPTY_SET,
              * Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-             * nodes.add(new SpyVsSpy.MapNode(2, Collections.singleton(0),
+             * nodes.add(new SpyVsSpyMapNode(2, Collections.singleton(0),
              * Collections.singleton(0), Collections.singleton(1),
-             * numTrapTypes)); nodes.add(new SpyVsSpy.MapNode(3,
+             * numTrapTypes)); nodes.add(new SpyVsSpyMapNode(3,
              * Collections.EMPTY_SET, Collections.singleton(1),
              * Collections.singleton(0), numTrapTypes));
              */
@@ -151,7 +151,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
             for (int itemType = 0; itemType < numItemTypes; itemType++) {
                 int numItemInstances = Math.min(itemCountDistribution.inverseFInt(rand.nextDouble()), numNodes);
-                for (MapNode nodeWithItem : RandomUtils.randomSample(nodes, numItemInstances, rand)) {
+                for (SpyVsSpyMapNode nodeWithItem : RandomUtils.randomSample(nodes, numItemInstances, rand)) {
 
                     nodeWithItem.getItems().add(itemType);
                     if (rand.nextDouble() < itemTrappedProbability) {
@@ -172,7 +172,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
                 DiscreteDistributionInt removerCountDistribution = new BinomialDist((int) Math.floor(expectedMean / removerP) + 1, removerP);
 
                 int numRemoverInstances = Math.min(removerCountDistribution.inverseFInt(rand.nextDouble()), numNodes);
-                for (MapNode nodeWithItem : RandomUtils.randomSample(nodes, numRemoverInstances, rand)) {
+                for (SpyVsSpyMapNode nodeWithItem : RandomUtils.randomSample(nodes, numRemoverInstances, rand)) {
                     nodeWithItem.getNumTrapRemovers()[trapRemoverType]++;
                 }
             }
@@ -186,18 +186,23 @@ public class SpyVsSpyGenerator implements IRandomizable{
              */
             SpyVsSpy spyVsSpyToTest = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
             SpyVsSpy spyVsSpyToReturn = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
-
+            
+            
             if(plannerToTestDomain != null){
                 logger.info("Testing domain with planner: " + plannerToTestDomain);
                 spyVsSpyToTest.init();
+                SpyVsSpyPDDLRepresentation representation = new SpyVsSpyPDDLRepresentation(spyVsSpyToTest);
                 //test for all possible bodies
                 for(int player = 0; player < maxPlayers; player++){
-                    SpyVsSpyAgentBody body = spyVsSpyToTest.createAgentBody(SpyVsSpyAgentType.getInstance());
-                    PDDLDomain domain = spyVsSpyToTest.getDomain(body);
-                    PDDLProblem problem = spyVsSpyToTest.getProblem(body);
+                    spyVsSpyToTest.createAgentBody(SpyVsSpyAgentType.getInstance());
+                }
+                
+                for(AgentBody body : spyVsSpyToTest.getActiveBodies()){
+                    PDDLDomain domain = representation.getDomain(body);
+                    PDDLProblem problem = representation.getProblem(body);
                     IPlanningResult testResult = Planning4JUtils.plan(plannerToTestDomain, domain, problem);
                     if(!testResult.isSuccess()){
-                        logger.info("Domain could not be solved for player " + player + ", generating new one.");
+                        logger.info("Domain could not be solved for player " + body.getId() + ", generating new one.");
                         continue generateCycle;
                     }
                 }
