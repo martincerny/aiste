@@ -17,9 +17,9 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IStateVariable;
-import cz.cuni.amis.aiste.environment.IStateVariableRepresentableEnvironment;
+import cz.cuni.amis.aiste.environment.IStateVariableRepresentation;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,13 +28,13 @@ import java.util.Map;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractStateVariableRepresentableSynchronizedEnvironment<BODY extends IAgentBody, ACTION extends IAction>
-    extends AbstractSynchronizedEnvironment<BODY, ACTION> implements IStateVariableRepresentableEnvironment<BODY, ACTION> {
+public abstract class AbstractStateVariableRepresentableSynchronizedEnvironment<ACTION extends IAction>
+    extends AbstractSynchronizedEnvironment<ACTION> implements IStateVariableRepresentation<ACTION> {
 
     private Map<IStateVariable, Object> stateVariableValues;
     
-    public AbstractStateVariableRepresentableSynchronizedEnvironment(Class<BODY> bodyClass, Class<ACTION> actionClass) {
-        super(bodyClass, actionClass);
+    public AbstractStateVariableRepresentableSynchronizedEnvironment(Class<ACTION> actionClass) {
+        super( actionClass);
         stateVariableValues = new HashMap<IStateVariable, Object>();
     }
     

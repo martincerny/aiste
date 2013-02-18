@@ -16,6 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.simplefps;
 
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
@@ -32,7 +33,7 @@ import java.util.Map;
  * 
  * @author 
  */
-public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnvironment<SimpleFPSAgentBody, SimpleFPSAction> {
+public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnvironment<SimpleFPSAction> {
 
     private int minPlayers;
     private int maxPlayers;
@@ -43,8 +44,13 @@ public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnv
         NOTHING, WEAPON_1, MEDIKIT
     }
     
+    /**
+     * Informace o jednotlivych agentech. Indexem je id {@link AgentBody#id}
+     */
+    private List<SimpleFPSBodyInfo> bodyInfos;
+    
     public SimpleFPS() {
-        super(SimpleFPSAgentBody.class, SimpleFPSAction.class);
+        super(SimpleFPSAction.class);
         //TODO doplnit a zmenit
         minPlayers = 2;
         maxPlayers = 4;
@@ -60,23 +66,36 @@ public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnv
         addStateVariable(newVariable);
         //a nastavit ji (a v prubehu simulace udrzovat) hodnotu
         setStateVariableValue(newVariable, ItemType.NOTHING);
+        bodyInfos = new ArrayList<SimpleFPSBodyInfo>();
     }
     
     
     
     @Override
-    protected Map<SimpleFPSAgentBody, Double> simulateOneStepInternal(Map<SimpleFPSAgentBody, SimpleFPSAction> actionsToPerform) {
+    protected Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, SimpleFPSAction> actionsToPerform) {
+        
+        //moje informace o prostredi dostanu od agenta takto:
+        //bodyInfos.get(body.getId())
+        
         //krok simulace vraci reward, ktery dostali agenti za provedene akce
         //v nasem pripade je reward +1 za zabiti oponenta, jinak 0 (tj. klasicky frag count)
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    protected SimpleFPSAgentBody createAgentBodyInternal(IAgentType type) {
+    protected AgentBody createAgentBodyInternal(IAgentType type) {
         if(type != SimpleFPSAgentType.getInstance()){
             throw new AgentInstantiationException("Illegal agent type");
         }
-        throw new UnsupportedOperationException("Not supported yet.");
+        AgentBody newBody = new AgentBody(bodyInfos.size() /*nove id v rade*/, type);
+        bodyInfos.add(new SimpleFPSBodyInfo(newBody));
+        
+        //cokoliv dalsiho potrebujes, dopis sem (a smaz tento bordel :-)
+        if(true){            
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+        
+        return newBody;
     }
 
     @Override
@@ -84,5 +103,18 @@ public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnv
         return Collections.singletonMap(SimpleFPSAgentType.getInstance(), new AgentInstantiationDescriptor(minPlayers, maxPlayers));
     }
     
-    
+    private static class SimpleFPSBodyInfo {
+        /**
+         * Body, ktere reprezentuji.
+         */
+        AgentBody body;
+        
+        
+        
+        //sem si pridej jakekoliv informace, ktere potrebujes ukladat o agentech
+
+        public SimpleFPSBodyInfo(AgentBody body) {
+            this.body = body;
+        }
+    }
 }

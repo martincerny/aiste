@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment;
+package cz.cuni.amis.aiste;
 
 /**
- *
+ * An interface for all components that are randomizable.
+ * This allows to set them a specific random seed, so that simulations are repeatable.
  * @author Martin Cerny
  */
-public interface IAgentBody {
-    IAgentType getType();
-    int getId();
+public interface IRandomizable {
+    public void setRandomSeed(long seed);
 }

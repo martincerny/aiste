@@ -19,27 +19,30 @@ package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION extends IAction, ENVIRONMENT extends IEnvironment<BODY, ACTION>> implements IAgentController<BODY, ACTION, ENVIRONMENT> {
+public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTATION extends IEnvironmentRepresentation> implements IAgentController<ACTION, REPRESENTATION> {
 
-    private ENVIRONMENT environment;
-    private BODY body;
-    private long stepDelay;
+    protected IEnvironment<ACTION> environment;
+    protected REPRESENTATION representation;
+    protected AgentBody body;
+    protected long stepDelay;    
     
     @Override
-    public void init(ENVIRONMENT environment, BODY body, long stepDelay) {
+    public void init(IEnvironment<ACTION> environment, REPRESENTATION representation, AgentBody body, long stepDelay) {
         
         if(this.environment != null){
             throw new AisteException("A controller may be initialized only once");
         }
         this.environment = environment;
+        this.representation = representation;
         this.body = body;
         this.stepDelay = stepDelay;
     }
@@ -65,16 +68,20 @@ public abstract class AbstractAgentController<BODY extends IAgentBody, ACTION ex
     }
 
     @Override
-    public BODY getBody() {
+    public AgentBody getBody() {
         return body;
     }
 
-    public ENVIRONMENT getEnvironment() {
+    public IEnvironment<ACTION> getEnvironment() {
         return environment;
     }
 
     public long getStepDelay() {
         return stepDelay;
+    }
+    
+    public REPRESENTATION getRepresentation(){
+        return representation;
     }
 
   

@@ -16,6 +16,8 @@
  */
 package cz.cuni.amis.aiste.simulations.simplefps;
 
+import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractAgentController;
 import cz.cuni.amis.utils.astar.AStar;
 
@@ -23,18 +25,15 @@ import cz.cuni.amis.utils.astar.AStar;
  *
  * @author 
  */
-public class SimpleFPSReactiveController extends AbstractAgentController<SimpleFPSAgentBody, SimpleFPSAction, SimpleFPS> {
+public class SimpleFPSReactiveController extends AbstractAgentController<SimpleFPSAction, SimpleFPS> {
 
     @Override
-    public boolean isApplicable(SimpleFPS environment) {
-        return (environment instanceof SimpleFPS);
+    public void init(IEnvironment<SimpleFPSAction> environment, SimpleFPS representation, AgentBody body, long stepDelay) {
+        super.init(environment, representation, body, stepDelay);
+        //prepare everything you need in here
     }
 
-    @Override
-    public void init(SimpleFPS environment, SimpleFPSAgentBody body, long stepDelay) {
-        super.init(environment, body, stepDelay);
-        //prepare anything you need here
-    }
+
 
     @Override
     public void onSimulationStep(double reward) {
@@ -52,6 +51,11 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
     @Override
     public void shutdown() {
         super.shutdown();
+    }
+
+    @Override
+    public Class getRepresentationClass() {
+        return SimpleFPS.class;
     }
 
 

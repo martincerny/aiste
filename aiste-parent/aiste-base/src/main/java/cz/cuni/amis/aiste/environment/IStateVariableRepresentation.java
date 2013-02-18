@@ -14,24 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.simulations.examples;
+package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
-import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
+import java.util.Collection;
 
 /**
  *
  * @author Martin Cerny
  */
-public class Test {
-    public static void main(String args[]){
-        MultiArmedBandit b = new MultiArmedBandit(2, new int [] {5, 10});
-        RandomModelLessController c = new RandomModelLessController();
-        
-        SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
-        executor.setEnvironment(b);
-        executor.addAgentController(b.theType, c, b /* The environment is its own representation */);
-        IEnvironmentExecutionResult result = executor.executeEnvironment(100);
-        System.out.println("Result: " + result.getAgentResults().get(0).getTotalReward());
-    }
+public interface IStateVariableRepresentation<ACTION extends IAction>
+extends IEnvironmentRepresentation {    
+    
+    /**
+     * Returns all state variables that represent this environment.
+     * @return 
+     */
+    public Collection<IStateVariable> getStateVariables();
+    
+    /**
+     * Returns the current value of a state variable.
+     * @param variable
+     * @return the value of the variable
+     */
+    public Object getStateVariableValue(IStateVariable variable);
 }

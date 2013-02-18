@@ -52,7 +52,7 @@ public class Test {
  //       IValidator validator = new ValValidator(plannersDirectory);
         IValidator validator = null;
  
-        SpyVsSpy b = new SpyVsSpyGenerator(2,8,3,4,3).generateEnvironment();
+        SpyVsSpy b = new SpyVsSpyGenerator(2,8,3,4,3,0.3, planner).generateEnvironment();
         IAgentController player1 = new Planning4JController(planner, validator);        
 
         DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(200);

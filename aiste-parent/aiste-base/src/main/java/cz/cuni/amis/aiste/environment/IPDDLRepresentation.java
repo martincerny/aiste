@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,20 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.simulations.simplefps;
+package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.aiste.environment.IAgentType;
-import cz.cuni.amis.aiste.environment.impl.SimpleBody;
+import cz.cuni.amis.planning4j.ActionDescription;
+import cz.cuni.amis.planning4j.pddl.PDDLDomain;
+import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+import java.util.List;
 
 /**
- * A protected class that describes an agent body in SimpleFPS
- * @author 
+ *
+ * @author Martin Cerny
  */
-public class SimpleFPSAgentBody extends SimpleBody {
-
-    public SimpleFPSAgentBody() {
-        super(SimpleFPSAgentType.getInstance());
-    }
-    
-    //Add some info about the agent body here, if needed
+public interface IPDDLRepresentation<ACTION extends IAction> extends IEnvironmentRepresentation {
+    public PDDLDomain getDomain(AgentBody body);
+    public PDDLProblem getProblem(AgentBody body);
+    public List<? extends ACTION> translateAction(ActionDescription actionFromPlanner);    
 }

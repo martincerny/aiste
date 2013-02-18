@@ -14,12 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
+import cz.cuni.amis.aiste.AisteException;
+import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.simulations.spyvsspy.SpyVsSpy.MapNode;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
+import cz.cuni.amis.planning4j.IPlanner;
+import cz.cuni.amis.planning4j.IPlanningResult;
+import cz.cuni.amis.planning4j.pddl.PDDLDomain;
+import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+import cz.cuni.amis.planning4j.utils.Planning4JUtils;
 import java.util.*;
+import org.apache.log4j.Logger;
 import org.jgrapht.EdgeFactory;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.VertexFactory;
@@ -33,120 +40,174 @@ import umontreal.iro.lecuyer.probdist.NegativeBinomialDist;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyGenerator {
+public class SpyVsSpyGenerator implements IRandomizable{
+
+    private final Logger logger = Logger.getLogger(SpyVsSpyGenerator.class);
+    
     private int maxPlayers;
+
     private int numNodes;
+
     private double meanNodeDegree;
+
     private int numItemTypes;
+
     private int numTrapTypes;
 
-    public SpyVsSpyGenerator(int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes) {
+    private double itemTrappedProbability;
+
+    private IPlanner plannerToTestDomain;
+    /**
+     * Maximum number of random generator trials, before giving up, if all
+     * created levels are unsolvable
+     */
+    private static final int MAX_GENERATOR_ROUNDS = 5;
+
+    private Random rand;
+    
+    public SpyVsSpyGenerator(int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, IPlanner plannerToTestDomain) {
         this.maxPlayers = maxPlayers;
         this.numNodes = numNodes;
         this.meanNodeDegree = meanNodeDegree;
         this.numItemTypes = numItemTypes;
         this.numTrapTypes = numTrapTypes;
+        this.itemTrappedProbability = itemTrappedProbability;
+        this.plannerToTestDomain = plannerToTestDomain;
+        rand = new Random();
     }
 
+    @Override
+    public void setRandomSeed(long seed) {
+        rand = new Random(seed);
+    }
     
     
-    public SpyVsSpy generateEnvironment(){
-        Random random = new Random();
-        
-        
-        RandomGraphGenerator<SpyVsSpy.MapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpy.MapNode, Object>(numNodes, (int)(numNodes * meanNodeDegree));
-        UndirectedGraph<SpyVsSpy.MapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpy.MapNode, Object>(new EdgeFactory<SpyVsSpy.MapNode, Object>(){
 
-            @Override
-            public Object createEdge(MapNode v, MapNode v1) {
-                return new Object();
+    public SpyVsSpy generateEnvironment() {
+
+        generateCycle: for (int trial = 0; trial < MAX_GENERATOR_ROUNDS; trial++) {
+
+            RandomGraphGenerator<SpyVsSpy.MapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpy.MapNode, Object>(numNodes, (int) (numNodes * meanNodeDegree));
+            UndirectedGraph<SpyVsSpy.MapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpy.MapNode, Object>(new EdgeFactory<SpyVsSpy.MapNode, Object>() {
+
+                @Override
+                public Object createEdge(MapNode v, MapNode v1) {
+                    return new Object();
+                }
+            });
+
+            final List<SpyVsSpy.MapNode> nodes = new ArrayList<SpyVsSpy.MapNode>();
+
+            graphGenerator.generateGraph(nodeGraph, new VertexFactory<MapNode>() {
+
+                @Override
+                public MapNode createVertex() {
+                    MapNode newNode = new MapNode(nodes.size(), numTrapTypes);
+                    nodes.add(newNode);
+                    return newNode;
+                }
+            }, null);
+
+            Map<Integer, List<Integer>> neighbours = new HashMap<Integer, List<Integer>>();
+            for (int i = 0; i < numNodes; i++) {
+                List<Integer> nodeNeighbours = new ArrayList<Integer>();
+                for (Object e : nodeGraph.edgesOf(nodes.get(i))) {
+                    nodeNeighbours.add(nodeGraph.getEdgeTarget(e).getIndex());
+                }
+                neighbours.put(i, nodeNeighbours);
             }
-            
-        });
+            //id                     traps                   items               trap removers
+/*
+             * nodes.add(new SpyVsSpy.MapNode(0, Collections.EMPTY_SET,
+             * Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
+             * nodes.add(new SpyVsSpy.MapNode(1, Collections.EMPTY_SET,
+             * Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
+             * nodes.add(new SpyVsSpy.MapNode(2, Collections.singleton(0),
+             * Collections.singleton(0), Collections.singleton(1),
+             * numTrapTypes)); nodes.add(new SpyVsSpy.MapNode(3,
+             * Collections.EMPTY_SET, Collections.singleton(1),
+             * Collections.singleton(0), numTrapTypes));
+             */
 
-        final List<SpyVsSpy.MapNode> nodes = new ArrayList<SpyVsSpy.MapNode>();
-        
-        graphGenerator.generateGraph(nodeGraph, new VertexFactory<MapNode>(){
+            List<Integer> startingLocations = new ArrayList<Integer>(RandomUtils.randomSampleOfIntegerRange(0, numNodes, maxPlayers, rand));
 
-            @Override
-            public MapNode createVertex() {
-                MapNode newNode = new MapNode(nodes.size(), numTrapTypes);
-                nodes.add(newNode);
-                return newNode;
+
+            int[] trapsCarriedCounts = new int[numTrapTypes];
+            double trapsCarriedP = ((double) (numNodes * numTrapTypes)) / ((numNodes * numTrapTypes) + 10); //the value of p is chosen se that mean number of traps is numNodes / numTrapTypes * 5
+            DiscreteDistributionInt trapCountDistribution = new NegativeBinomialDist(2, trapsCarriedP);
+            for (int i = 0; i < numTrapTypes; i++) {
+                trapsCarriedCounts[i] = trapCountDistribution.inverseFInt(rand.nextDouble());
             }
-            
-        },null);
-        
-        Map<Integer, List<Integer>> neighbours = new HashMap<Integer, List<Integer>>();
-        for(int i = 0; i < numNodes; i++){
-            List<Integer> nodeNeighbours = new ArrayList<Integer>();
-            for(Object e : nodeGraph.edgesOf(nodes.get(i))){
-                nodeNeighbours.add(nodeGraph.getEdgeTarget(e).getIndex());
-            }
-            neighbours.put(i, nodeNeighbours);
-        }
-        //id                     traps                   items               trap removers
-/*        nodes.add(new SpyVsSpy.MapNode(0, Collections.EMPTY_SET, Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-        nodes.add(new SpyVsSpy.MapNode(1, Collections.EMPTY_SET, Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-        nodes.add(new SpyVsSpy.MapNode(2, Collections.singleton(0), Collections.singleton(0), Collections.singleton(1), numTrapTypes));
-        nodes.add(new SpyVsSpy.MapNode(3, Collections.EMPTY_SET, Collections.singleton(1), Collections.singleton(0), numTrapTypes));
-*/
-        
-        List<Integer> startingLocations = new ArrayList<Integer>(RandomUtils.randomSampleOfIntegerRange(0, numNodes, maxPlayers, random));
 
-        
-        int[] trapsCarriedCounts = new int[numTrapTypes];
-        double trapsCarriedP = ((double)(numNodes * numTrapTypes)) / ((numNodes  * numTrapTypes) + 10); //the value of p is chosen se that mean number of traps is numNodes / numTrapTypes * 5
-        DiscreteDistributionInt trapCountDistribution = new NegativeBinomialDist(2, trapsCarriedP);
-        for(int i = 0; i < numTrapTypes; i++){
-            trapsCarriedCounts[i] = trapCountDistribution.inverseFInt(random.nextDouble());
-        }
-        
-        int maxTrapsInTheMap[] = new int[numTrapTypes];
-        for(int i = 0; i < numTrapTypes; i++){
-            maxTrapsInTheMap[i] = trapsCarriedCounts[i] * maxPlayers;
-        }
-        //Generate items
-        
-        double itemP = ((double)maxPlayers) / (maxPlayers + 4); //the value of p is chosen se that mean number of items is maxPlayers / 2
-        DiscreteDistributionInt itemCountDistribution = new NegativeBinomialDist(2, itemP);
-        double itemTrappedProbability = 0.5;
-        
-        
-        for(int itemType = 0; itemType < numItemTypes; itemType++){
-            int numItemInstances = Math.min(itemCountDistribution.inverseFInt(random.nextDouble()), numNodes);
-            for(MapNode nodeWithItem: RandomUtils.randomSample(nodes, numItemInstances, random)){
-                
-                nodeWithItem.getItems().add(itemType);
-                if(random.nextDouble() < itemTrappedProbability){
-                    int trapType = random.nextInt(numTrapTypes);
-                    if(!nodeWithItem.getTraps().contains(trapType)){
-                        maxTrapsInTheMap[trapType]++;
-                        nodeWithItem.getTraps().add(trapType);
+            int maxTrapsInTheMap[] = new int[numTrapTypes];
+            for (int i = 0; i < numTrapTypes; i++) {
+                maxTrapsInTheMap[i] = trapsCarriedCounts[i] * maxPlayers;
+            }
+            //Generate items
+
+            double itemP = ((double) maxPlayers) / (maxPlayers + 4); //the value of p is chosen se that mean number of items is maxPlayers / 2
+            DiscreteDistributionInt itemCountDistribution = new NegativeBinomialDist(2, itemP);
+
+
+            for (int itemType = 0; itemType < numItemTypes; itemType++) {
+                int numItemInstances = Math.min(itemCountDistribution.inverseFInt(rand.nextDouble()), numNodes);
+                for (MapNode nodeWithItem : RandomUtils.randomSample(nodes, numItemInstances, rand)) {
+
+                    nodeWithItem.getItems().add(itemType);
+                    if (rand.nextDouble() < itemTrappedProbability) {
+                        int trapType = rand.nextInt(numTrapTypes);
+                        if (!nodeWithItem.getTraps().contains(trapType)) {
+                            maxTrapsInTheMap[trapType]++;
+                            nodeWithItem.getTraps().add(trapType);
+                        }
                     }
                 }
             }
-        }
-        
-        //Generate trap removers
-        for(int trapRemoverType = 0; trapRemoverType < numTrapTypes; trapRemoverType++){
-            //the parameters are chosen se that mean number of removers is the 0.9 * (maximum number of traps of that type)
-            double expectedMean = maxTrapsInTheMap[trapRemoverType] * 0.9;
-            double removerP = 0.8;
-            DiscreteDistributionInt removerCountDistribution = new BinomialDist((int)Math.floor(expectedMean / removerP) + 1, removerP);
-            
-            int numRemoverInstances = Math.min(removerCountDistribution.inverseFInt(random.nextDouble()), numNodes);
-            for(MapNode nodeWithItem: RandomUtils.randomSample(nodes, numRemoverInstances, random)){                
-                nodeWithItem.getNumTrapRemovers()[trapRemoverType]++;
+
+            //Generate trap removers
+            for (int trapRemoverType = 0; trapRemoverType < numTrapTypes; trapRemoverType++) {
+                //the parameters are chosen se that mean number of removers is the 0.9 * (maximum number of traps of that type)
+                double expectedMean = maxTrapsInTheMap[trapRemoverType] * 0.9;
+                double removerP = 0.8;
+                DiscreteDistributionInt removerCountDistribution = new BinomialDist((int) Math.floor(expectedMean / removerP) + 1, removerP);
+
+                int numRemoverInstances = Math.min(removerCountDistribution.inverseFInt(rand.nextDouble()), numNodes);
+                for (MapNode nodeWithItem : RandomUtils.randomSample(nodes, numRemoverInstances, rand)) {
+                    nodeWithItem.getNumTrapRemovers()[trapRemoverType]++;
+                }
             }
+
+
+
+            int destination = rand.nextInt(numNodes);
+
+            /**
+             * I create one instance to test (I will need to create a body and mess with it) and another identical to return, if the test is succesful
+             */
+            SpyVsSpy spyVsSpyToTest = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
+            SpyVsSpy spyVsSpyToReturn = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
+
+            if(plannerToTestDomain != null){
+                logger.info("Testing domain with planner: " + plannerToTestDomain);
+                spyVsSpyToTest.init();
+                //test for all possible bodies
+                for(int player = 0; player < maxPlayers; player++){
+                    SpyVsSpyAgentBody body = spyVsSpyToTest.createAgentBody(SpyVsSpyAgentType.getInstance());
+                    PDDLDomain domain = spyVsSpyToTest.getDomain(body);
+                    PDDLProblem problem = spyVsSpyToTest.getProblem(body);
+                    IPlanningResult testResult = Planning4JUtils.plan(plannerToTestDomain, domain, problem);
+                    if(!testResult.isSuccess()){
+                        logger.info("Domain could not be solved for player " + player + ", generating new one.");
+                        continue generateCycle;
+                    }
+                }
+                logger.info("Domain succesfully tested");
+            }
+            
+            
+            return spyVsSpyToReturn;
         }
         
-
-        
-        int destination = random.nextInt(numNodes);
-
-        SpyVsSpy spyVsSpy = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
-        
-        return spyVsSpy;
+        throw new AisteException("After " + MAX_GENERATOR_ROUNDS + " trials, no environment created that would be solvable from all starting positions. Bad parameters?");
     }
 }

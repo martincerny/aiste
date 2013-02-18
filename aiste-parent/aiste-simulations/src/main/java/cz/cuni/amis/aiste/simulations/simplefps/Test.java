@@ -25,14 +25,14 @@ import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
  */
 public class Test {
     public static void main(String args[]){
-        SimpleFPS b = new SimpleFPS();
+        SimpleFPS fpsEnvironment = new SimpleFPS();
         SimpleFPSReactiveController player1 = new SimpleFPSReactiveController();
         SimpleFPSReactiveController player2 = new SimpleFPSReactiveController();
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
-        executor.setEnvironment(b);
-        executor.addAgentController(SimpleFPSAgentType.getInstance(), player1);
-        executor.addAgentController(SimpleFPSAgentType.getInstance(), player2);
+        executor.setEnvironment(fpsEnvironment);
+        executor.addAgentController(SimpleFPSAgentType.getInstance(), player1, fpsEnvironment);
+        executor.addAgentController(SimpleFPSAgentType.getInstance(), player2, fpsEnvironment);
         
         IEnvironmentExecutionResult result = executor.executeEnvironment(50 /*Max steps*/);
         

@@ -16,10 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.keylockmaze;
 
-import cz.cuni.amis.aiste.environment.AgentInstantiationException;
-import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
-import cz.cuni.amis.aiste.environment.IAgentType;
-import cz.cuni.amis.aiste.environment.IStateVariable;
+import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.IntegerStateVariable;
 import cz.cuni.amis.aiste.environment.impl.SingletonAgentInstantiationDescriptor;
@@ -30,14 +27,17 @@ import java.util.Map;
  * 
  * @author 
  */
-public class KeyLockMaze extends AbstractStateVariableRepresentableSynchronizedEnvironment<KeyLockAgentBody, KeyLockAction> {
+public class KeyLockMaze extends AbstractStateVariableRepresentableSynchronizedEnvironment<KeyLockAction> {
 
     private IStateVariable playerPositionVariable;
 
     int numRooms = 10; //tohle klidne odstran
     
+    //je jenom jedno body, takze si ho muzu ulozit v promenne
+    AgentBody theBody; 
+    
     public KeyLockMaze() {
-        super(KeyLockAgentBody.class, KeyLockAction.class);
+        super(KeyLockAction.class);
 
         //TODO: prostredi se musi umet reprezentovat pomoci sady state variables, to jsou vlastne pary jmeno-hodnota
         //protoze prostredi je obecne, budes je muset mit v nejakych kolekcich, asi listech nebo mapach, jak se ti to bude hodit
@@ -53,24 +53,24 @@ public class KeyLockMaze extends AbstractStateVariableRepresentableSynchronizedE
     
     
     @Override
-    protected Map<KeyLockAgentBody, Double> simulateOneStepInternal(Map<KeyLockAgentBody, KeyLockAction> actionsToPerform) {
+    protected Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, KeyLockAction> actionsToPerform) {
         //krok simulace vraci reward, ktery dostali agenti za provedene akce
         //v nasem pripade je reward +100 za dojiti do cile oponenta, jinak -1 za kazdy krok (aby to motivovalo k rychlemu reseni)
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    protected KeyLockAgentBody createAgentBodyInternal(IAgentType type) {
+    protected AgentBody createAgentBodyInternal(IAgentType type) {
         if(type != KeyLockAgentType.getInstance()){
             throw new AgentInstantiationException("Illegal agent type");
         }
-        throw new UnsupportedOperationException("Not supported yet.");
+        theBody = new AgentBody(0, type);
+        return theBody;
     }
 
     @Override
     public Map<? extends IAgentType, ? extends IAgentInstantiationDescriptor> getInstantiationDescriptors() {
         return Collections.singletonMap(KeyLockAgentType.getInstance(), new SingletonAgentInstantiationDescriptor());
     }
-    
     
 }

@@ -17,8 +17,9 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
-import cz.cuni.amis.aiste.environment.IPDDLRepresentableEnvironment;
+import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IPDDLRepresentation;
 import cz.cuni.amis.planning4j.*;
 import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
 import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
@@ -33,7 +34,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin
  */
-public class Planning4JController extends AbstractAgentController<IAgentBody, IAction, IPDDLRepresentableEnvironment<IAgentBody, IAction>> {
+public class Planning4JController extends AbstractAgentController<IAction, IPDDLRepresentation<IAction>> {
 
     private final Logger logger = Logger.getLogger(Planning4JController.class);
 
@@ -65,15 +66,11 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
     }
 
     @Override
-    public void init(IPDDLRepresentableEnvironment<IAgentBody, IAction> environment, IAgentBody body, long stepDelay) {
-        super.init(environment, body, stepDelay);
-        domainProvider = new PDDLObjectDomainProvider(getEnvironment().getDomain(getBody()));
+    public void init(IEnvironment<IAction> environment, IPDDLRepresentation<IAction> representation, AgentBody body, long stepDelay) {
+        super.init(environment, representation, body, stepDelay);
+        domainProvider = new PDDLObjectDomainProvider(representation.getDomain(body));
     }
 
-    @Override
-    public boolean isApplicable(IPDDLRepresentableEnvironment<IAgentBody, IAction> environment) {
-        return environment instanceof IPDDLRepresentableEnvironment;
-    }
 
     @Override
     public void onSimulationStep(double reward) {
@@ -129,7 +126,7 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
                 if(validator != null){
                     try {
                         long validationStart = System.currentTimeMillis();
-                        IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(getEnvironment().getProblem(getBody())), new ArrayList<ActionDescription>(currentPlan));
+                        IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody())), new ArrayList<ActionDescription>(currentPlan));
                         logger.debug("Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
                         if(!validationResult.isValid()){
                             logger.info("Plan invalidated.");
@@ -144,7 +141,7 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
                     }
                 }
                 if(!currentPlan.isEmpty()){
-                    actionsToPerform.addAll(getEnvironment().translateAction(currentPlan.poll()));
+                    actionsToPerform.addAll(representation.translateAction(currentPlan.poll()));
                 }
             }
         }
@@ -164,6 +161,13 @@ public class Planning4JController extends AbstractAgentController<IAgentBody, IA
         if (planFuture != null && !planFuture.isDone()) {
             planFuture.cancel(true);
         }
-        planFuture = planner.planAsync(domainProvider, new PDDLObjectProblemProvider(getEnvironment().getProblem(getBody())));
+        planFuture = planner.planAsync(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody())));
     }
+
+    @Override
+    public Class getRepresentationClass() {
+        return IPDDLRepresentation.class;
+    }
+    
+    
 }

@@ -20,9 +20,10 @@ import cz.cuni.amis.aiste.SimulationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.IAgentType;
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAction;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -30,38 +31,49 @@ import org.apache.log4j.Logger;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extends IAction> implements IEnvironment<BODY, ACTION> {
+public abstract class AbstractEnvironment<ACTION extends IAction> implements IEnvironment<ACTION> {
 
     private final Logger logger = Logger.getLogger(AbstractEnvironment.class);
     
-    private Class<BODY> bodyClass;
     private Class<ACTION> actionClass;
 
     private boolean finished;
-    private List<BODY> bodies;
+    private List<AgentBody> bodies;
     private long timeStep;
-    private Map<BODY, Double> totalRewards;
+    private Map<AgentBody, Double> totalRewards;
+    
+    private final double failureReward;
+    private List<IEnvironmentRepresentation> representations;
 
 
     /**
      * Bodies that are active - ie. have been added and not yet removed.
      */
-    private List<BODY> activeBodies;
+    private List<AgentBody> activeBodies;
     
     /**
      * Bodies that should no longer be active
      */
-    private Set<BODY> removedBodies;
+    private Set<AgentBody> removedBodies;
 
     private Map<IAgentType, Integer> instanceCount = new HashMap<IAgentType,Integer>();
 
-    public AbstractEnvironment(Class<BODY> bodyClass, Class<ACTION> actionClass) {
-        this.bodyClass = bodyClass;
+    public AbstractEnvironment(Class<ACTION> actionClass){
+        this(actionClass, Double.NEGATIVE_INFINITY);
+    }
+    
+    public AbstractEnvironment(Class<ACTION> actionClass, double failureReward) {
         this.actionClass = actionClass;
+        representations = new ArrayList<IEnvironmentRepresentation>();
+        this.failureReward = failureReward;
+    }
+    
+    protected void registerRepresentation(IEnvironmentRepresentation representation){
+        representations.add(representation);
     }
 
     @Override
-    public Map<BODY, Double> simulateOneStep() {
+    public Map<AgentBody, Double> simulateOneStep() {
         if(isFinished()){
             throw new SimulationException("Trying to simulate a finished environment");
         }
@@ -71,8 +83,8 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
             return Collections.EMPTY_MAP;
         }
         
-        Map<BODY, Double> result = simulateOneStepInternal();
-        for(Map.Entry<BODY, Double> rewardEntry : result.entrySet() ){
+        Map<AgentBody, Double> result = simulateOneStepInternal();
+        for(Map.Entry<AgentBody, Double> rewardEntry : result.entrySet() ){
             if(!removedBodies.contains(rewardEntry.getKey())){
                 //removed bodies no longer receive rewards
                 totalRewards.put(rewardEntry.getKey(), totalRewards.get(rewardEntry.getKey()) + rewardEntry.getValue());
@@ -83,10 +95,15 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     }
     
 
-    protected abstract Map<BODY, Double> simulateOneStepInternal();
+    protected abstract Map<AgentBody, Double> simulateOneStepInternal();
 
     @Override
-    public BODY createAgentBody(IAgentType type) {
+    public AgentBody createAgentBody(IAgentType type) {
+        
+        if(timeStep > 0){
+            throw new AgentInstantiationException("Instantiation in running environment is not supported");
+        }
+        
         IAgentInstantiationDescriptor desc = getInstantiationDescriptors().get(type);
         
         if(desc == null){
@@ -102,7 +119,7 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
             throw new AgentInstantiationException("Trying to instantiate more agents of type " + type + " than allowed. The maxCount is " + desc.getMaxInstances() );
         }
         
-        BODY newBody = createAgentBodyInternal(type);
+        AgentBody newBody = createAgentBodyInternal(type);
                 
         instanceCount.put(type, instancesSoFar + 1);
         bodies.add(newBody);     
@@ -113,16 +130,16 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
         
     }
     
-    protected abstract BODY createAgentBodyInternal(IAgentType type);
+    protected abstract AgentBody createAgentBodyInternal(IAgentType type);
 
     @Override
     public void init() {
         finished = false;
-        bodies = new ArrayList<BODY>();
-        activeBodies = new ArrayList<BODY>();
-        removedBodies =  new HashSet<BODY>();
+        bodies = new ArrayList<AgentBody>();
+        activeBodies = new ArrayList<AgentBody>();
+        removedBodies =  new HashSet<AgentBody>();
         timeStep = 0;
-        totalRewards = new HashMap<BODY, Double>();
+        totalRewards = new HashMap<AgentBody, Double>();
     }
 
     @Override
@@ -133,17 +150,22 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     
     
     @Override
-    public List<BODY> getAllBodies() {
+    public List<AgentBody> getAllBodies() {
         return bodies;
     }
 
     @Override
-    public List<BODY> getActiveBodies() {
+    public List<AgentBody> getActiveBodies() {
         return activeBodies;
     }
 
-    protected Set<BODY> getRemovedBodies() {
+    protected Set<AgentBody> getRemovedBodies() {
         return removedBodies;
+    }
+
+    @Override
+    public List<IEnvironmentRepresentation> getRepresentations() {
+        return representations;
     }
     
 
@@ -155,7 +177,7 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
     }
     
     @Override
-    public double getTotalReward(BODY agentBody) {
+    public double getTotalReward(AgentBody agentBody) {
         return totalRewards.get(agentBody);
     }
     
@@ -176,20 +198,11 @@ public abstract class AbstractEnvironment<BODY extends IAgentBody, ACTION extend
         return actionClass;
     }
 
-    @Override
-    public Class<BODY> getBodyClass() {
-        return bodyClass;
-    }
 
     @Override
-    public void removeAgentBody(BODY body) {
-        removeAgentBody(body, 0);        
-    }
-
-    @Override
-    public void removeAgentBody(BODY body, double reward) {
+    public void removeAgentBody(AgentBody body) {
         removedBodies.add(body);
-        totalRewards.put(body,  totalRewards.get(body) + reward);
+        totalRewards.put(body,  totalRewards.get(body) + failureReward);
     }
     
     

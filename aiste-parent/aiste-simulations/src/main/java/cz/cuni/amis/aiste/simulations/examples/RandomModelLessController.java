@@ -16,9 +16,11 @@
  */
 package cz.cuni.amis.aiste.simulations.examples;
 
+import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
-import cz.cuni.amis.aiste.environment.IModelLessRepresentableEnvironment;
+import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IModelLessRepresentation;
 import cz.cuni.amis.aiste.environment.IPercept;
 import cz.cuni.amis.aiste.environment.impl.AbstractReactiveModelLessController;
 import java.util.ArrayList;
@@ -29,16 +31,16 @@ import java.util.Random;
  *
  * @author Martin Cerny
  */
-public class RandomModelLessController extends AbstractReactiveModelLessController<IAgentBody, IAction, IPercept> {
+public class RandomModelLessController extends AbstractReactiveModelLessController<IAction, IPercept> implements IRandomizable {
 
     List<IAction> possibleActions;
     
     Random rnd;
 
     @Override
-    public void init(IModelLessRepresentableEnvironment<IAgentBody, IAction, IPercept> environment, IAgentBody body, long stepDelay) {
-        super.init(environment, body, stepDelay);
-        possibleActions = new ArrayList<IAction>(environment.getPossibleActions(body.getType()));
+    public void init(IEnvironment<IAction> environment, IModelLessRepresentation<IAction, IPercept> representation, AgentBody body, long stepDelay) {
+        super.init(environment, representation, body, stepDelay);
+        possibleActions = new ArrayList<IAction>(representation.getPossibleActions(body.getType()));
         rnd = new Random();
     }
     
@@ -49,4 +51,10 @@ public class RandomModelLessController extends AbstractReactiveModelLessControll
         return possibleActions.get(rnd.nextInt(possibleActions.size()));
     }
 
+    @Override
+    public void setRandomSeed(long seed) {
+        rnd = new Random(seed);
+    }
+
+    
 }

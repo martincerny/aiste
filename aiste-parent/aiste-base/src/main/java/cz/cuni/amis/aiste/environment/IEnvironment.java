@@ -28,7 +28,7 @@ import java.util.Map;
  * should be able to start afresh (without keeping the registered executors).
  * @author Martin Cerny
  */
-public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
+public interface IEnvironment<ACTION extends IAction> {
     
     /**
      * Initializes the environment for use.
@@ -52,7 +52,7 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
      * @return 
      * @throws AgentInstantiationException if it was not possible to instantiate such agent
      */
-    BODY createAgentBody(IAgentType type);
+    AgentBody createAgentBody(IAgentType type);
     
     /**
      * Perform an action by the specified body.
@@ -66,26 +66,26 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
      * the action is found to belong to different agent type or not recognized at all.
      * 
      */
-    boolean act(BODY agentBody, ACTION action);
+    boolean act(AgentBody agentBody, ACTION action);
     
     /**
      * Get all agent bodies present in the environment
      * @return 
      */
-    List<BODY> getAllBodies();
+    List<AgentBody> getAllBodies();
 
     /**
      * Get all agent bodies present in the environment that have not yet been removed.
      * @return 
      */
-    List<BODY> getActiveBodies();
+    List<AgentBody> getActiveBodies();
     
     /**
      * Runs one step of the simulation.
      * @return rewards earned by all agents in the simulation
      * @throws SimulationException if an unexpected event occurs
      */
-    Map<BODY, Double> simulateOneStep();
+    Map<AgentBody, Double> simulateOneStep();
     
     /**
      * Returns the number of steps that were simulated.
@@ -98,7 +98,7 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
      * @param agentBody
      * @return 
      */
-    double getTotalReward(BODY agentBody);
+    double getTotalReward(AgentBody agentBody);
     
     /**
      * Whether the simulation has reached a terminal state
@@ -106,19 +106,21 @@ public interface IEnvironment<BODY extends IAgentBody, ACTION extends IAction> {
      */
     boolean isFinished();
     
-    Class<BODY> getBodyClass();
     Class<ACTION> getActionClass();
     
     /**
-     * A shorthand for {@link #removeAgentBody(double) } with 0 reward.
-     */
-    void removeAgentBody(BODY body);    
-
-    /**
-     * Removes agent body from the simulation and gives it a specified reward.
+     * Removes agent body from the simulation. An environment specific failure-reward should
+     * be given to the agent. This is usually -Inf for environments where there is
+     * no lower bound on reward agent may accumulate or -SOME_INTEGER for environments
+     * where doing nothing does not hurt the agent.
      * Useful especially to remove bodies of agents that performed some sort of illegal operation
      * (e. g. exception in agent logic).
-     * @param reward 
      */
-    void removeAgentBody(BODY body, double reward);
+    void removeAgentBody(AgentBody body);    
+
+    
+    /**
+     * Gets all representations this environment has.
+     */
+    List<IEnvironmentRepresentation> getRepresentations();
 }

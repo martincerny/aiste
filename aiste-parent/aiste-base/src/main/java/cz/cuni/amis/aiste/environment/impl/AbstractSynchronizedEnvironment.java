@@ -17,7 +17,7 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,36 +28,37 @@ import java.util.Map;
  * the last one is taken.
  * @author Martin Cerny
  */
-public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, ACTION extends IAction> extends AbstractEnvironment<BODY, ACTION>{
+public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> extends AbstractEnvironment<ACTION>{
     
     
-    private Map<BODY, ACTION> actionsForNextStep = new HashMap<BODY, ACTION>();
+    //TODO - change to array indexed by body id
+    private Map<AgentBody, ACTION> actionsForNextStep = new HashMap<AgentBody, ACTION>();
     
     /**
      * Mutex for synchronization of access to actionsForNextStep.
      */
     private final Object mutex = new Object();
 
-    public AbstractSynchronizedEnvironment(Class<BODY> bodyClass, Class<ACTION> actionClass) {
-        super(bodyClass, actionClass);
+    public AbstractSynchronizedEnvironment(Class<ACTION> actionClass) {
+        super( actionClass);
     }
     
     
     
 
     @Override
-    protected Map<BODY, Double> simulateOneStepInternal() {
-        Map<BODY,ACTION> actionsCopy;
+    protected Map<AgentBody, Double> simulateOneStepInternal() {
+        Map<AgentBody,ACTION> actionsCopy;
         synchronized (mutex){
-            actionsCopy = new HashMap<BODY, ACTION>(actionsForNextStep);
+            actionsCopy = new HashMap<AgentBody, ACTION>(actionsForNextStep);
             actionsForNextStep.clear();
         }
-        Map<BODY, Double> result = simulateOneStepInternal(actionsCopy);
+        Map<AgentBody, Double> result = simulateOneStepInternal(actionsCopy);
         return result;
     }
 
     @Override
-    public boolean act(BODY agentBody, ACTION action) {
+    public boolean act(AgentBody agentBody, ACTION action) {
         if(!isActionRecognized(agentBody, action)){
             return false;
         }
@@ -74,7 +75,7 @@ public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, A
     public void init() {
         super.init();
         synchronized(mutex){
-            actionsForNextStep = new HashMap<BODY, ACTION>();
+            actionsForNextStep = new HashMap<AgentBody, ACTION>();
         }
     }
 
@@ -89,12 +90,12 @@ public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, A
     
     
     /**
-     * Test, whether the action is recognized. This is useful to get return value for {@link #act(cz.cuni.amis.aiste.IAgentBody, java.lang.Object) }
+     * Test, whether the action is recognized. This is useful to get return value for {@link #act(cz.cuni.amis.aiste.AgentBody, java.lang.Object) }
      * @param agentBody
      * @param action
      * @return the default implementation always returns true.
      */
-    protected boolean isActionRecognized(BODY agentBody, ACTION action){
+    protected boolean isActionRecognized(AgentBody agentBody, ACTION action){
         return true;
     }
     
@@ -103,5 +104,5 @@ public abstract class AbstractSynchronizedEnvironment<BODY extends IAgentBody, A
      * @param actionsToPerform
      * @return 
      */
-    protected abstract Map<BODY, Double> simulateOneStepInternal(Map<BODY, ACTION> actionsToPerform);
+    protected abstract Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, ACTION> actionsToPerform);
 }

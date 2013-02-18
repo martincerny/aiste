@@ -14,40 +14,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment.impl;
+package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IAgentType;
 
 /**
- *
+ * A simple agent body that represents itself with an index.
  * @author Martin Cerny
  */
-public class SimpleBody implements IAgentBody{
+public class AgentBody {
 
     private int id;
     
     private IAgentType type;
 
-    public SimpleBody(IAgentType type) {
+    public AgentBody(IAgentType type) {
         this.type = type;
     }
 
-    public SimpleBody(int id, IAgentType type) {
+    public AgentBody(int id, IAgentType type) {
         this.id = id;
         this.type = type;
     }
     
     
     
-    @Override
     public IAgentType getType() {
         return type;
     }
 
-    @Override
     public int getId() {
         return id;
+    }
+
+    @Override
+    public String toString() {
+        return type.getName() + ": " + id;
     }
     
     

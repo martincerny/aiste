@@ -55,16 +55,15 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
      */
     private static final long MILISECOND_TOLERANCE_FOR_ENVIRONMENT_STEPS = 50;
 
-    public DefaultEnvironmentExecutor(long stepDelay, int maxNotificationInstancesPerController, double failureReward) {
+    public DefaultEnvironmentExecutor(long stepDelay, int maxNotificationInstancesPerController) {
         super(stepDelay);
         this.maxNotificationInstancesPerController = maxNotificationInstancesPerController;
         environmentStepTimer = new Timer("Environment execution");
-        setFailureReward(failureReward);
         agentStepNotificationExecutorService = Executors.newCachedThreadPool();
     }
 
     public DefaultEnvironmentExecutor(long stepDelay) {
-        this(stepDelay, 2, Double.NEGATIVE_INFINITY);
+        this(stepDelay, 2 );
     }
 
     @Override

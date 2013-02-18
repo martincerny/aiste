@@ -16,24 +16,10 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.PDDLDomain;
-import cz.cuni.amis.planning4j.pddl.PDDLProblem;
-import java.util.List;
-
 /**
- *
+ * 
  * @author Martin Cerny
  */
-public interface IPDDLRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction> extends IEnvironment<BODY, ACTION> {
-    public PDDLDomain getDomain(BODY body);
-    public PDDLProblem getProblem(BODY body);
-    public List<? extends ACTION> translateAction(ActionDescription actionFromPlanner);
-    
-    /**
-     * Checks validity of a plan
-     * @param plan
-     * @return true, if given actions lead to the goal from current world situation
-     */
-    public boolean checkPlanValidity(List<? extends ACTION> plan);
+public interface IRepresentationWithModel<ACTION extends IAction> extends IEnvironmentRepresentation{
+    IEnvironmentModel<ACTION> getModel();
 }
