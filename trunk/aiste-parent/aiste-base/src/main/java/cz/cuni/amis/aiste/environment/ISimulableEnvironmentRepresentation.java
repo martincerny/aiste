@@ -17,9 +17,15 @@
 package cz.cuni.amis.aiste.environment;
 
 /**
- * A marker interface for all class that represent an environment.
+ * An environment representation, that supports switching to 
+ * different environment clone, especially for simulating the environment inside the agent.
  * @author Martin Cerny
  */
-public interface IEnvironmentRepresentation {
+public interface ISimulableEnvironmentRepresentation<ENVIRONMENT extends IEnvironment> extends IEnvironmentRepresentation {
+    /**
+     * Sets environment this representation should work with.
+     * @param env 
+     */
+    void setEnvironment(ENVIRONMENT env);
     
 }

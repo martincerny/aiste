@@ -46,6 +46,17 @@ public class SpyVsSpyMapNode {
      */
     int index;
 
+    /**
+     * Create a node with a copy of original data
+     * @param original 
+     */
+    public SpyVsSpyMapNode(SpyVsSpyMapNode original){
+        this.index = original.index;
+        this.traps = new HashSet<Integer>(original.traps);
+        this.items = new HashSet<Integer>(original.items);
+        this.numTrapRemovers =  Arrays.copyOf(original.numTrapRemovers, original.numTrapRemovers.length);
+    }
+    
     public SpyVsSpyMapNode(int index, Set<Integer> traps, Set<Integer> items, Set<Integer> trapRemovers, int numTraps) {
         this.index = index;
         this.traps = new HashSet<Integer>(traps);

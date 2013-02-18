@@ -20,6 +20,7 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IPDDLRepresentation;
+import cz.cuni.amis.aiste.environment.ISimulableEnvironmentRepresentation;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.pddl.*;
 import java.util.ArrayList;
@@ -30,10 +31,10 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyAction> {
+public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyAction>, ISimulableEnvironmentRepresentation<SpyVsSpy> {
     
     
-    private SpyVsSpyModel model;
+    private SpyVsSpy environment;
     
     /*
      * PDDL generating stuf
@@ -71,8 +72,8 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
     public static final String REMOVER_PREFIX = "remover";
     public static final String SEPARATOR = "_";
 
-    public SpyVsSpyPDDLRepresentation(SpyVsSpyModel model) {
-        this.model = model;
+    public SpyVsSpyPDDLRepresentation(SpyVsSpy environment) {
+        this.environment = environment;
         
         /*
          * Declare global PDDL objects
@@ -86,8 +87,8 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
 
         locationType = new PDDLType("location");
 
-        locationConstants = new PDDLObjectInstance[model.nodes.size()];
-        for (int i = 0; i < model.nodes.size(); i++) {
+        locationConstants = new PDDLObjectInstance[environment.nodes.size()];
+        for (int i = 0; i < environment.nodes.size(); i++) {
             locationConstants[i] = new PDDLObjectInstance(LOCATION_PREFIX + SEPARATOR + i, locationType);
         }
 
@@ -130,8 +131,8 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
         setTrapAction.setPositiveEffects(objectAtPredicate.stringAfterSubstitution("?trap", "?loc"));
         setTrapAction.setNegativeEffects(carryingObjectPredicate.stringAfterSubstitution("?trap"));
 
-        itemConstants = new PDDLObjectInstance[model.numItemTypes];
-        for (int i = 0; i < model.numItemTypes; i++) {
+        itemConstants = new PDDLObjectInstance[environment.defs.numItemTypes];
+        for (int i = 0; i < environment.defs.numItemTypes; i++) {
             itemConstants[i] = new PDDLObjectInstance(ITEM_PREFIX + SEPARATOR + i, itemType);
         }
         
@@ -166,27 +167,27 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
     @Override
     public PDDLProblem getProblem(AgentBody body) {
         PDDLProblem problem = new PDDLProblem("SpyVsSpyProblem", "SpyVsSpy");
-        for (int i = 0; i < model.nodes.size(); i++) {
+        for (int i = 0; i < environment.nodes.size(); i++) {
             problem.addObject(locationConstants[i]);
         }
-        for (int i = 0; i < model.numItemTypes; i++) {
+        for (int i = 0; i < environment.defs.numItemTypes; i++) {
             problem.addObject(itemConstants[i]);
         }
 
         List<List<PDDLObjectInstance>> trapInstances = new ArrayList<List<PDDLObjectInstance>>();         //first index is the trap type
         List<List<PDDLObjectInstance>> trapRemoverInstances = new ArrayList<List<PDDLObjectInstance>>();
-        for (int i = 0; i < model.numTrapTypes; i++) {
+        for (int i = 0; i < environment.defs.numTrapTypes; i++) {
             trapInstances.add(new ArrayList<PDDLObjectInstance>());
             trapRemoverInstances.add(new ArrayList<PDDLObjectInstance>());
         }
         
-        SpyVsSpyBodyInfo bodyInfo = model.bodyInfos.get(body.getId());        
+        SpyVsSpyBodyInfo bodyInfo = environment.bodyInfos.get(body.getId());        
 
         List<String> initialLiterals = new ArrayList<String>();
         initialLiterals.add(playerAtPredicate.stringAfterSubstitution(locationConstants[bodyInfo.locationIndex]));
-        for (SpyVsSpyMapNode n : model.nodes) {
+        for (SpyVsSpyMapNode n : environment.nodes) {
             PDDLObjectInstance nodeInstance = locationConstants[n.index];
-            for (Integer neighbourIndex : model.neighbours.get(n.index)) {
+            for (Integer neighbourIndex : environment.defs.neighbours.get(n.index)) {
                 initialLiterals.add(adjacentPredicate.stringAfterSubstitution(nodeInstance, locationConstants[neighbourIndex]));
             }
             for (Integer item : n.items) {
@@ -198,7 +199,7 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
                 initialLiterals.add(trapSetPredicate.stringAfterSubstitution(newTrapInstance, nodeInstance));
             }
 
-            for (int newTrapRemoverType = 0; newTrapRemoverType < model.numTrapTypes; newTrapRemoverType++) {
+            for (int newTrapRemoverType = 0; newTrapRemoverType < environment.defs.numTrapTypes; newTrapRemoverType++) {
                 for (int i = 0; i < n.numTrapRemovers[newTrapRemoverType]; i++) {
                     PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, newTrapRemoverType, problem);
 
@@ -211,7 +212,7 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
             initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(itemConstants[carriedItemType]));
         }
 
-        for (int trapTypeIndex = 0; trapTypeIndex < model.numTrapTypes; trapTypeIndex++) {
+        for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
             for (int i = 0; i < bodyInfo.numTrapsCarried[trapTypeIndex]; i++) {
                 PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
                 initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapInstance));
@@ -225,7 +226,7 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
         /*
          * Generate removesTrap predicat
          */
-        for (int trapTypeIndex = 0; trapTypeIndex < model.numTrapTypes; trapTypeIndex++) {
+        for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
             for (PDDLObjectInstance trapRemover : trapRemoverInstances.get(trapTypeIndex)) {
                 for (PDDLObjectInstance trap : trapInstances.get(trapTypeIndex)) {
                     initialLiterals.add(removesTrapPredicate.stringAfterSubstitution(trapRemover, trap));
@@ -236,7 +237,7 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
         problem.setInitialLiterals(initialLiterals);
 
         List<String> goalConditions = new ArrayList<String>();
-        goalConditions.add(playerAtPredicate.stringAfterSubstitution(locationConstants[model.destination]));
+        goalConditions.add(playerAtPredicate.stringAfterSubstitution(locationConstants[environment.defs.destination]));
         for (PDDLObjectInstance item : itemConstants) {
             goalConditions.add(carryingObjectPredicate.stringAfterSubstitution(item));
         }
@@ -300,6 +301,15 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
         }
         return actions;
     }
+
+    @Override
+    public void setEnvironment(SpyVsSpy env) {
+        if(env.defs != this.environment.defs){
+            throw new IllegalArgumentException("Environment could only be set to a copy of the original env.");
+        }
+        this.environment = env;
+    }
+ 
     
     
 }

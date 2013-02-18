@@ -58,7 +58,7 @@ public class Test {
         DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(200);
         executor.setDebugMode(true);
         executor.setEnvironment(b);
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
+        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
 
         IEnvironmentExecutionResult result = executor.executeEnvironment(100);
 

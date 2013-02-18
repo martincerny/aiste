@@ -58,6 +58,27 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
 
     private Map<IAgentType, Integer> instanceCount = new HashMap<IAgentType,Integer>();
 
+    /**
+     * Constructor that creates a shallow copy of specified environment.
+     * Namely: everything related bodies are the same list (changes will propagate)
+     * totalRewards are copied
+     * @param original 
+     */
+    protected AbstractEnvironment(AbstractEnvironment original){
+        this.actionClass = original.actionClass;
+        this.finished = original.finished;
+        this.bodies = original.bodies;
+        this.timeStep = original.timeStep;
+        this.failureReward = original.failureReward;
+        this.representations = original.representations;
+        this.activeBodies = original.activeBodies;
+        this.removedBodies = original.removedBodies;
+        this.instanceCount = original.instanceCount;
+        
+        //total rewards are the only thing that is deeply copied
+        this.totalRewards = new HashMap<AgentBody, Double>(original.totalRewards);
+    }
+    
     public AbstractEnvironment(Class<ACTION> actionClass){
         this(actionClass, Double.NEGATIVE_INFINITY);
     }
@@ -73,7 +94,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     }
 
     @Override
-    public Map<AgentBody, Double> simulateOneStep() {
+    public Map<AgentBody, Double> nextStep() {
         if(isFinished()){
             throw new SimulationException("Trying to simulate a finished environment");
         }
@@ -83,7 +104,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
             return Collections.EMPTY_MAP;
         }
         
-        Map<AgentBody, Double> result = simulateOneStepInternal();
+        Map<AgentBody, Double> result = nextStepInternal();
         for(Map.Entry<AgentBody, Double> rewardEntry : result.entrySet() ){
             if(!removedBodies.contains(rewardEntry.getKey())){
                 //removed bodies no longer receive rewards
@@ -95,7 +116,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     }
     
 
-    protected abstract Map<AgentBody, Double> simulateOneStepInternal();
+    protected abstract Map<AgentBody, Double> nextStepInternal();
 
     @Override
     public AgentBody createAgentBody(IAgentType type) {

@@ -16,28 +16,25 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
+import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractAgentController;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
  * @author 
  */
-public class SpyVsSpyReactiveController extends AbstractAgentController<SpyVsSpyAgentBody, SpyVsSpyAction, SpyVsSpy> {
+public class SpyVsSpyReactiveController extends AbstractAgentController<SpyVsSpyAction, SpyVsSpy> {
 
-    @Override
-    public boolean isApplicable(SpyVsSpy environment) {
-        return (environment instanceof SpyVsSpy);
-    }
+
 
     
     int scriptIndex = 0;
     SpyVsSpyAction[] script;
-    
+
     @Override
-    public void init(SpyVsSpy environment, SpyVsSpyAgentBody body, long stepDelay) {
-        super.init(environment, body, stepDelay);
+    public void init(IEnvironment<SpyVsSpyAction> environment, SpyVsSpy representation, AgentBody body, long stepDelay) {
+        super.init(environment, representation, body, stepDelay);
         //prepare anything you need here
         int otherId = 1 - body.getId();
         script = new SpyVsSpyAction[] {
@@ -71,6 +68,11 @@ public class SpyVsSpyReactiveController extends AbstractAgentController<SpyVsSpy
     @Override
     public void shutdown() {
         super.shutdown();
+    }
+
+    @Override
+    public Class getRepresentationClass() {
+        return SpyVsSpy.class;
     }
 
 

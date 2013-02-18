@@ -39,6 +39,14 @@ public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> ex
      */
     private final Object mutex = new Object();
 
+    /**
+     * Constructor that creates a shallow copy of data using {@link AbstractEnvironment#AbstractEnvironment(cz.cuni.amis.aiste.environment.impl.AbstractEnvironment) }
+     * @param original 
+     */
+    protected AbstractSynchronizedEnvironment(AbstractSynchronizedEnvironment original){
+        super(original);
+    }
+    
     public AbstractSynchronizedEnvironment(Class<ACTION> actionClass) {
         super( actionClass);
     }
@@ -47,13 +55,13 @@ public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> ex
     
 
     @Override
-    protected Map<AgentBody, Double> simulateOneStepInternal() {
+    protected Map<AgentBody, Double> nextStepInternal() {
         Map<AgentBody,ACTION> actionsCopy;
         synchronized (mutex){
             actionsCopy = new HashMap<AgentBody, ACTION>(actionsForNextStep);
             actionsForNextStep.clear();
         }
-        Map<AgentBody, Double> result = simulateOneStepInternal(actionsCopy);
+        Map<AgentBody, Double> result = nextStepInternal(actionsCopy);
         return result;
     }
 
@@ -104,5 +112,5 @@ public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> ex
      * @param actionsToPerform
      * @return 
      */
-    protected abstract Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, ACTION> actionsToPerform);
+    protected abstract Map<AgentBody, Double> nextStepInternal(Map<AgentBody, ACTION> actionsToPerform);
 }
