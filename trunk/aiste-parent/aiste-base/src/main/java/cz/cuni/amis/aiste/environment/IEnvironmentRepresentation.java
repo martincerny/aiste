@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,25 +16,10 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import java.util.Collection;
-
 /**
- *
+ * A markek interface for all class that represent an environment.
  * @author Martin Cerny
  */
-public interface IStateVariableRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction>
-extends IEnvironment<BODY, ACTION> {    
+public interface IEnvironmentRepresentation {
     
-    /**
-     * Returns all state variables that represent this environment.
-     * @return 
-     */
-    public Collection<IStateVariable> getStateVariables();
-    
-    /**
-     * Returns the current value of a state variable.
-     * @param variable
-     * @return the value of the variable
-     */
-    public Object getStateVariableValue(IStateVariable variable);
 }

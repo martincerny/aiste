@@ -19,6 +19,7 @@ package cz.cuni.amis.aiste.execution;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 
 /**
  * Interface for classes that execute environments and agent controllers. 
@@ -41,7 +42,7 @@ public interface IEnvironmentExecutor {
      * @param type
      * @param controller 
      */
-    void addAgentController(IAgentType type, IAgentController controller);
+    void addAgentController(IAgentType type, IAgentController controller, IEnvironmentRepresentation representation);
     
     /**
      * Executes the environment, until it reaches a terminal state.

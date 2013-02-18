@@ -19,10 +19,11 @@ package cz.cuni.amis.aiste.execution.impl;
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.SimulationException;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
@@ -42,15 +43,10 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     private final Logger logger = Logger.getLogger(AbstractEnvironmentExecutor.class);
     
     private IEnvironment environment = null;
-    private Map<IAgentBody, IAgentController> bodyToControllers = new HashMap<IAgentBody, IAgentController>();
+    private Map<AgentBody, IAgentController> bodyToControllers = new HashMap<AgentBody, IAgentController>();
     private List<IAgentController> controllers = new ArrayList<IAgentController>();
     private List<IAgentController> activeControllers = new CopyOnWriteArrayList<IAgentController>();
     private long stepDelay;
-    /**
-     * The reward given to agents that somehow fail (logic fails to finish on time, execution exception).
-     * Defaults to -Infinity.
-     */
-    private double failureReward = Double.NEGATIVE_INFINITY;
 
     public AbstractEnvironmentExecutor(long stepDelay) {
         this.stepDelay = stepDelay;
@@ -72,16 +68,19 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     }
 
     @Override
-    public void addAgentController(IAgentType type, IAgentController controller) {
+    public void addAgentController(IAgentType type, IAgentController controller, IEnvironmentRepresentation representation) {
         if(environment == null){
             throw new IllegalStateException("Environment not set");
         }
-        if(!controller.isApplicable(environment)){
-            throw new AgentInstantiationException("Controller " + controller + " is not applicable to environment " + environment);
+        if(!environment.getRepresentations().contains(representation)){
+            throw new AgentInstantiationException("Trying to instantiate controller with representation that does not belong to the environment");
+        }
+        if(!controller.getRepresentationClass().isAssignableFrom(representation.getClass())){
+            throw new AgentInstantiationException("Controller " + controller + " is not applicable to representation " + representation);
         }
 
-        IAgentBody newBody = environment.createAgentBody(type);
-        controller.init(environment, newBody, stepDelay);
+        AgentBody newBody = environment.createAgentBody(type);
+        controller.init(environment, representation, newBody, stepDelay);
         
         controllers.add(controller);        
         activeControllers.add(controller);
@@ -108,7 +107,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
      * is not thread safe.
      */
     protected void performSimulationStep(){
-        Map<IAgentBody, Double> stepResult = environment.simulateOneStep();
+        Map<AgentBody, Double> stepResult = environment.simulateOneStep();
         for(IAgentController controller : activeControllers){
             Double reward = stepResult.get(controller.getBody());
             if(reward == null){
@@ -127,7 +126,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     protected abstract void notifyControllerOfSimulationStep(IAgentController controller, double reward);
     
     protected void controllerFailed(IAgentController controller){
-        getEnvironment().removeAgentBody(controller.getBody(), getFailureReward());        
+        getEnvironment().removeAgentBody(controller.getBody());        
         activeControllers.remove(controller);        
         try {
             controller.shutdown();
@@ -177,7 +176,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
         return executeEnvironment(0);
     }
 
-    public Map<IAgentBody, IAgentController> getBodyToControllers() {
+    public Map<AgentBody, IAgentController> getBodyToControllers() {
         return bodyToControllers;
     }
 
@@ -194,13 +193,6 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
         return stepDelay;
     }
 
-    public double getFailureReward() {
-        return failureReward;
-    }
 
-    public void setFailureReward(double failureReward) {
-        this.failureReward = failureReward;
-    }
-    
     
 }

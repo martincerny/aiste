@@ -16,7 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
-import cz.cuni.amis.aiste.environment.impl.SimpleBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -29,7 +29,9 @@ import java.util.Set;
  * outside the environment cannot look at the internals.
  * @author 
  */
-public class SpyVsSpyAgentBody extends SimpleBody {
+public class SpyVsSpyBodyInfo  {
+    
+    AgentBody body;
     
     int locationIndex;
     
@@ -39,8 +41,8 @@ public class SpyVsSpyAgentBody extends SimpleBody {
     
     int[] numTrapRemoversCarried;
     
-    SpyVsSpyAgentBody(int id, int initialLocation, int numTraps, int[] numTrapsCarried) {
-        super(id, SpyVsSpyAgentType.getInstance());
+    SpyVsSpyBodyInfo(AgentBody body, int initialLocation, int numTraps, int[] numTrapsCarried) {
+        this.body = body;
         locationIndex = initialLocation;
         this.numTrapsCarried = Arrays.copyOf(numTrapsCarried, numTrapsCarried.length);
         numTrapRemoversCarried = new int[numTraps];
@@ -50,7 +52,7 @@ public class SpyVsSpyAgentBody extends SimpleBody {
     @Override
     public String toString() {
         
-        return "SpyVsSpyAgentBody id: " + getId() + ", locationIndex: " + locationIndex + ", numTrapsCarried: " + Arrays.toString(numTrapsCarried) + ", itemsCarried: " + itemsCarried + ", numTrapRemoversCarried: " + Arrays.toString(numTrapRemoversCarried);
+        return "SpyVsSpyBodyInfo id: " + body.getId() + ", locationIndex: " + locationIndex + ", numTrapsCarried: " + Arrays.toString(numTrapsCarried) + ", itemsCarried: " + itemsCarried + ", numTrapRemoversCarried: " + Arrays.toString(numTrapRemoversCarried);
     }
     
     

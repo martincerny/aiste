@@ -16,7 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.examples;
 
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IPercept;
@@ -25,7 +25,7 @@ import cz.cuni.amis.aiste.environment.impl.EmptyPercept;
 import cz.cuni.amis.aiste.environment.impl.IntegerAction;
 import cz.cuni.amis.aiste.environment.impl.IntegerPercept;
 import cz.cuni.amis.aiste.environment.impl.SimpleAgentType;
-import cz.cuni.amis.aiste.environment.impl.SimpleBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.impl.SingletonAgentInstantiationDescriptor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,15 +34,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+//TODO decouple representation and environment
 /**
  * 
  * @author Martin Cerny
  */
-public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronizedEnvironment<IAgentBody, IntegerAction, IPercept> {
+public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronizedEnvironment<IntegerAction, IPercept> {
     int numArms;
     int[] armMeans;
     
-    IAgentBody theBody;
+    AgentBody theBody;
     IAgentType theType;
     
     Random rnd;
@@ -50,7 +51,7 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
     List<IntegerAction> theActions;
     
     public MultiArmedBandit(int numArms, int[] armMeans) {
-        super(IAgentBody.class, IntegerAction.class, IPercept.class);
+        super(IntegerAction.class, IPercept.class);
         this.numArms = numArms;
         this.armMeans = armMeans;
         theType = new SimpleAgentType("MultiArmedBanditPlayer");
@@ -70,7 +71,7 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
     
 
     @Override
-    protected Map<IAgentBody, Double> simulateOneStepInternal(Map<IAgentBody, IntegerAction> actionsToPerform) {
+    protected Map<AgentBody, Double> simulateOneStepInternal(Map<AgentBody, IntegerAction> actionsToPerform) {
         IntegerAction action = actionsToPerform.get(theBody);
         double reward;
         if(action == null){
@@ -82,8 +83,8 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
     }
 
     @Override
-    protected IAgentBody createAgentBodyInternal(IAgentType type) {
-        theBody = new SimpleBody(type);
+    protected AgentBody createAgentBodyInternal(IAgentType type) {
+        theBody = new AgentBody(type);
         return theBody;
     }
 
@@ -93,7 +94,7 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
     }
 
     @Override
-    public IPercept getPercept(IAgentBody agentBody) {
+    public IPercept getPercept(AgentBody agentBody) {
         return new EmptyPercept();
     }
 

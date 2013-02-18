@@ -30,7 +30,7 @@ public class Test {
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
         executor.setEnvironment(b);
-        executor.addAgentController(KeyLockAgentType.getInstance(), player);
+        executor.addAgentController(KeyLockAgentType.getInstance(), player, b);
         
         IEnvironmentExecutionResult result = executor.executeEnvironment(300 /*Max steps*/);
         

@@ -19,14 +19,14 @@ package cz.cuni.amis.aiste.environment;
 import java.util.Collection;
 
 /**
- * An environment, where agents may be controlled in a model-less way. Model-less
+ * A representation, where agents are be controlled in a model-less way. Model-less
  * means that agents do not need to construct an explicit model of the environment to act
  * upon it. In such an environment, there is a finite number of possible actions and the
  * same actions are possible for a specific agent type at all simulation steps.
  * @author Martin Cerny
  */
-public interface IModelLessRepresentableEnvironment<BODY extends IAgentBody, ACTION extends IAction, PERCEPT extends IPercept>
-extends IEnvironment<BODY, ACTION> {    
+public interface IModelLessRepresentation<ACTION extends IAction, PERCEPT extends IPercept>
+extends IEnvironmentRepresentation {    
     
     /**
      * Gets the class of the percept in this simulation. This value is important
@@ -40,7 +40,7 @@ extends IEnvironment<BODY, ACTION> {
      * @param agentBody
      * @return 
      */
-    PERCEPT getPercept(BODY agentBody);
+    PERCEPT getPercept(AgentBody agentBody);
     
     /**
      * Gets the actions possible for a specific agent type

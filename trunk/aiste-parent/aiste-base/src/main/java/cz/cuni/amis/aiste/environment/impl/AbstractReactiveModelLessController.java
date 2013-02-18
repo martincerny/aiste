@@ -17,32 +17,34 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.IAgentBody;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IEnvironment;
-import cz.cuni.amis.aiste.environment.IModelLessRepresentableEnvironment;
+import cz.cuni.amis.aiste.environment.IModelLessRepresentation;
 import cz.cuni.amis.aiste.environment.IPercept;
 
 /**
  * A controller for model-less environments that deliberates instantly and does
  * not have its own thread of execution.
  * @author Martin Cerny
- * @see IModelLessRepresentableEnvironment
+ * @see IModelLessRepresentation
  */
-public abstract class AbstractReactiveModelLessController<BODY extends IAgentBody, ACTION extends IAction, PERCEPT  extends IPercept> extends AbstractAgentController<BODY, ACTION, IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT>> {
+public abstract class AbstractReactiveModelLessController<ACTION extends IAction, PERCEPT  extends IPercept> extends AbstractAgentController<ACTION, IModelLessRepresentation<ACTION, PERCEPT>> {
 
-    @Override
-    public boolean isApplicable(IModelLessRepresentableEnvironment<BODY, ACTION, PERCEPT> environment) {
-        return environment instanceof IModelLessRepresentableEnvironment;
-    }
+
 
     @Override
     public void onSimulationStep(double reward) {
         super.onSimulationStep(reward);
-        ACTION nextAction = getActionForPercept(getEnvironment().getPercept(getBody()));
-        getEnvironment().act(getBody(), nextAction);        
+        ACTION nextAction = getActionForPercept(representation.getPercept(body));
+        environment.act(body, nextAction);        
     }
     
     protected abstract ACTION getActionForPercept(PERCEPT percept);
+
+    @Override
+    public Class getRepresentationClass() {
+        return IModelLessRepresentation.class;
+    }
 
     
 }

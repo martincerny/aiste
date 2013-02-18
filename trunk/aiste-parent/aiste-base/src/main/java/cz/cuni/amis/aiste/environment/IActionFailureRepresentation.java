@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,19 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.simulations.keylockmaze;
-
-import cz.cuni.amis.aiste.environment.impl.SimpleBody;
+package cz.cuni.amis.aiste.environment;
 
 /**
- * A  class that describes an agent body in KeyLockMaze
- * @author 
+ * All representations that support action failure should inherit this interface.
+ * @author Martin Cerny
  */
-public class KeyLockAgentBody extends SimpleBody {
-
-    public KeyLockAgentBody() {
-        super(KeyLockAgentType.getInstance());
-    }
-    
-    //Add some info about the agent body here, if needed
+public interface IActionFailureRepresentation {
+    /**
+     * Tests whether last action of a given agent body failed.
+     * @param body
+     * @return 
+     */
+    boolean lastActionFailed(AgentBody body);
 }

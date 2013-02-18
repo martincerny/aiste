@@ -16,6 +16,8 @@
  */
 package cz.cuni.amis.aiste.simulations.keylockmaze;
 
+import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractAgentController;
 import cz.cuni.amis.utils.astar.AStar;
 
@@ -23,16 +25,12 @@ import cz.cuni.amis.utils.astar.AStar;
  *
  * @author 
  */
-public class KeyLockNaiveController extends AbstractAgentController<KeyLockAgentBody, KeyLockAction, KeyLockMaze> {
+public class KeyLockNaiveController extends AbstractAgentController<KeyLockAction, KeyLockMaze> {
+
 
     @Override
-    public boolean isApplicable(KeyLockMaze environment) {
-        return (environment instanceof KeyLockMaze);
-    }
-
-    @Override
-    public void init(KeyLockMaze environment, KeyLockAgentBody body, long stepDelay) {
-        super.init(environment, body, stepDelay);
+    public void init(IEnvironment<KeyLockAction> environment, KeyLockMaze representation, AgentBody body, long stepDelay) {
+        super.init(environment, representation, body, stepDelay);
         //prepare anything you need here
     }
 
@@ -44,6 +42,8 @@ public class KeyLockNaiveController extends AbstractAgentController<KeyLockAgent
         //akce se provadi takto:
         act(new KeyLockAction(/*Tady si asi budes chtit predat nejake info*/));
         
+        //representation je protected promenna, ktera je instanci KeyLockMaze, takze si s ni muzes delat, co chces
+        
         //pro hledani cesty muzes pouzit treba (s doplnenim parametru)
         AStar.aStar(null, null, null);
         
@@ -52,6 +52,11 @@ public class KeyLockNaiveController extends AbstractAgentController<KeyLockAgent
     @Override
     public void shutdown() {
         super.shutdown();
+    }
+
+    @Override
+    public Class getRepresentationClass() {
+        return KeyLockMaze.class;
     }
 
 

@@ -21,18 +21,11 @@ package cz.cuni.amis.aiste.environment;
  * all concrete implementing classes should provide a no-argument constructor.
  * @author Martin Cerny
  */
-public interface IAgentController<BODY extends IAgentBody, ACTION extends IAction, ENVIRONMENT extends IEnvironment<BODY, ACTION>> {
+public interface IAgentController<ACTION extends IAction, REPRESENTATION extends IEnvironmentRepresentation> {
 
-    /**
-     * Check whether this agent controller may control agents in given environment.
-     * Called during matchmaking between controllers and environments
-     * @param environment
-     * @return 
-     */
-    boolean isApplicable(ENVIRONMENT environment);
     
     /**
-     * Initialize the agent for specific body in a specific environment.
+     * Initialize the agent for specific body in a specific environment and representation.
      * Agent should initialize any resources necessary for execution in this method. 
      * It is forbidden to issue any actions in this method or at any time prior to call
      * of {@link #start() }
@@ -40,7 +33,7 @@ public interface IAgentController<BODY extends IAgentBody, ACTION extends IActio
      * @param body
      * @param stepDelay an informative delay in milliseconds between successive simulation step (e. g. to set a time limit for deliberation)
      */
-    void init(ENVIRONMENT environment, BODY body, long stepDelay);
+    void init(IEnvironment<ACTION> environment, REPRESENTATION representation, AgentBody body, long stepDelay);
     
     /**
      * Called once, when the simulation starts. If the agent has its own thread of execution,
@@ -67,6 +60,11 @@ public interface IAgentController<BODY extends IAgentBody, ACTION extends IActio
      * Gets the body this controller works with.
      * @return 
      */
-    BODY getBody();
-    
+    AgentBody getBody();
+
+    /**
+     * Gets the representation class this controller works with - used during automatic matchmaking.
+     * @return 
+     */
+    Class getRepresentationClass();
 }
