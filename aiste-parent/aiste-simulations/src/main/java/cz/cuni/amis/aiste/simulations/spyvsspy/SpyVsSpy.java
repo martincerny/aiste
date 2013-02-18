@@ -16,20 +16,15 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
-import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
-import cz.cuni.amis.aiste.environment.IPDDLRepresentation;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
-import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
-import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.*;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -58,6 +53,11 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
     SpyVsSpyPDDLRepresentation pDDLRepresentation;
     
     /**
+     * True if this environment is a clone, created only for simulation
+     */
+    boolean isSimulation;
+    
+    /**
      * Create a shallow copy of the environment with the same defs
      * @param original 
      */
@@ -76,6 +76,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         }
 
         this.rand = new Random();
+        this.isSimulation = original.isSimulation;
     }
 
     public SpyVsSpy(List<SpyVsSpyMapNode> nodes, int maxPlayers, List<Integer> startingLocations, Map<Integer, List<Integer>> neighbours, int numTrapTypes, int[] trapCounts, int numItemTypes, int destination) {
@@ -86,6 +87,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         this.nodes = nodes;
 
 
+        isSimulation = false;
 
         bodyInfos = new ArrayList<SpyVsSpyBodyInfo>();
 
@@ -174,14 +176,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, SpyVsSpyAction> actionsToPerform) {
         Map<AgentBody, Double> reward = new HashMap<AgentBody, Double>();
 
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled() && !isSimulation) {
             logger.debug("============ Map State: ================");
             for (SpyVsSpyMapNode node : nodes) {
                 logger.debug(node);
             }
             logger.debug("=========== MapState End ===============");
         }
-
+        
         //evaluate attack actions
         for (AgentBody agentBody : actionsToPerform.keySet()) {
             SpyVsSpyAction action = actionsToPerform.get(agentBody);
@@ -191,17 +193,19 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         || bodyInfo.locationIndex != bodyInfos.get(action.getActionTarget()).locationIndex) {
                     //I am attacking an invalid agent or agent at different location
                     logger.info("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    agentFailedAction(agentBody);
                     continue;
                 }
                 if (rand.nextDouble() < defs.attackSuccessProbability) {
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
                     killAgent(getAllBodies().get(action.getActionTarget()), actionsToPerform, reward);
                 } else {
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Unsuccesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
+                    agentFailedAction(agentBody);
                 }
             }
         }
@@ -218,11 +222,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         && location.traps.contains(targetTrap)) {
                     location.traps.remove(targetTrap);
                     bodyInfo.numTrapRemoversCarried[targetTrap]--;
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
-                } else if (logger.isDebugEnabled()) {
-                    logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                } else {
+                    if (logger.isDebugEnabled() && !isSimulation) {
+                        logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    }
+                    agentFailedAction(agentBody);
                 }
 
             }
@@ -239,11 +246,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         && bodyInfo.numTrapsCarried[targetTrap] > 0) {
                     location.traps.add(targetTrap);
                     bodyInfo.numTrapsCarried[targetTrap]--;
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
-                } else if (logger.isDebugEnabled()) {
-                    logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                } else {
+                    if (logger.isDebugEnabled() && !isSimulation) {
+                        logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    }
+                    agentFailedAction(agentBody);
                 }
 
             }
@@ -260,12 +270,15 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     if (checkTrapSet(agentBody, actionsToPerform, reward)) {
                         bodyInfo.numTrapRemoversCarried[targetTrap]++;
                         location.numTrapRemovers[targetTrap]--;
-                        if (logger.isDebugEnabled()) {
+                        if (logger.isDebugEnabled() && !isSimulation) {
                             logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                         }
                     }
-                } else if (logger.isDebugEnabled()) {
-                    logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                } else {
+                    if (logger.isDebugEnabled() && !isSimulation) {
+                        logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    }
+                    agentFailedAction(agentBody);
                 }
 
             }
@@ -283,12 +296,15 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     if (checkTrapSet(agentBody, actionsToPerform, reward)) {
                         bodyInfo.itemsCarried.add(targetItem);
                         location.items.remove(targetItem);
-                        if (logger.isDebugEnabled()) {
+                        if (logger.isDebugEnabled() && !isSimulation) {
                             logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                         }
                     }
-                } else if (logger.isDebugEnabled()) {
-                    logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                } else {
+                    if (logger.isDebugEnabled() && !isSimulation) {
+                        logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    }
+                    agentFailedAction(agentBody);
                 }
             }
         }
@@ -300,11 +316,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             if (action.getType() == SpyVsSpyAction.ActionType.MOVE) {
                 if (defs.neighbours.get(bodyInfo.locationIndex).contains(action.getActionTarget())) {
                     bodyInfo.locationIndex = action.getActionTarget();
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
-                } else if (logger.isDebugEnabled()) {
-                    logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                } else {
+                    if (logger.isDebugEnabled() && !isSimulation) {
+                        logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    }
+                    agentFailedAction(agentBody);
                 }
 
             }
@@ -318,7 +337,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                 reward.put(agentBody, defs.rewardReachGoal);
                 this.setFinished(true);
                 //TODO split reward if two agents reach goal simultaneously
-                if (logger.isDebugEnabled()) {
+                if (logger.isDebugEnabled() && !isSimulation) {
                     logger.debug("Agent reached goal: " + bodyInfo);
                 }
             }
@@ -353,7 +372,9 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
     @Override
     public SpyVsSpy cloneForSimulation() {
-        return new SpyVsSpy(this);
+        SpyVsSpy copy =  new SpyVsSpy(this);
+        copy.isSimulation = true;
+        return copy;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,44 +16,16 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.aiste.environment.AgentBody;
-import cz.cuni.amis.aiste.environment.IAgentType;
-
 /**
- * A handle to an agent body.
+ *
  * @author Martin Cerny
  */
-public class AgentBody {
-
-   
-    private int id;
-    
-    private IAgentType type;
-
-
+public interface ISimulablePDDLRepresentation<ACTION extends IAction, ENVIRONMENT extends IEnvironment> 
+extends IPDDLRepresentation<IAction>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {
     /**
-     * @param type 
+     * Check whether given body is in goal state. Useful especially for simulations.
+     * @param body
+     * @return 
      */
-    public AgentBody(int id, IAgentType type) {
-        this.id = id;
-        this.type = type;
-    }
-    
-    
-    
-    public IAgentType getType() {
-        return type;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    @Override
-    public String toString() {
-        return type.getName() + ": " + id;
-    }
-
-
-        
+    public boolean isGoalState(AgentBody body);
 }
