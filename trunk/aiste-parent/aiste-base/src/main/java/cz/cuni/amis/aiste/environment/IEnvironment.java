@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An abstract ancestor for all environments. A specific environment should inherit
- * one or more IXXXXRepresentableEnvironment interfaces. In a typical scenario environments
+ * An abstract ancestor for all environments. In a typical scenario environments
  * should inherit from {@link AbstractSynchronizedEnvironment} ore one of its descendants.
  * The environment should be reusable - i. e. after call to {@link #stop() } and {@link #init()} it
  * should be able to start afresh (without keeping the registered executors).

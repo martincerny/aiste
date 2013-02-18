@@ -61,7 +61,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
      * Maximum number of random generator trials, before giving up, if all
      * created levels are unsolvable
      */
-    private static final int MAX_GENERATOR_ROUNDS = 5;
+    private static final int MAX_GENERATOR_ROUNDS = 10;
 
     private Random rand;
     
@@ -87,7 +87,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
         generateCycle: for (int trial = 0; trial < MAX_GENERATOR_ROUNDS; trial++) {
 
-            RandomGraphGenerator<SpyVsSpyMapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpyMapNode, Object>(numNodes, (int) (numNodes * meanNodeDegree));
+            RandomGraphGenerator<SpyVsSpyMapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpyMapNode, Object>(numNodes, (int) ((numNodes * meanNodeDegree) / 2));
             UndirectedGraph<SpyVsSpyMapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpyMapNode, Object>(new EdgeFactory<SpyVsSpyMapNode, Object>() {
 
                 @Override

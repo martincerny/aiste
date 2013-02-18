@@ -52,18 +52,22 @@ public class Test {
  //       IValidator validator = new ValValidator(plannersDirectory);
         IValidator validator = null;
  
-        SpyVsSpy b = new SpyVsSpyGenerator(2,8,3,4,3,0.3, planner).generateEnvironment();
-        IAgentController player1 = new Planning4JController(planner, validator);        
+        SpyVsSpy b = new SpyVsSpyGenerator(2,6,2,2,2,0.05, planner).generateEnvironment();
+        b.setRandomSeed(1234878864L);
+        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
+        IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 
         DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(200);
         executor.setDebugMode(true);
         executor.setEnvironment(b);
         executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
+        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(100);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(20);
 
         System.out.println("Results: ");
         System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());
+        System.out.println("Player2: "+ result.getAgentResults().get(1).getTotalReward());
          
 
         /*

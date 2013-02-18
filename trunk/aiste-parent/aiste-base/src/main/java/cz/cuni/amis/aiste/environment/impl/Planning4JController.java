@@ -16,18 +16,13 @@
  */
 package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.aiste.environment.IAction;
-import cz.cuni.amis.aiste.environment.AgentBody;
-import cz.cuni.amis.aiste.environment.IEnvironment;
-import cz.cuni.amis.aiste.environment.IPDDLRepresentation;
+import cz.cuni.amis.aiste.AisteException;
+import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.planning4j.*;
 import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
 import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
 import cz.cuni.amis.planning4j.utils.Planning4JUtils;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import org.apache.log4j.Logger;
 
 /**
@@ -52,15 +47,51 @@ public class Planning4JController extends AbstractAgentController<IAction, IPDDL
 
     Queue<ActionDescription> currentPlan;
     Queue<IAction> actionsToPerform;
+
     
+    public enum ValidationMethod { NONE, EXTERNAL_VALIDATOR, ENVIRONMENT_SIMULATION_NEXT_STEP, ENVIRONMENT_SIMULATION_WHOLE_PLAN };
+    
+    private ValidationMethod validationMethod;
+
+    /**
+     * Createas a controller without validation
+     * @param planner 
+     */
+    public Planning4JController(IAsyncPlanner planner) {
+        this(planner, ValidationMethod.NONE);
+    }
+    
+    /**
+     * Creates a controller with specified validation method.
+     * @param planner
+     * @param validationScope 
+     */
+    public Planning4JController(IAsyncPlanner planner, ValidationMethod validationMethod) {
+        this(planner, validationMethod, null);
+    }    
+    
+    /**
+     * Creates a controller with external validator plan validation.
+     * @param planner
+     * @param validationScope
+     * @param validator 
+     */
     public Planning4JController(IAsyncPlanner planner, IValidator validator) {
+        this(planner, ValidationMethod.EXTERNAL_VALIDATOR, validator);
+    }    
+    
+    public Planning4JController(IAsyncPlanner planner, ValidationMethod validationMethod, IValidator validator) {
         this.planner = Planning4JUtils.getTranslatingAsyncPlanner(planner, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
         if(validator != null){
             this.validator = Planning4JUtils.getTranslatingValidator(validator, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
         } else {
+            if(validationMethod == ValidationMethod.EXTERNAL_VALIDATOR){
+                throw new IllegalArgumentException("If external validation is required, validator has to be given");
+            }
             this.validator = null;
         }
-    
+
+        this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<ActionDescription>();
         actionsToPerform = new ArrayDeque<IAction>();
     }
@@ -69,6 +100,15 @@ public class Planning4JController extends AbstractAgentController<IAction, IPDDL
     public void init(IEnvironment<IAction> environment, IPDDLRepresentation<IAction> representation, AgentBody body, long stepDelay) {
         super.init(environment, representation, body, stepDelay);
         domainProvider = new PDDLObjectDomainProvider(representation.getDomain(body));
+        if(validationMethod == ValidationMethod.ENVIRONMENT_SIMULATION_NEXT_STEP || validationMethod == ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN){
+            if(!(environment instanceof ISimulableEnvironment)){
+                throw new AisteException("Validation method set to environment simulation, but the environment is not simulable");
+            }
+            if(!(representation instanceof ISimulableEnvironmentRepresentation)){
+                throw new AisteException("Validation method set to environment simulation, but the representation is not simulable");
+            }
+            
+        }
     }
 
 
@@ -120,26 +160,12 @@ public class Planning4JController extends AbstractAgentController<IAction, IPDDL
                     startPlanning();
                 }
             } else {
-                /*
-                * Validate current state of plan
-                */
-                if(validator != null){
-                    try {
-                        long validationStart = System.currentTimeMillis();
-                        IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody())), new ArrayList<ActionDescription>(currentPlan));
-                        logger.debug("Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
-                        if(!validationResult.isValid()){
-                            logger.info("Plan invalidated.");
-                            if(logger.isDebugEnabled()){
-                                logger.debug("Validation output:\n" + validationResult.getValidationOutput());
-                            }
-                            currentPlan.clear();
-                            startPlanning();
-                        }
-                    } catch (ValidationException ex){
-                        logger.error("Exception in validating plan." + ex );
-                    }
+                if(!validatePlan()){
+                    logger.info("Plan invalidated.");                    
+                    currentPlan.clear();
+                    actionsToPerform.clear();
                 }
+
                 if(!currentPlan.isEmpty()){
                     actionsToPerform.addAll(representation.translateAction(currentPlan.poll()));
                 }
@@ -151,6 +177,65 @@ public class Planning4JController extends AbstractAgentController<IAction, IPDDL
         
     }
 
+    /**
+     * Validate current plan
+     * @return true, if plan is valid, false otherwise
+     */
+    protected boolean validatePlan() {
+        switch (validationMethod){
+            case NONE :
+                return true;
+            case EXTERNAL_VALIDATOR: {
+                try {
+                    long validationStart = System.currentTimeMillis();
+                    IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody())), new ArrayList<ActionDescription>(currentPlan));
+                    logger.debug("Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
+                    if (!validationResult.isValid()) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Validation output:\n" + validationResult.getValidationOutput());
+                        }
+                        return false;
+                    } else {
+                        return true;
+                    }
+                } catch (ValidationException ex) {
+                    logger.error("Exception in validating plan." + ex);
+                    return true;
+                }
+            }
+            case ENVIRONMENT_SIMULATION_NEXT_STEP: {
+                throw new UnsupportedOperationException("One-step validation is not supported yet.");
+            }
+            case ENVIRONMENT_SIMULATION_WHOLE_PLAN : {
+                List<IAction> restOfPlanCopy = new ArrayList<IAction>(actionsToPerform.size() + currentPlan.size());
+                
+                //those casts are safe, beacause types are enforced in constructor if validation is set to environment simulation
+                ISimulableEnvironment environmentCopy = ((ISimulableEnvironment)environment).cloneForSimulation();
+                ISimulablePDDLRepresentation simulableRepresentaion = (ISimulablePDDLRepresentation)representation;
+                simulableRepresentaion.setEnvironment(environmentCopy);
+                
+                try {
+                    restOfPlanCopy.addAll(actionsToPerform);
+                    for(ActionDescription ac : currentPlan){
+                        restOfPlanCopy.addAll(representation.translateAction(ac));
+                    }
+                    for(IAction act : restOfPlanCopy){
+                        environmentCopy.simulateOneStep(Collections.singletonMap(body, act));
+                        if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
+                            return false;
+                        }                        
+                    }
+                    return simulableRepresentaion.isGoalState(body);
+                } finally {
+                    simulableRepresentaion.setEnvironment(environment);
+                }
+            }
+        }
+        
+        throw new IllegalStateException("Unrecognized validation method: " + validationMethod);
+    }
+    
+    
     @Override
     public void start() {
         super.start();

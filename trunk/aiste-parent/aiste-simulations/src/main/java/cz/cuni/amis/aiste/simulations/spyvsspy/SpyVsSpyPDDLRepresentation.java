@@ -19,8 +19,8 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
-import cz.cuni.amis.aiste.environment.IPDDLRepresentation;
-import cz.cuni.amis.aiste.environment.ISimulableEnvironmentRepresentation;
+import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
+import cz.cuni.amis.aiste.environment.ISimulablePDDLRepresentation;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.pddl.*;
 import java.util.ArrayList;
@@ -31,7 +31,8 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyAction>, ISimulableEnvironmentRepresentation<SpyVsSpy> {
+public class SpyVsSpyPDDLRepresentation 
+    implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy>, IActionFailureRepresentation {
     
     
     private SpyVsSpy environment;
@@ -308,6 +309,26 @@ public class SpyVsSpyPDDLRepresentation implements IPDDLRepresentation<SpyVsSpyA
             throw new IllegalArgumentException("Environment could only be set to a copy of the original env.");
         }
         this.environment = env;
+    }
+
+    @Override
+    public boolean lastActionFailed(AgentBody body) {
+        return environment.lastActionFailed(body);
+    }
+
+    @Override
+    public boolean isGoalState(AgentBody body) {
+        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
+        
+        if(info.locationIndex != environment.defs.destination){
+            return false;
+        }
+        
+        if(info.itemsCarried.size() != environment.defs.numItemTypes){
+            return false;
+        }
+        
+        return true;
     }
  
     

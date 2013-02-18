@@ -99,11 +99,12 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
             throw new SimulationException("Trying to simulate a finished environment");
         }
         if(activeBodies.isEmpty()){
-            logger.info("No more active bodies, finishign simulation");            
+            logger.info("No more active bodies, finishing simulation");            
             this.setFinished(true);
             return Collections.EMPTY_MAP;
         }
         
+        timeStep++;
         Map<AgentBody, Double> result = nextStepInternal();
         for(Map.Entry<AgentBody, Double> rewardEntry : result.entrySet() ){
             if(!removedBodies.contains(rewardEntry.getKey())){
@@ -111,7 +112,6 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
                 totalRewards.put(rewardEntry.getKey(), totalRewards.get(rewardEntry.getKey()) + rewardEntry.getValue());
             }
         }
-        timeStep++;
         return result;
     }
     
@@ -147,11 +147,17 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
         activeBodies.add(newBody);
         totalRewards.put(newBody, 0d);
                 
+        afterAgentBodyCreated(newBody);        
+        
         return newBody;
         
     }
     
     protected abstract AgentBody createAgentBodyInternal(IAgentType type);
+    
+    protected void afterAgentBodyCreated(AgentBody body){
+        
+    }
 
     @Override
     public void init() {

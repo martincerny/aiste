@@ -84,7 +84,7 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
 
     @Override
     protected AgentBody createAgentBodyInternal(IAgentType type) {
-        theBody = new AgentBody(type);
+        theBody = new AgentBody(0, type);
         return theBody;
     }
 
