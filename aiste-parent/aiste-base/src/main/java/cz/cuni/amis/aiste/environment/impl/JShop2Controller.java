@@ -14,15 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment;
-
-import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.PDDLDomain;
-import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+package cz.cuni.amis.aiste.environment.impl;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface IPDDLRepresentation<ACTION extends IAction> extends IPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription, ACTION> {
+public class JShop2Controller {
+    
 }

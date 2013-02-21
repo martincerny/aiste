@@ -23,5 +23,10 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
         </dependency>
+        <dependency>
+            <groupId>net.sf.shop</groupId>
+            <artifactId>jshop2</artifactId>
+            <version>1.0.3a-SNAPSHOT</version>
+        </dependency>        
     </dependencies>
 </project>
