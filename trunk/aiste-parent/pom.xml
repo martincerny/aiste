@@ -146,6 +146,11 @@
                 <groupId>cz.cuni.amis.planning4j.external</groupId>
                 <artifactId>external-validation</artifactId>
                 <version>${planning4j.version}</version>
+            </dependency>          
+            <dependency>
+                <groupId>cz.cuni.amis</groupId>
+                <artifactId>amis-utils</artifactId>
+                <version>3.5.1-SNAPSHOT</version>
             </dependency>            
             <dependency>
                 <groupId>junit</groupId>

@@ -16,15 +16,16 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import JSHOP2.State;
-import JSHOP2.TaskList;
-
 /**
  *
  * @author Martin Cerny
  */
-public interface IJShop2Problem {
-    String[] getProblemConstants();
-    State getInitialState();
-    TaskList getTaskList();
+public interface ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, ENVIRONMENT extends IEnvironment> 
+extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {    
+    /**
+     * Check whether given body is in goal state. Useful especially for simulations.
+     * @param body
+     * @return 
+     */
+    public boolean isGoalState(AgentBody body);
 }

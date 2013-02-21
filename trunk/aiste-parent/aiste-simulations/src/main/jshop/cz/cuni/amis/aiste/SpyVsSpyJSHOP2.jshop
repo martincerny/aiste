@@ -1,0 +1,134 @@
+(Defdomain SpyVsSpyJSHOP2
+   (
+        ;;operators
+        ;;format : 
+        ;; operator
+        ;;   preconditions
+        ;;   negative effects
+        ;;   possitive effects
+        ;;   [cost] - optional
+
+            (:operator (!move ?from ?to)
+             (    ;(location ?from)  (location ?to)
+                  (player_at ?from)
+                  (adjacent ?from ?to) )
+             ((player_at ?from)) 
+             ((player_at ?to)))
+
+             (:operator (!take ?item)
+                (   ;(object ?item) 
+                    (player_at ?loc) 
+                    (object_at ?item ?loc) 
+                    (not (trap_set ?trap ?loc)) )
+                ( (object_at ?item ?loc) )
+                ( (carrying ?item) ) 
+            )
+
+             (:operator (!remove_trap ?trap)
+                (   ;(trap ?trap) 
+                    (player_at ?loc) 
+                    (trap_set ?trap ?loc) 
+                    (removes_trap ?remover ?trap)
+                    (carrying ?remover)     )
+                (   (carrying ?remover) 
+                    (trap_set ?trap ?loc) )
+                ()
+            )
+
+
+            ;;(:operator (!sample_soil ?x ?s ?p)
+            ;; (    (rover ?x) (store ?s) (waypoint ?p) (at ?x ?p)
+            ;;      (at_soil_sample ?p) (equipped_for_soil_analysis ?x)
+            ;;      (store_of ?s ?x) (empty ?s))
+            ;; ((empty ?s) (at_soil_sample ?p))
+            ;; ((full ?s) (have_soil_analysis ?x ?p)))
+            
+
+
+;----------------------------------------------
+(:operator (!visit ?loc)
+  () ;(location ?loc)
+  ()
+  ((visited ?loc)))
+
+(:operator (!unvisit ?loc)
+  () ;(location ?loc)
+  ((visited ?loc))
+  ())
+
+(:method (move ?to)
+  ((player_at ?from))
+  ((!visit ?from)
+     (move ?from ?to)
+     (!unvisit ?from))
+)
+
+(:method (move ?from ?to)
+Case1    ((player_at ?to))
+         ()
+Case2    ((adjacent ?from ?to))
+         ((!move ?from ?to))
+Case3    ((location ?mid)  ;honestly, I don't know, why this is neccessary
+          (adjacent ?from ?mid)
+          (not (visited ?mid))
+         )
+         ((!move ?from ?mid) (!visit ?mid) (move ?mid ?to) (!unvisit ?mid))
+)
+
+
+;(:method (move ?from ?to)
+;    ((location ?from) (location ?to) )
+;    ((move_locs ?from ?to))
+;)
+
+
+
+(:method (remove_all_traps ?loc)
+NoTraps     ((not (trap_set ?trap ?loc)))
+            ()
+Traps       ((trap_set ?trap ?loc))
+            ((!remove_trap ?trap) (remove_all_traps ?loc))
+     
+)
+
+(:method (have ?item) 
+Has     ( (carrying ?item) )
+        ()
+NotHas  ()
+        ( (take ?item) ) )
+
+
+(:method (secure_loc ?loc)
+Secured       ( (not (trap_set ?trap ?loc)) )
+              ()
+NoRemovers    (     (trap_set ?trap ?loc) 
+                    (forall (?remover) ((removes_trap ?remover ?trap)) ((not (carrying ?remover)))) )
+              ( (removes_trap ?remover ?trap) (take ?remover) )
+Removers      ((forall (?trap) ((trap_set ?trap ?loc)) ((removes_trap ?remover ?trap) (carrying ?remover))))
+              ((move ?loc) (remove_all_traps ?loc))
+
+)
+
+(:method (take ?item) 
+     ((object_at ?item ?loc) )
+     ((take ?item ?loc)) )
+
+
+(:method (take ?item ?loc)
+     ( )
+     ( (secure_loc ?loc) (move ?loc) (!take item) )
+)
+
+
+;Domain axioms
+;"Type inheritance"
+(:- (object ?x) 
+    ((item ?x))
+    ((trap ?x)) 
+    ((trap_remover ?x))
+)
+;----------------------------------------------
+
+
+)
+)
