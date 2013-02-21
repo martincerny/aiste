@@ -16,13 +16,15 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.PDDLDomain;
-import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+import JSHOP2.State;
+import JSHOP2.TaskList;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface IPDDLRepresentation<ACTION extends IAction> extends IPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription, ACTION> {
+public interface IJShop2Problem {
+    String[] getProblemConstants();
+    State initialState();
+    TaskList getTaskList();
 }

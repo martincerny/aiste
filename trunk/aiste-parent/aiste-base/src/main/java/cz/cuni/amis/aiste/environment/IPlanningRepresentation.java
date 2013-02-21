@@ -16,13 +16,15 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import cz.cuni.amis.planning4j.ActionDescription;
-import cz.cuni.amis.planning4j.pddl.PDDLDomain;
-import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+import java.util.List;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface IPDDLRepresentation<ACTION extends IAction> extends IPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription, ACTION> {
+public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction> extends IEnvironmentRepresentation {
+    public DOMAIN getDomain(AgentBody body);
+    public PROBLEM getProblem(AgentBody body);
+    public List<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner);    
+    
 }
