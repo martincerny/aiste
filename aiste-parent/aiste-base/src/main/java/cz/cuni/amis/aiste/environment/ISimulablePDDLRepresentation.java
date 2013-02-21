@@ -16,16 +16,14 @@
  */
 package cz.cuni.amis.aiste.environment;
 
+import cz.cuni.amis.planning4j.ActionDescription;
+import cz.cuni.amis.planning4j.pddl.PDDLDomain;
+import cz.cuni.amis.planning4j.pddl.PDDLProblem;
+
 /**
  *
  * @author Martin Cerny
  */
 public interface ISimulablePDDLRepresentation<ACTION extends IAction, ENVIRONMENT extends IEnvironment> 
-extends IPDDLRepresentation<IAction>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {
-    /**
-     * Check whether given body is in goal state. Useful especially for simulations.
-     * @param body
-     * @return 
-     */
-    public boolean isGoalState(AgentBody body);
+extends ISimulablePlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription, ACTION, ENVIRONMENT>, IPDDLRepresentation<ACTION> {
 }

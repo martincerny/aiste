@@ -31,11 +31,8 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyPDDLRepresentation 
-    implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy>, IActionFailureRepresentation {
-    
-    
-    private SpyVsSpy environment;
+public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyRepresentation 
+    implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy> {
     
     /*
      * PDDL generating stuf
@@ -301,34 +298,6 @@ public class SpyVsSpyPDDLRepresentation
             throw new AisteException("Unrecognized action name: " + actionFromPlanner.getName());
         }
         return actions;
-    }
-
-    @Override
-    public void setEnvironment(SpyVsSpy env) {
-        if(env.defs != this.environment.defs){
-            throw new IllegalArgumentException("Environment could only be set to a copy of the original env.");
-        }
-        this.environment = env;
-    }
-
-    @Override
-    public boolean lastActionFailed(AgentBody body) {
-        return environment.lastActionFailed(body);
-    }
-
-    @Override
-    public boolean isGoalState(AgentBody body) {
-        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
-        
-        if(info.locationIndex != environment.defs.destination){
-            return false;
-        }
-        
-        if(info.itemsCarried.size() != environment.defs.numItemTypes){
-            return false;
-        }
-        
-        return true;
     }
  
     

@@ -20,6 +20,7 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
+import cz.cuni.amis.aiste.simulations.utils.SeedableRandomGraphGenerator;
 import cz.cuni.amis.planning4j.IPlanner;
 import cz.cuni.amis.planning4j.IPlanningResult;
 import cz.cuni.amis.planning4j.pddl.PDDLDomain;
@@ -87,7 +88,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
         generateCycle: for (int trial = 0; trial < MAX_GENERATOR_ROUNDS; trial++) {
 
-            RandomGraphGenerator<SpyVsSpyMapNode, Object> graphGenerator = new RandomGraphGenerator<SpyVsSpyMapNode, Object>(numNodes, (int) ((numNodes * meanNodeDegree) / 2));
+            SeedableRandomGraphGenerator<SpyVsSpyMapNode, Object> graphGenerator = new SeedableRandomGraphGenerator<SpyVsSpyMapNode, Object>(numNodes, (int) ((numNodes * meanNodeDegree) / 2));
             UndirectedGraph<SpyVsSpyMapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpyMapNode, Object>(new EdgeFactory<SpyVsSpyMapNode, Object>() {
 
                 @Override
@@ -98,6 +99,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
             final List<SpyVsSpyMapNode> nodes = new ArrayList<SpyVsSpyMapNode>();
 
+            graphGenerator.setRandomSeed(rand.nextLong());            
             graphGenerator.generateGraph(nodeGraph, new VertexFactory<SpyVsSpyMapNode>() {
 
                 @Override
@@ -209,6 +211,19 @@ public class SpyVsSpyGenerator implements IRandomizable{
                 logger.info("Domain succesfully tested");
             }
             
+            if(logger.isDebugEnabled()){
+                logger.debug("====== Map ==========");
+                for(int i = 0; i < nodes.size(); i++){
+                    StringBuilder nodeInfo = new StringBuilder();
+                    nodeInfo.append("Node ").append(i).append(" -> ");
+                    for(int nodeIndex : neighbours.get(i)){
+                        nodeInfo.append(nodeIndex).append(" ");
+                    }
+                    logger.debug(nodeInfo.toString());
+                }
+                logger.debug("Destination: " + destination);
+                logger.debug("====== Map end ======");
+            }
             
             return spyVsSpyToReturn;
         }

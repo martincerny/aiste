@@ -1,3 +1,4 @@
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -16,7 +17,7 @@
     
     <build>
         <plugins>
-           <plugin>
+            <plugin>
                 <!-- Compile SpyVsSpy SHOP domain into java code. To be replaced with JSHOP Maven plugin (see issue #41) -->
                 <groupId>org.codehaus.mojo</groupId> 
                 <artifactId>exec-maven-plugin</artifactId>
@@ -30,18 +31,35 @@
                         </goals>
                         <configuration>
                             <mainClass>JSHOP2.InternalDomain</mainClass>
-                            <arguments>
-                                <argument>-i</argument>
-                                <argument>${basedir}/src/main/jshop</argument>
-                                <argument>-o</argument>
-                                <argument>${basedir}/target/generated-sources</argument> 
-                                <argument>--no-txt</argument> 
-                                <argument>SpyVsSpyJSHOP2</argument>
-                            </arguments>
                             <executableDependency>
                                 <groupId>net.sf.shop</groupId>
                                 <artifactId>jshop2</artifactId>
                             </executableDependency>
+                            <commandlineArgs>-i ${basedir}/src/main/jshop -o ${basedir}/target/generated-sources/jshop --no-txt cz/cuni/amis/aiste/SpyVsSpyJSHOP2.jshop</commandlineArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <commandlineArgs>${exec.defaultArgs}</commandlineArgs>
+                    <classpathScope>runtime</classpathScope>
+                    <executable>java</executable>
+                </configuration>
+            </plugin>  
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/jshop/</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>
@@ -69,7 +87,6 @@
         <dependency>
             <groupId>cz.cuni.amis</groupId>
             <artifactId>amis-utils</artifactId>
-            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>cz.cuni.amis.planning4j</groupId>

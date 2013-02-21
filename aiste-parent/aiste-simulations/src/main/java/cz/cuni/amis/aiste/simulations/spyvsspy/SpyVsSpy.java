@@ -51,6 +51,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
     Random rand;
 
     SpyVsSpyPDDLRepresentation pDDLRepresentation;
+    SpyVsSpyJShop2Representation jShop2Representation;
     
     /**
      * True if this environment is a clone, created only for simulation
@@ -96,6 +97,9 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         
         pDDLRepresentation = new SpyVsSpyPDDLRepresentation(this);
         registerRepresentation(pDDLRepresentation);
+        
+        jShop2Representation = new SpyVsSpyJShop2Representation(this);
+        registerRepresentation(jShop2Representation);
 
     }
 
@@ -384,6 +388,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
     public SpyVsSpyPDDLRepresentation getpDDLRepresentation() {
         return pDDLRepresentation;
+    }
+
+    public SpyVsSpyJShop2Representation getjShop2Representation() {
+        return jShop2Representation;
     }
 
     

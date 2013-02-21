@@ -16,15 +16,13 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import JSHOP2.State;
-import JSHOP2.TaskList;
+import JSHOP2.Domain;
+import JSHOP2.Predicate;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface IJShop2Problem {
-    String[] getProblemConstants();
-    State getInitialState();
-    TaskList getTaskList();
+public interface ISimulableJShop2Representation<ACTION extends IAction, ENVIRONMENT extends IEnvironment> 
+extends ISimulablePlanningRepresentation<Domain, IJShop2Problem, Predicate, ACTION, ENVIRONMENT>, IJShop2Representation<ACTION> {
 }

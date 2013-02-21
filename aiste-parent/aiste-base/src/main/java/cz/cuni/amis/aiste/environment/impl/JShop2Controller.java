@@ -16,10 +16,131 @@
  */
 package cz.cuni.amis.aiste.environment.impl;
 
+import JSHOP2.*;
+import cz.cuni.amis.aiste.AisteException;
+import cz.cuni.amis.aiste.environment.*;
+import cz.cuni.amis.utils.future.FutureStatus;
+import cz.cuni.amis.utils.future.FutureWithListeners;
+import cz.cuni.amis.utils.future.IFutureWithListeners;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author Martin Cerny
  */
-public class JShop2Controller {
+public class JShop2Controller extends AbstractPlanningController<Domain, IJShop2Problem, Predicate, List<Plan>, IJShop2Representation<IAction>> {
+
+    private Domain domain;
     
+    public JShop2Controller(ValidationMethod validationMethod) {
+        super(validationMethod);
+    }
+
+    @Override
+    public void init(IEnvironment<IAction> environment, IJShop2Representation<IAction> representation, AgentBody body, long stepDelay) {
+        super.init(environment, representation, body, stepDelay);
+        domain = representation.getDomain(body);
+    }
+    
+    
+
+    @Override
+    protected List<Predicate> getActionsFromPlanningResult(List<Plan> result) {
+        double minimalCost = Double.POSITIVE_INFINITY;
+        List<Predicate> bestPlan = null;
+        for (Plan p : result) {
+            if (p.getCost() < minimalCost) {
+                minimalCost = p.getCost();
+                bestPlan = p.getOps();
+            }
+        }
+        return bestPlan;
+    }
+
+    @Override
+    protected boolean isPlanningResultSucces(List<Plan> result) {
+        return !result.isEmpty();
+    }
+
+    @Override
+    protected void getDebugRepresentationOfPlannerActions(List<Predicate> plannerActions, StringBuilder planSB) {
+        for(Predicate act : plannerActions){
+            JShop2Utils.GroundActionInfo info = JShop2Utils.getGroundInfo(act);
+            planSB.append(" (").append(domain.getPrimitiveTasks()[info.actionId]);
+            for(int constantIndex  : info.params){
+                planSB.append(" ").append(domain.getConstant(constantIndex));
+            }
+            planSB.append(")");
+        }
+    }
+
+    
+    
+    @Override
+    protected IFutureWithListeners<List<Plan>> startPlanningProcess() {
+        final JShop2PlanningFuture future = new JShop2PlanningFuture();
+        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(domain, representation.getProblem(body));
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    List<Plan> planningResult = planningProcess.execute();
+                    synchronized (future) {
+                        if (!future.isCancelled()) {
+                            if (planningResult != null) {
+                                future.setResult(planningResult);
+                            } else {
+                                //null result signalls cancellation
+                                future.cancel(true);
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    if (future.getStatus() == FutureStatus.FUTURE_IS_BEING_COMPUTED) {
+                        future.computationException(ex);
+                    } else {
+                        throw new AisteException("Exception occurred in processing planning future result", ex);
+                    }
+                }
+            }
+        }).start();
+        
+        return future;
+    }
+
+    @Override
+    public Class getRepresentationClass() {
+        return IJShop2Representation.class;
+    }
+
+    private class JShop2PlanningFuture extends FutureWithListeners<List<Plan>> {
+    }
+
+    private class JShop2PlanningProcess {
+
+        Domain domain;
+        IJShop2Problem problem;
+
+        public JShop2PlanningProcess(Domain domain, IJShop2Problem problem) {
+            this.domain = domain;
+            this.problem = problem;
+        }
+
+        public List<Plan> execute() {
+                //initialization is now done in representation.getDomain()... Curse static objects!
+		//TermConstant.initialize(domain.getDomainConstantCount() + problem.getProblemConstants().length);
+
+		domain.setProblemConstants(problem.getProblemConstants());
+
+		State s = problem.getInitialState();
+
+		JSHOP2.initialize(domain, s);
+
+                LinkedList p = JSHOP2.findPlans(problem.getTaskList(), 1 /*Number of plans*/);
+                
+                return p;
+	}
+    }
 }

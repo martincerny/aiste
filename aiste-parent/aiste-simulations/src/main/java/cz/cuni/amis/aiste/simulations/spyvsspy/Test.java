@@ -17,6 +17,8 @@
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController;
+import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutor;
@@ -51,23 +53,29 @@ public class Test {
         ValValidator.extractAndPrepareValidator(plannersDirectory);        
  //       IValidator validator = new ValValidator(plannersDirectory);
         IValidator validator = null;
+        
+        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,6,2,2,2,0.05, planner);
+        generator.setRandomSeed(5845462223L);        
  
-        SpyVsSpy b = new SpyVsSpyGenerator(2,6,2,2,2,0.05, planner).generateEnvironment();
+        SpyVsSpy b = generator.generateEnvironment();
         b.setRandomSeed(1234878864L);
-        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
-        IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
+        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.NONE);        
+        //IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
+        //IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 
         DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(200);
         executor.setDebugMode(true);
         executor.setEnvironment(b);
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
+        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
+        //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
+        //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(20);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(10);
 
         System.out.println("Results: ");
-        System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());
-        System.out.println("Player2: "+ result.getAgentResults().get(1).getTotalReward());
+        for(int i = 0; i < result.getAgentResults().size(); i++){
+            System.out.println("Player " + i + ": " + result.getAgentResults().get(i).getTotalReward());
+        }
          
 
         /*
