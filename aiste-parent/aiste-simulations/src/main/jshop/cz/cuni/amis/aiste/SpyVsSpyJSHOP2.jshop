@@ -9,14 +9,14 @@
         ;;   [cost] - optional
 
             (:operator (!move ?from ?to)
-             (    ;(location ?from)  (location ?to)
+             (    (location ?from)  (location ?to)
                   (player_at ?from)
                   (adjacent ?from ?to) )
              ((player_at ?from)) 
              ((player_at ?to)))
 
              (:operator (!take ?item)
-                (   ;(object ?item) 
+                (   (object ?item) 
                     (player_at ?loc) 
                     (object_at ?item ?loc) 
                     (not (trap_set ?trap ?loc)) )
@@ -25,9 +25,10 @@
             )
 
              (:operator (!remove_trap ?trap)
-                (   ;(trap ?trap) 
+                (   (trap ?trap) 
                     (player_at ?loc) 
                     (trap_set ?trap ?loc) 
+                    (trap_remover ?remover)
                     (removes_trap ?remover ?trap)
                     (carrying ?remover)     )
                 (   (carrying ?remover) 
