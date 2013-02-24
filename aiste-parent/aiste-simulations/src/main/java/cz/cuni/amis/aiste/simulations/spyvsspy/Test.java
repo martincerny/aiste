@@ -55,7 +55,8 @@ public class Test {
         IValidator validator = null;
         
         SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,6,2,2,2,0.05, planner);
-        generator.setRandomSeed(5845462223L);        
+//        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, planner);        
+        generator.setRandomSeed(5847468223L);        
  
         SpyVsSpy b = generator.generateEnvironment();
         b.setRandomSeed(1234878864L);

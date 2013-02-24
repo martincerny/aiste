@@ -307,7 +307,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
             }
             for (int trapType : mapNode.traps) {
                 initialState.add(new Predicate(trapSetPredicateIndex, 0, createTermList(trapToConstants.get(trapType).get(nextTrapIndices[trapType]), locationIdToConstants[mapNode.index])));
-                nextRemoverIndices[trapType]++;
+                nextTrapIndices[trapType]++;
             }
             for (int itemType : mapNode.items){
                 initialState.add(new Predicate(objectAtPredicateIndex, 0, createTermList(itemIdToConstants[itemType], locationIdToConstants[mapNode.index])));
