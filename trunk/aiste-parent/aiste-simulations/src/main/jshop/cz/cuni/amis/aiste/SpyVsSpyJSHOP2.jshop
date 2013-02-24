@@ -58,18 +58,21 @@
   ())
 
 (:method (move ?to)
-  ((player_at ?from))
-  ((!visit ?from)
-     (move ?from ?to)
-     (!unvisit ?from))
+Case1    ((player_at ?to))
+         ()
+Case2    ((player_at ?from))
+         ((!visit ?from)
+             (move ?from ?to)
+             (!unvisit ?from))
 )
 
 (:method (move ?from ?to)
-Case1    ((player_at ?to))
-         ()
+;Case1 is probably redundant due to Case1 in (move ?to) - this is never called directly
+;Case1    ((player_at ?to))
+;         ()
 Case2    ((adjacent ?from ?to))
          ((!move ?from ?to))
-Case3    ((location ?mid)  ;honestly, I don't know, why this is neccessary
+Case3    ((location ?mid)  ;honestly, I don't know, why requiring mid to be a location is neccessary (it should be given by the adjacent requirement])
           (adjacent ?from ?mid)
           (not (visited ?mid))
          )
@@ -117,7 +120,7 @@ Removers      ((forall (?trap) ((trap_set ?trap ?loc)) ((removes_trap ?remover ?
 
 (:method (take ?item ?loc)
      ( )
-     ( (secure_loc ?loc) (move ?loc) (!take item) )
+     ( (secure_loc ?loc) (move ?loc) (!take ?item) )
 )
 
 
