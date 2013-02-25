@@ -57,6 +57,18 @@
   ((visited ?loc))
   ())
 
+(:operator (!start_securing ?loc)
+  () ;(location ?loc)
+  ()
+  ((securing ?loc)))
+
+
+(:operator (!finish_securing ?loc)
+    ()
+    ((securing ?loc))
+    ()
+)
+
 (:method (move ?to)
 Case1    ((player_at ?to))
          ()
@@ -103,24 +115,32 @@ NotHas  ()
 
 
 (:method (secure_loc ?loc)
-Secured       ( (not (trap_set ?trap ?loc)) )
+Secured       ( (secure ?loc) )
               ()
-NoRemovers    (     (trap_set ?trap ?loc) 
-                    (forall (?remover) ((removes_trap ?remover ?trap)) ((not (carrying ?remover)))) )
-              ( (removes_trap ?remover ?trap) (take ?remover) )
 Removers      ((forall (?trap) ((trap_set ?trap ?loc)) ((removes_trap ?remover ?trap) (carrying ?remover))))
               ((move ?loc) (remove_all_traps ?loc))
+NoRemovers    (     (trap_set ?trap ?loc) 
+                    (forall (?remover) ((removes_trap ?remover ?trap)) ((not (carrying ?remover)))) 
+                    (removes_trap ?remover_to_take ?trap)
+              )
+              ( (take ?remover_to_take) (secure_loc ?loc) )
 
 )
 
 (:method (take ?item) 
-     ((object_at ?item ?loc) )
-     ((take ?item ?loc)) )
+TakeUnsecured       ((object_at ?item ?loc) (secure ?loc ) )
+                    ((take ?item ?loc)) 
+TakeHaveRemovers    ((object_at ?item ?loc) 
+                        (forall (?trap) ((trap_set ?trap ?loc)) ((removes_trap ?remover ?trap) (carrying ?remover))))
+                    ((take ?item ?loc)) 
+TakeSecured       ((object_at ?item ?loc) )
+                    ((take ?item ?loc)) 
+)
 
 
 (:method (take ?item ?loc)
-     ( )
-     ( (secure_loc ?loc) (move ?loc) (!take ?item) )
+     ( (not (securing ?loc) ) )
+     ( (!start_securing ?loc) (secure_loc ?loc) (!finish_securing ?loc) (move ?loc) (!take ?item) ) 
 )
 
 
@@ -130,6 +150,9 @@ Removers      ((forall (?trap) ((trap_set ?trap ?loc)) ((removes_trap ?remover ?
     ((item ?x))
     ((trap ?x)) 
     ((trap_remover ?x))
+)
+(:- (secure ?loc) 
+    (not (trap_set ?trap ?loc) )
 )
 ;----------------------------------------------
 
