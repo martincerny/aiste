@@ -95,7 +95,10 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
         ignoredActionsId = new HashSet<Integer>();
         Set<String> ignoredActionsNames = new HashSet<String>(Arrays.asList(new String[]{
             "!visit",
-            "!unvisit"
+            "!unvisit",
+            "!start_securing",
+            "!stop_securing",
+            "!finish_securing"
         }));
         
         //analyze action names
@@ -188,7 +191,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
             }
             for(int trapType : mapNode.traps){
                 trapToConstants.get(trapType).add(nextConstantIndex);
-                constantsToTrapRemoverType.put(nextConstantIndex, trapType);
+                constantsToTrapType.put(nextConstantIndex, trapType);
                 additionalConstantNames[nextConstantIndex - problemConstantOffset] = "trap_"  + trapType + "_" + trapToConstants.get(trapType).size();
                 nextConstantIndex++;
             }
@@ -198,7 +201,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
             for(int trap = 0; trap < environment.defs.trapCounts[trapType]; trap++){
                 for(int i  = 0; i < environment.defs.maxPlayers; i++){
                     trapToConstants.get(trapType).add(nextConstantIndex);
-                    constantsToTrapRemoverType.put(nextConstantIndex, trapType);
+                    constantsToTrapType.put(nextConstantIndex, trapType);
                     additionalConstantNames[nextConstantIndex - problemConstantOffset] = "trap_"  + trapType + "_" + trapToConstants.get(trapType).size();
                     nextConstantIndex++;
                 }

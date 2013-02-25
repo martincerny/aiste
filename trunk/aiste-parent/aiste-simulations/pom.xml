@@ -35,7 +35,7 @@
                                 <groupId>net.sf.shop</groupId>
                                 <artifactId>jshop2</artifactId>
                             </executableDependency>
-                            <commandlineArgs>-i ${basedir}/src/main/jshop -o ${basedir}/target/generated-sources/jshop --no-txt cz/cuni/amis/aiste/SpyVsSpyJSHOP2.jshop</commandlineArgs>
+                            <commandlineArgs>-i "${basedir}/src/main/jshop" -o "${basedir}/target/generated-sources/jshop" --no-txt cz/cuni/amis/aiste/SpyVsSpyJSHOP2.jshop</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

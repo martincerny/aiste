@@ -21,6 +21,7 @@ import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
 import cz.cuni.amis.aiste.simulations.utils.SeedableRandomGraphGenerator;
+import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.IPlanner;
 import cz.cuni.amis.planning4j.IPlanningResult;
 import cz.cuni.amis.planning4j.pddl.PDDLDomain;
@@ -147,12 +148,20 @@ public class SpyVsSpyGenerator implements IRandomizable{
             }
             //Generate items
 
-            double itemP = ((double) maxPlayers) / (maxPlayers + 4); //the value of p is chosen se that mean number of items is maxPlayers / 2
+            /**
+             * the value of p is chosen so that mean number of items is maxPlayers / 2  
+             * given r = 2 and desired mean x, we get p = x / (2 - x)
+             * our desired mean is (max_players / 2) - 0.5 , so we get:
+             */
+            double itemP = ((double) maxPlayers - 1) / (maxPlayers + 3); 
             DiscreteDistributionInt itemCountDistribution = new NegativeBinomialDist(2, itemP);
 
 
             for (int itemType = 0; itemType < numItemTypes; itemType++) {
-                int numItemInstances = Math.min(itemCountDistribution.inverseFInt(rand.nextDouble()), numNodes);
+                int numItemInstances = Math.min(itemCountDistribution.inverseFInt(rand.nextDouble()) , numNodes);
+                if(numItemInstances == 0){
+                    numItemInstances = 1; //without a single instance of the item, the map is not solvable
+                }
                 for (SpyVsSpyMapNode nodeWithItem : RandomUtils.randomSample(nodes, numItemInstances, rand)) {
 
                     nodeWithItem.getItems().add(itemType);
@@ -206,6 +215,15 @@ public class SpyVsSpyGenerator implements IRandomizable{
                     if(!testResult.isSuccess()){
                         logger.info("Domain could not be solved for player " + body.getId() + ", generating new one.");
                         continue generateCycle;
+                    } else {
+                        logger.info("Domain solvable for player " + body.getId() + " in " + testResult.getPlan().size() + " actions.");
+                        if(logger.isDebugEnabled()){
+                            StringBuilder solvingPlan = new StringBuilder();
+                            for(ActionDescription ad: testResult.getPlan()){
+                                solvingPlan.append(ad.toString()).append(" ");
+                            }
+                            logger.debug("Plan to solve: " + solvingPlan.toString());
+                        }
                     }
                 }
                 logger.info("Domain succesfully tested");
