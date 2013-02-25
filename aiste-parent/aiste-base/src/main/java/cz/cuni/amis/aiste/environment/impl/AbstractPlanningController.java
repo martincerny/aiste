@@ -130,7 +130,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                 }
 
                 while(actionsToPerform.isEmpty() && !currentPlan.isEmpty()){
-                    actionsToPerform.addAll(representation.translateAction(currentPlan.poll()));
+                    actionsToPerform.addAll(representation.translateAction(currentPlan.poll(), body));
                 }
             }
         }
@@ -174,7 +174,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                 try {
                     restOfPlanCopy.addAll(actionsToPerform);
                     for(PLANNER_ACTION ac : currentPlan){
-                        restOfPlanCopy.addAll(representation.translateAction(ac));
+                        restOfPlanCopy.addAll(representation.translateAction(ac, body));
                     }
                     for(IAction act : restOfPlanCopy){
                         environmentCopy.simulateOneStep(Collections.singletonMap(body, act));

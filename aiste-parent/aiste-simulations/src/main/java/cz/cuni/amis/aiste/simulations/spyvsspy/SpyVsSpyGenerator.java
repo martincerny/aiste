@@ -136,7 +136,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
 
             int[] trapsCarriedCounts = new int[numTrapTypes];
-            double trapsCarriedP = ((double) (numNodes * numTrapTypes)) / ((numNodes * numTrapTypes) + 10); //the value of p is chosen se that mean number of traps is numNodes / numTrapTypes * 5
+            double trapsCarriedP = ((double) (numNodes * numTrapTypes)) / ((double)(numNodes * numTrapTypes) + 10); //the value of p is chosen se that mean number of traps is numNodes / numTrapTypes * 5
             DiscreteDistributionInt trapCountDistribution = new NegativeBinomialDist(2, trapsCarriedP);
             for (int i = 0; i < numTrapTypes; i++) {
                 trapsCarriedCounts[i] = trapCountDistribution.inverseFInt(rand.nextDouble());
@@ -153,7 +153,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
              * given r = 2 and desired mean x, we get p = x / (2 - x)
              * our desired mean is (max_players / 2) - 0.5 , so we get:
              */
-            double itemP = ((double) maxPlayers - 1) / (maxPlayers + 3); 
+            double itemP = ((double) maxPlayers - 1) / (double)(maxPlayers + 3); 
             DiscreteDistributionInt itemCountDistribution = new NegativeBinomialDist(2, itemP);
 
 

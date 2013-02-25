@@ -268,7 +268,7 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyRepresentation
     }
 
     @Override
-    public List<? extends SpyVsSpyAction> translateAction(ActionDescription actionFromPlanner) {
+    public List<? extends SpyVsSpyAction> translateAction(ActionDescription actionFromPlanner, AgentBody body) {
         List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(1);
         if (actionFromPlanner.getName().equalsIgnoreCase(moveAction.getName())) {
             int targetLocation = extractActionParameter(actionFromPlanner, 1, LOCATION_PREFIX);
