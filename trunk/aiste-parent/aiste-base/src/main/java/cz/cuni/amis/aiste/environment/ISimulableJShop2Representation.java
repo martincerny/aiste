@@ -16,7 +16,7 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import JSHOP2.Domain;
+import JSHOP2.JSHOP2;
 import JSHOP2.Predicate;
 
 /**
@@ -24,5 +24,5 @@ import JSHOP2.Predicate;
  * @author Martin Cerny
  */
 public interface ISimulableJShop2Representation<ACTION extends IAction, ENVIRONMENT extends IEnvironment> 
-extends ISimulablePlanningRepresentation<Domain, IJShop2Problem, Predicate, ACTION, ENVIRONMENT>, IJShop2Representation<ACTION> {
+extends ISimulablePlanningRepresentation<JSHOP2, IJShop2Problem, Predicate, ACTION, ENVIRONMENT>, IJShop2Representation<ACTION> {
 }

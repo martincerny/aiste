@@ -25,6 +25,6 @@ import java.util.List;
 public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction> extends IEnvironmentRepresentation {
     public DOMAIN getDomain(AgentBody body);
     public PROBLEM getProblem(AgentBody body);
-    public List<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner);    
+    public List<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner, AgentBody body);    
     
 }

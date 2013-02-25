@@ -34,13 +34,7 @@ import org.apache.log4j.Logger;
  */
 public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation implements ISimulableJShop2Representation<SpyVsSpyAction, SpyVsSpy> {
 
-    private final cz.cuni.amis.aiste.SpyVsSpyJSHOP2 domain;
     private final Logger logger = Logger.getLogger(SpyVsSpyJShop2Representation.class);
-
-    int locationPredicateIndex;
-    int removesTrapPredicateIndex;
-    int trapSetPredicateIndex;    
-    int objectAtPredicateIndex;
 
     int[] locationIdToConstants;
     Map<Integer, Integer> constantsToLocationId;
@@ -56,21 +50,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
     
     String[] additionalConstantNames;
     
-    int moveActionId;
-    int takeActionId;
-    int removeTrapActionId;
-    
-    int haveMethodId;
-    int moveMethodId;
-    
-    int playerAtPredicateId;
-    int adjacentPredicateId;
-    int locationPredicateId;
-    int carryingPredicateId;
-    int removerPredicateId;
-    int trapPredicateId;
-    int itemPredicateId;
-    
+    Map<AgentBody, JSHOP2> jshops = new HashMap<AgentBody, JSHOP2>();
     
     boolean termsInitialized = false;
     
@@ -84,73 +64,18 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
 
     public SpyVsSpyJShop2Representation(SpyVsSpy environment) {
         this.environment = environment;
-        
-        initializeTermConstants();
-        
-        domain = new SpyVsSpyJSHOP2();
-        
+                
         /**
          * Analyze the domain
          */
-        ignoredActionsId = new HashSet<Integer>();
-        Set<String> ignoredActionsNames = new HashSet<String>(Arrays.asList(new String[]{
-            "!visit",
-            "!unvisit",
-            "!start_securing",
-            "!stop_securing",
-            "!finish_securing"
+        ignoredActionsId = new HashSet<Integer>(Arrays.asList(new Integer[] {
+            SpyVsSpyJSHOP2.PRIMITIVE_VISIT,
+            SpyVsSpyJSHOP2.PRIMITIVE_UNVISIT,
+            SpyVsSpyJSHOP2.PRIMITIVE_FINISH_SECURING,
+            SpyVsSpyJSHOP2.PRIMITIVE_START_SECURING,
         }));
         
-        //analyze action names
-        for(int i = 0; i < domain.getPrimitiveTasks().length; i++){
-            String currentAction = domain.getPrimitiveTasks()[i];
-            if(currentAction.equals("!move")){
-                moveActionId = i;
-            } else if(currentAction.equals("!take")){
-                takeActionId = i;
-            } else if(currentAction.equals("!remove_trap")) {
-                removeTrapActionId = i;
-            }
-            else if(ignoredActionsNames.contains(currentAction)){
-                ignoredActionsId.add(i);
-            }
-        }
-        
-        for(int i = 0; i < domain.getDomainConstantCount(); i++){
-            String currentConstant = domain.getDomainConstant(i);
-            if(currentConstant.equals("player_at")){
-                playerAtPredicateId = i;
-            } else if(currentConstant.equals("adjacent")){
-                adjacentPredicateId = i;
-            } else if(currentConstant.equals("location")){
-                locationPredicateId = i;
-            } else if(currentConstant.equals("object_at")){
-                objectAtPredicateIndex = i;
-            } else if(currentConstant.equals("trap_set")){
-                trapSetPredicateIndex = i;
-            } else if(currentConstant.equals("removes_trap")){
-                removesTrapPredicateIndex = i;
-            }  else if(currentConstant.equals("carrying")){
-                carryingPredicateId = i;
-            } else if(currentConstant.equals("trap")){
-                trapPredicateId = i;
-            } else if(currentConstant.equals("item")){
-                itemPredicateId = i;
-            } else if(currentConstant.equals("trap_remover")){
-                removerPredicateId = i;
-            }
-        }
-        
-        for(int i = 0; i < domain.getCompoundTasks().length; i++){
-            String currentTask = domain.getCompoundTasks()[i];
-            if(currentTask.equals("move")){
-                moveMethodId = i;
-            }
-            else if(currentTask.equals("have")){
-                haveMethodId = i;
-            }            
-        }
-        
+                
         /**
          * Create common parts of problem spec
          */
@@ -160,7 +85,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
         constantsToLocationId = new HashMap<Integer, Integer>();
         additionalConstantNames = new String[getNumAdditionalConstants()];
         
-        int problemConstantOffset = domain.getDomainConstantCount();
+        int problemConstantOffset = SpyVsSpyJSHOP2.NUM_CONSTANTS;
         int nextConstantIndex = problemConstantOffset;
 
 
@@ -217,61 +142,26 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
             nextConstantIndex++;
         }
         
-        /**
-         * Create static predicates
-         */
-        
-        staticDomainInfo = new ArrayList<Predicate>();
-        for(SpyVsSpyMapNode node : environment.nodes){
-            staticDomainInfo.add(new Predicate(locationPredicateId, 0, createTermList(locationIdToConstants[node.index])));
-        }
-                
-        for(Map.Entry<Integer,java.util.List<Integer>> neighbourEntry : environment.defs.neighbours.entrySet()){
-            int from = neighbourEntry.getKey();
-            for(int to : neighbourEntry.getValue()){
-                staticDomainInfo.add(new Predicate(adjacentPredicateId, 0, createTermList(locationIdToConstants[from], locationIdToConstants[to])));
-            }
-        }
-        
-        for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
-            for(int removerId: trapRemoversToConstants.get(trapType)){
-                for(int trapId: trapToConstants.get(trapType)){
-                    staticDomainInfo.add(new Predicate(removesTrapPredicateIndex,  0, createTermList(removerId, trapId)));
-                }
-            }
-        }
-        
-        for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
-            for(int removerId: trapRemoversToConstants.get(trapType)){
-                staticDomainInfo.add(new Predicate(removerPredicateId,  0, createTermList(removerId)));
-            }
-            for(int trapId: trapToConstants.get(trapType)){
-                staticDomainInfo.add(new Predicate(trapPredicateId,  0, createTermList(trapId)));
-            }
-        }
-        
-        for(int itemType = 0; itemType < environment.defs.numItemTypes; itemType++){
-            staticDomainInfo.add(new Predicate(itemPredicateId,  0, createTermList(itemIdToConstants[itemType])));
-        }
         
     }
 
     
     
     @Override
-    public Domain getDomain(AgentBody body) {
-        initializeTermConstants();
-        return domain;
+    public JSHOP2 getDomain(AgentBody body) {
+        JSHOP2 jshop = new JSHOP2();
+        SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop);
+        jshop.initialize(domain, getMaxNumConstants());
+        jshops.put(body, jshop);
+        return jshop;
     }
 
-    private void initializeTermConstants() {
-        if(!termsInitialized){
-            int numAdditionalConstants = getNumAdditionalConstants() ;
+    protected int getMaxNumConstants() {
+        int numAdditionalConstants = getNumAdditionalConstants() ;
             
-            TermConstant.initialize(20 /*Za domenu, nutno staticky*/ + numAdditionalConstants);            
-            termsInitialized = true;
-        }
-    }
+        return (20 /*Za domenu, nutno staticky*/ + numAdditionalConstants);            
+
+    }   
 
     protected int getNumAdditionalConstants() {
         int trapsPerPlayer = 0;
@@ -287,14 +177,56 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
     @Override
     public IJShop2Problem getProblem(AgentBody body) {
         
-        State initialState = new State(domain.getAxioms().length, domain.getAxioms());
+        /**
+         * Create static predicates
+         */
+        JSHOP2 jshop = jshops.get(body);
+        if(jshop == null){
+            throw new IllegalStateException("Getting problem before getting domain");
+        }
+        
+        staticDomainInfo = new ArrayList<Predicate>();
+        for(SpyVsSpyMapNode node : environment.nodes){            
+            staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_LOCATION, 0, createTermList(jshop, locationIdToConstants[node.index])));
+        }
+                
+        for(Map.Entry<Integer,java.util.List<Integer>> neighbourEntry : environment.defs.neighbours.entrySet()){
+            int from = neighbourEntry.getKey();
+            for(int to : neighbourEntry.getValue()){                
+                staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_ADJACENT, 0, createTermList(jshop, locationIdToConstants[from], locationIdToConstants[to])));
+            }
+        }
+        
+        for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
+            for(int removerId: trapRemoversToConstants.get(trapType)){
+                for(int trapId: trapToConstants.get(trapType)){                    
+                    staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_REMOVES_TRAP,  0, createTermList(jshop, removerId, trapId)));
+                }
+            }
+        }
+        
+        for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
+            for(int removerId: trapRemoversToConstants.get(trapType)){                
+                staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_TRAP_REMOVER,  0, createTermList(jshop, removerId)));
+            }
+            for(int trapId: trapToConstants.get(trapType)){ 
+                staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_TRAP,  0, createTermList(jshop, trapId)));
+            }
+        }
+        
+        for(int itemType = 0; itemType < environment.defs.numItemTypes; itemType++){ 
+            staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_ITEM,  0, createTermList(jshop, itemIdToConstants[itemType])));
+        }
+        
+        
+        State initialState = new State(jshop.getDomain().getAxioms().length, jshop.getDomain().getAxioms());
         for(Predicate p : staticDomainInfo){
             initialState.add(p);
         }
         
         SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
         
-        initialState.add(new Predicate(playerAtPredicateId, 0, createTermList(locationIdToConstants[info.locationIndex])));
+        initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_PLAYER_AT, 0, createTermList(jshop, locationIdToConstants[info.locationIndex])));
 
         /**
          * Objects in the environment
@@ -303,33 +235,33 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
         int[] nextRemoverIndices = new int[environment.defs.numTrapTypes];
         for (SpyVsSpyMapNode mapNode : environment.nodes) {
             for (int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++) {
-                for (int remover = 0; remover < mapNode.numTrapRemovers[trapType]; remover++) {
-                    initialState.add(new Predicate(objectAtPredicateIndex, 0, createTermList(trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]), locationIdToConstants[mapNode.index])));
+                for (int remover = 0; remover < mapNode.numTrapRemovers[trapType]; remover++) { 
+                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]), locationIdToConstants[mapNode.index])));
                     nextRemoverIndices[trapType]++;
                 }
             }
-            for (int trapType : mapNode.traps) {
-                initialState.add(new Predicate(trapSetPredicateIndex, 0, createTermList(trapToConstants.get(trapType).get(nextTrapIndices[trapType]), locationIdToConstants[mapNode.index])));
+            for (int trapType : mapNode.traps) { 
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_TRAP_SET, 0, createTermList(jshop, trapToConstants.get(trapType).get(nextTrapIndices[trapType]), locationIdToConstants[mapNode.index])));
                 nextTrapIndices[trapType]++;
             }
             for (int itemType : mapNode.items){
-                initialState.add(new Predicate(objectAtPredicateIndex, 0, createTermList(itemIdToConstants[itemType], locationIdToConstants[mapNode.index])));
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, itemIdToConstants[itemType], locationIdToConstants[mapNode.index])));
             }
         }
         
         /**
          * Objects carried by the player
          */
-        for(int itemType : info.itemsCarried){
-            initialState.add(new Predicate(carryingPredicateId, 0, createTermList(itemIdToConstants[itemType])));
+        for(int itemType : info.itemsCarried){ 
+            initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, itemIdToConstants[itemType])));
         }
         for(int trapType = 0 ; trapType < environment.defs.numTrapTypes; trapType++){
             for(int remover = 0; remover < info.numTrapRemoversCarried[trapType]; remover++){                
-                initialState.add(new Predicate(carryingPredicateId, 0, createTermList(trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]))));
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]))));
                 nextRemoverIndices[trapType]++;
             }
             for(int trap = 0; trap < info.numTrapsCarried[trapType]; trap++){                
-                initialState.add(new Predicate(carryingPredicateId, 0, createTermList(trapToConstants.get(trapType).get(nextTrapIndices[trapType]))));
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, trapToConstants.get(trapType).get(nextTrapIndices[trapType]))));
                 nextTrapIndices[trapType]++;
             }
         }
@@ -338,32 +270,33 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
         TaskList tasks = new TaskList(2, true);
         TaskList itemTasks = new TaskList(environment.defs.numItemTypes, false); //unordered task to gather all items
         for(int i = 0; i < environment.defs.numItemTypes; i++){
-            itemTasks.subtasks[i] = new TaskList(new TaskAtom(new Predicate(haveMethodId, 0, createTermList(itemIdToConstants[i])), false, false));
+            itemTasks.subtasks[i] = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_HAVE, 0, createTermList(jshop, itemIdToConstants[i])), false, false));
         }        
         tasks.subtasks[0] = itemTasks;
-        tasks.subtasks[1] = new TaskList(new TaskAtom(new Predicate(moveMethodId, 0, createTermList(locationIdToConstants[environment.defs.destination])), false, false));
+        tasks.subtasks[1] = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_MOVE, 0, createTermList(jshop, locationIdToConstants[environment.defs.destination])), false, false));
         return new JShop2Problem(additionalConstantNames, initialState, tasks);
     }
 
 
     @Override
-    public java.util.List<? extends SpyVsSpyAction> translateAction(Predicate actionFromPlanner) {
+    public java.util.List<? extends SpyVsSpyAction> translateAction(Predicate actionFromPlanner, AgentBody body) {
         if (!actionFromPlanner.isGround()) {
             throw new AisteException("Cannot translate non-ground action");
         }
 
+        Domain domain = jshops.get(body).getDomain();
         GroundActionInfo info = getGroundInfo(actionFromPlanner);
         String actionName = domain.getPrimitiveTasks()[info.actionId];
         
         
-        if(info.actionId == moveActionId){
+        if(info.actionId == SpyVsSpyJSHOP2.PRIMITIVE_MOVE){
             int constantIndex = info.params.get(1);
             Integer locationId = constantsToLocationId.get(constantIndex);
             if(locationId == null){
                 throw new AisteException("Constant index " + constantIndex + " (" + domain.getConstant(constantIndex) + ") does not correspond to a valid location");
             }
             return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, locationId));
-        } else if(info.actionId == takeActionId){
+        } else if(info.actionId ==  SpyVsSpyJSHOP2.PRIMITIVE_TAKE){
             int constantIndex = info.params.get(0);
             if(constantsToItemId.containsKey(constantIndex)){
                 return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, constantsToItemId.get(constantIndex)));
@@ -372,7 +305,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
             } else {
                 throw new AisteException("Unrecognized object to take");
             }
-        } else if(info.actionId == removeTrapActionId){
+        } else if(info.actionId ==  SpyVsSpyJSHOP2.PRIMITIVE_REMOVE_TRAP){
             return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, constantsToTrapType.get(info.params.get(0))));
         }
         else if (ignoredActionsId.contains(info.actionId)){

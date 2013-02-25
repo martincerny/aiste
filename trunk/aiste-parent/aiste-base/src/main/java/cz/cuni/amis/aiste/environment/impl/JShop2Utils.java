@@ -17,6 +17,7 @@
 
 package cz.cuni.amis.aiste.environment.impl;
 
+import JSHOP2.JSHOP2;
 import JSHOP2.Predicate;
 import JSHOP2.Term;
 import JSHOP2.TermConstant;
@@ -30,10 +31,10 @@ import java.util.List;
  * @author Martin Cerny
  */
 public class JShop2Utils {
-    public static TermList createTermList(int ... constantIndices){
+    public static TermList createTermList(JSHOP2 jshop, int ... constantIndices){
         TermList ret = TermList.NIL;
         for(int i = constantIndices.length - 1; i >= 0; i--){
-            ret = new TermList(TermConstant.getConstant(constantIndices[i]), ret);
+            ret = new TermList(jshop.getConstant(constantIndices[i]), ret);
         }
         return ret;
     }

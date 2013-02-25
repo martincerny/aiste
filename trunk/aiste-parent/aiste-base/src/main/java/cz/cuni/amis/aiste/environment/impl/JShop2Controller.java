@@ -29,9 +29,9 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class JShop2Controller extends AbstractPlanningController<Domain, IJShop2Problem, Predicate, List<Plan>, IJShop2Representation<IAction>> {
+public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2Problem, Predicate, List<Plan>, IJShop2Representation<IAction>> {
 
-    private Domain domain;
+    private JSHOP2 jshop;
     
     public JShop2Controller(ValidationMethod validationMethod) {
         super(validationMethod);
@@ -40,7 +40,7 @@ public class JShop2Controller extends AbstractPlanningController<Domain, IJShop2
     @Override
     public void init(IEnvironment<IAction> environment, IJShop2Representation<IAction> representation, AgentBody body, long stepDelay) {
         super.init(environment, representation, body, stepDelay);
-        domain = representation.getDomain(body);
+        jshop = representation.getDomain(body);
     }
     
     
@@ -67,9 +67,9 @@ public class JShop2Controller extends AbstractPlanningController<Domain, IJShop2
     protected void getDebugRepresentationOfPlannerActions(List<Predicate> plannerActions, StringBuilder planSB) {
         for(Predicate act : plannerActions){
             JShop2Utils.GroundActionInfo info = JShop2Utils.getGroundInfo(act);
-            planSB.append(" (").append(domain.getPrimitiveTasks()[info.actionId]);
+            planSB.append(" (").append(jshop.getDomain().getPrimitiveTasks()[info.actionId]);
             for(int constantIndex  : info.params){
-                planSB.append(" ").append(domain.getConstant(constantIndex));
+                planSB.append(" ").append(jshop.getConstant(constantIndex));
             }
             planSB.append(")");
         }
@@ -80,7 +80,7 @@ public class JShop2Controller extends AbstractPlanningController<Domain, IJShop2
     @Override
     protected IFutureWithListeners<List<Plan>> startPlanningProcess() {
         final JShop2PlanningFuture future = new JShop2PlanningFuture();
-        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(domain, representation.getProblem(body));
+        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, representation.getProblem(body));
         new Thread(new Runnable() {
 
             @Override
@@ -120,25 +120,27 @@ public class JShop2Controller extends AbstractPlanningController<Domain, IJShop2
 
     private class JShop2PlanningProcess {
 
-        Domain domain;
+        JSHOP2 jshop;
         IJShop2Problem problem;
 
-        public JShop2PlanningProcess(Domain domain, IJShop2Problem problem) {
-            this.domain = domain;
+        public JShop2PlanningProcess(JSHOP2 jshop, IJShop2Problem problem) {
+            this.jshop = jshop;
             this.problem = problem;
         }
+
+
 
         public List<Plan> execute() {
                 //initialization is now done in representation.getDomain()... Curse static objects!
 		//TermConstant.initialize(domain.getDomainConstantCount() + problem.getProblemConstants().length);
 
-		domain.setProblemConstants(problem.getProblemConstants());
+		jshop.getDomain().setProblemConstants(problem.getProblemConstants());
 
 		State s = problem.getInitialState();
 
-		JSHOP2.initialize(domain, s);
+		jshop.setState(s);
 
-                LinkedList p = JSHOP2.findPlans(problem.getTaskList(), 1 /*Number of plans*/);
+                LinkedList p = jshop.findPlans(problem.getTaskList(), 1 /*Number of plans*/);
                 
                 return p;
 	}
