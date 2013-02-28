@@ -65,11 +65,11 @@ public class Test {
         executor.setDebugMode(true);
         executor.setEnvironment(b);
         
-        //IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.NONE);        
-        //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
+        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.NONE);        
+        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
 
-        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
+        //IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
+        //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
 
         //IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
         //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());

@@ -150,7 +150,9 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
     @Override
     public JSHOP2 getDomain(AgentBody body) {
         JSHOP2 jshop = new JSHOP2();
-        SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop);
+        Map<String, Calculate> userFunctions = new HashMap<String, Calculate>();
+        userFunctions.put("reachable", new ReachableCalculate(this));
+        SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop, userFunctions);
         jshop.initialize(domain, getMaxNumConstants());
         jshops.put(body, jshop);
         return jshop;
@@ -317,6 +319,5 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
 
     }
 
-    
-    
+        
 }
