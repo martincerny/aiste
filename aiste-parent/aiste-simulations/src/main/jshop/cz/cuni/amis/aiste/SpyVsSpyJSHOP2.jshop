@@ -8,6 +8,18 @@
         ;;   possitive effects
         ;;   [cost] - optional
 
+            ;"Skip" to a location. The pathfinding is done by the interpreter
+            (:operator (!move_directly ?from ?to ?price) 
+                ;Preconditions do not repeat the reachable function call as that could decrease performance, the price is also given from such a call
+                (  (location ?from)  (location ?to)
+                  (player_at ?from) )
+             ((player_at ?from)) 
+             ((player_at ?to))
+             (?price)
+            )
+
+
+            ;Move by a single room
             (:operator (!move ?from ?to)
              (    (location ?from)  (location ?to)
                   (player_at ?from)
@@ -72,6 +84,8 @@
 (:method (move ?to)
 Case1    ((player_at ?to))
          ()
+Direct   ( (use_direct_moves) (player_at ?from))
+         ( (move_directly ?from ?to) )
 Case2    ((player_at ?from))
          ((!visit ?from)
              (move ?from ?to)
@@ -82,7 +96,7 @@ Case2    ((player_at ?from))
 ;Case1 is probably redundant due to Case1 in (move ?to) - this is never called directly
 ;Case1    ((player_at ?to))
 ;         ()
-Case2    ((call cz.cuni.amis.aiste.simulations.spyvsspy.ReachableCalculate ?from ?to) (adjacent ?from ?to))   
+Case2    ((adjacent ?from ?to))   
          ((!move ?from ?to))
 Case3    ((location ?mid)  ;honestly, I don't know, why requiring mid to be a location is neccessary (it should be given by the adjacent requirement])
           (adjacent ?from ?mid)
@@ -91,6 +105,12 @@ Case3    ((location ?mid)  ;honestly, I don't know, why requiring mid to be a lo
          ((!move ?from ?mid) (!visit ?mid) (move ?mid ?to) (!unvisit ?mid))
 )
 
+(:method (move_directly ?from ?to) 
+         ( (assign ?price (call reachable ?from ?to ?price) ) 
+               (call != ?price infinity)
+         )
+         ( (!move_directly ?from ?to ?price) )
+)
 
 ;(:method (move ?from ?to)
 ;    ((location ?from) (location ?to) )
