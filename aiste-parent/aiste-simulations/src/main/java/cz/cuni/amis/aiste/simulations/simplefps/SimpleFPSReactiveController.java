@@ -19,7 +19,7 @@ package cz.cuni.amis.aiste.simulations.simplefps;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractAgentController;
-import cz.cuni.amis.utils.astar.AStar;
+import cz.cuni.amis.pathfinding.alg.astar.AStar;
 
 /**
  *
@@ -44,7 +44,8 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         act(new SimpleFPSAction(/*Tady si asi budes chtit predat nejake info*/));
         
         //pro hledani cesty muzes pouzit treba (s doplnenim parametru)
-        AStar.aStar(null, null, null);
+        AStar astar = new AStar(null);
+        astar.findPath(null);
         
     }
 

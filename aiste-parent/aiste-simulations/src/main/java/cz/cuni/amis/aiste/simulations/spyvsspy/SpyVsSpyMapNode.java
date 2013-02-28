@@ -45,6 +45,10 @@ public class SpyVsSpyMapNode {
      * The unique identifier of this node
      */
     int index;
+    
+    int posX;
+    
+    int posY;
 
     /**
      * Create a node with a copy of original data
@@ -54,10 +58,12 @@ public class SpyVsSpyMapNode {
         this.index = original.index;
         this.traps = new HashSet<Integer>(original.traps);
         this.items = new HashSet<Integer>(original.items);
+        this.posX = original.posX;
+        this.posY = original.posY;
         this.numTrapRemovers =  Arrays.copyOf(original.numTrapRemovers, original.numTrapRemovers.length);
     }
     
-    public SpyVsSpyMapNode(int index, Set<Integer> traps, Set<Integer> items, Set<Integer> trapRemovers, int numTraps) {
+    public SpyVsSpyMapNode(int index, Set<Integer> traps, Set<Integer> items, Set<Integer> trapRemovers, int numTraps, int posX, int posY) {
         this.index = index;
         this.traps = new HashSet<Integer>(traps);
         this.items = new HashSet<Integer>(items);
@@ -65,13 +71,17 @@ public class SpyVsSpyMapNode {
         for (int trapRemoverIndex : trapRemovers) {
             numTrapRemovers[trapRemoverIndex]++;
         }
+        this.posX = posX;
+        this.posY = posY;
     }
 
-    public SpyVsSpyMapNode(int index, int numTraps) {
+    public SpyVsSpyMapNode(int index, int numTraps, int posX, int posY) {
         this.index = index;
         this.traps = new HashSet<Integer>();
         this.items = new HashSet<Integer>();
         numTrapRemovers = new int[numTraps];
+        this.posX = posX;
+        this.posY = posY;
     }
 
     public int getIndex() {
@@ -90,8 +100,16 @@ public class SpyVsSpyMapNode {
         return traps;
     }
 
+    public int getPosX() {
+        return posX;
+    }
+
+    public int getPosY() {
+        return posY;
+    }   
+    
     @Override
     public String toString() {
-        return "MapNode index: " + index + ", traps:" + traps + ", items: " + items + ", trapRemovers: " + Arrays.toString(numTrapRemovers);
+        return "MapNode index: " + index + " at [" + posX + "," + posY + "], traps:" + traps + ", items: " + items + ", trapRemovers: " + Arrays.toString(numTrapRemovers);
     }
 }

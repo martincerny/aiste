@@ -69,7 +69,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
             JShop2Utils.GroundActionInfo info = JShop2Utils.getGroundInfo(act);
             planSB.append(" (").append(jshop.getDomain().getPrimitiveTasks()[info.actionId]);
             for(int constantIndex  : info.params){
-                planSB.append(" ").append(jshop.getConstant(constantIndex));
+                planSB.append(" ").append(jshop.getConstant(constantIndex).toString(jshop));
             }
             planSB.append(")");
         }

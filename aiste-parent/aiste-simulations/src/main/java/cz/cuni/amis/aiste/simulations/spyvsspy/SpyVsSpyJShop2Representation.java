@@ -151,7 +151,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
     public JSHOP2 getDomain(AgentBody body) {
         JSHOP2 jshop = new JSHOP2();
         Map<String, Calculate> userFunctions = new HashMap<String, Calculate>();
-        userFunctions.put("reachable", new ReachableCalculate(this));
+        userFunctions.put("find_path", new FindPathCalculate(this, body));
         SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop, userFunctions);
         jshop.initialize(domain, getMaxNumConstants());
         jshops.put(body, jshop);
@@ -268,6 +268,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
             }
         }
         
+        initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_USE_DIRECT_MOVES, 0, TermList.NIL));        
                 
         TaskList tasks = new TaskList(2, true);
         TaskList itemTasks = new TaskList(environment.defs.numItemTypes, false); //unordered task to gather all items

@@ -89,6 +89,71 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
         generateCycle: for (int trial = 0; trial < MAX_GENERATOR_ROUNDS; trial++) {
 
+            //create nodes on a grid
+            final List<SpyVsSpyMapNode> nodes = new ArrayList<SpyVsSpyMapNode>();
+            Map<Integer, List<Integer>> neighbours = new HashMap<Integer, List<Integer>>();
+            
+            int gridSize = (int) (Math.sqrt(numNodes) + 1 );
+            
+            SpyVsSpyMapNode nodesOnGrid[][] = new SpyVsSpyMapNode[gridSize][gridSize];
+            
+            
+            for(int i = 0; i < numNodes; i++){
+                int emptySquares = (gridSize * gridSize) - i;
+                int nextSquare = rand.nextInt(emptySquares);
+                int squareNo = 0;
+                
+                searchForEmptyCycle:
+                for(int x = 0; x < gridSize; x++){
+                    for(int y = 0; y < gridSize; y++){
+                        if(nodesOnGrid[x][y] == null){
+                            if(squareNo == nextSquare){
+                                SpyVsSpyMapNode newNode = new SpyVsSpyMapNode(i, numTrapTypes, x, y);
+                                nodesOnGrid[x][y] = newNode;
+                                nodes.add(newNode);
+                                break searchForEmptyCycle;
+                            }
+                            squareNo++;
+                        }
+                    }
+                }
+            }
+            
+            //generate neighbours
+            for(int x = 0; x < gridSize; x++){
+                for(int y = 0; y < gridSize; y++){
+                    if(nodesOnGrid[x][y] != null){
+                        SpyVsSpyMapNode currentNode = nodesOnGrid[x][y];
+                        List<Integer> nodeNeighbours = new ArrayList<Integer>();
+                        for(int distance = 1; distance < 3; distance++){
+                            boolean foundNeighbour = false;
+                            if(x - distance >= 0 && nodesOnGrid[x - distance][y] != null){
+                                nodeNeighbours.add(nodesOnGrid[x - distance][y].index);
+                                foundNeighbour = true;
+                            }
+                            if(x + distance < gridSize && nodesOnGrid[x + distance][y] != null){
+                                nodeNeighbours.add(nodesOnGrid[x + distance][y].index);
+                                foundNeighbour = true;
+                            }
+                            if(y - distance >= 0 && nodesOnGrid[x][y  - distance] != null){
+                                nodeNeighbours.add(nodesOnGrid[x][y - distance].index);
+                                foundNeighbour = true;
+                            }
+                            if(y + distance < gridSize && nodesOnGrid[x][y  + distance] != null){
+                                nodeNeighbours.add(nodesOnGrid[x][y + distance].index);
+                                foundNeighbour = true;
+                            }
+                            if(foundNeighbour){
+                                break;
+                            }
+                        }
+                        neighbours.put(currentNode.index, nodeNeighbours);
+                    }
+                }
+            }
+            
+            /*
+             * Graph generating withou position is obsolete. 
             SeedableRandomGraphGenerator<SpyVsSpyMapNode, Object> graphGenerator = new SeedableRandomGraphGenerator<SpyVsSpyMapNode, Object>(numNodes, (int) ((numNodes * meanNodeDegree) / 2));
             UndirectedGraph<SpyVsSpyMapNode, Object> nodeGraph = new SimpleGraph<SpyVsSpyMapNode, Object>(new EdgeFactory<SpyVsSpyMapNode, Object>() {
 
@@ -119,18 +184,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
                 }
                 neighbours.put(i, nodeneighbours);
             }
-            //id                     traps                   items               trap removers
-/*
-             * nodes.add(new SpyVsSpyMapNode(0, Collections.EMPTY_SET,
-             * Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-             * nodes.add(new SpyVsSpyMapNode(1, Collections.EMPTY_SET,
-             * Collections.EMPTY_SET, Collections.EMPTY_SET, numTrapTypes));
-             * nodes.add(new SpyVsSpyMapNode(2, Collections.singleton(0),
-             * Collections.singleton(0), Collections.singleton(1),
-             * numTrapTypes)); nodes.add(new SpyVsSpyMapNode(3,
-             * Collections.EMPTY_SET, Collections.singleton(1),
-             * Collections.singleton(0), numTrapTypes));
-             */
+            */            
 
             List<Integer> startingLocations = new ArrayList<Integer>(RandomUtils.randomSampleOfIntegerRange(0, numNodes, maxPlayers, rand));
 

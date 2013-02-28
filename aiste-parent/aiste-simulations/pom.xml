@@ -89,6 +89,10 @@
             <artifactId>amis-utils</artifactId>
         </dependency>
         <dependency>
+            <groupId>cz.cuni.amis</groupId>
+            <artifactId>amis-path-finding</artifactId>
+        </dependency>
+        <dependency>
             <groupId>cz.cuni.amis.planning4j</groupId>
             <artifactId>planning4j-base</artifactId>
         </dependency>
