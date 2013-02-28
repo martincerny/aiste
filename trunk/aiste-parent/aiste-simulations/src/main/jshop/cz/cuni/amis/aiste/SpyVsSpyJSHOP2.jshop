@@ -8,17 +8,6 @@
         ;;   possitive effects
         ;;   [cost] - optional
 
-            ;"Skip" to a location. The pathfinding is done by the interpreter
-            (:operator (!move_directly ?from ?to ?price) 
-                ;Preconditions do not repeat the reachable function call as that could decrease performance, the price is also given from such a call
-                (  (location ?from)  (location ?to)
-                  (player_at ?from) )
-             ((player_at ?from)) 
-             ((player_at ?to))
-             (?price)
-            )
-
-
             ;Move by a single room
             (:operator (!move ?from ?to)
              (    (location ?from)  (location ?to)
@@ -106,10 +95,17 @@ Case3    ((location ?mid)  ;honestly, I don't know, why requiring mid to be a lo
 )
 
 (:method (move_directly ?from ?to) 
-         ( (assign ?price (call reachable ?from ?to ?price) ) 
-               (call != ?price infinity)
+         ( (assign ?path (call find_path ?from ?to) ) 
+               (call != ?path nil)
          )
-         ( (!move_directly ?from ?to ?price) )
+         ( (expand_move ?from ?path) )
+)
+
+(:method (expand_move ?from ?path)
+    ( (call = ?path nil) )
+    ( () )
+    ( (assign ?head (call stdlib.head ?path) ) (assign ?tail (call stdlib.tail ?path) ) )
+    ( (!move ?from ?head) (expand_move ?head ?tail) )
 )
 
 ;(:method (move ?from ?to)

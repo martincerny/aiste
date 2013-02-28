@@ -54,18 +54,19 @@ public class Test {
  //       IValidator validator = new ValValidator(plannersDirectory);
         IValidator validator = null;
         
-        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, planner);
+        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,100,3,5,8,0.5, planner);
+//        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, planner);
 //        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, planner);        
         generator.setRandomSeed(1745646655);        
  
         SpyVsSpy b = generator.generateEnvironment();
         b.setRandomSeed(1234878864L);
 
-        DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(200);
+        DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(150);
         executor.setDebugMode(true);
         executor.setEnvironment(b);
         
-        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.NONE);        
+        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
         executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
 
         //IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
@@ -74,7 +75,7 @@ public class Test {
         //IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
         //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(20);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(45);
 
         System.out.println("Results: ");
         for(int i = 0; i < result.getAgentResults().size(); i++){

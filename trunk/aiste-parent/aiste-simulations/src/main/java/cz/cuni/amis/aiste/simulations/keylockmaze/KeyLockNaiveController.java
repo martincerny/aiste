@@ -19,7 +19,7 @@ package cz.cuni.amis.aiste.simulations.keylockmaze;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractAgentController;
-import cz.cuni.amis.utils.astar.AStar;
+import cz.cuni.amis.pathfinding.alg.astar.*;
 
 /**
  *
@@ -45,7 +45,8 @@ public class KeyLockNaiveController extends AbstractAgentController<KeyLockActio
         //representation je protected promenna, ktera je instanci KeyLockMaze, takze si s ni muzes delat, co chces
         
         //pro hledani cesty muzes pouzit treba (s doplnenim parametru)
-        AStar.aStar(null, null, null);
+        AStar astar = new AStar(null);
+        astar.findPath(null);
         
     }
 

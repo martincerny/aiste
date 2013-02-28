@@ -25,6 +25,7 @@ import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
+import cz.cuni.amis.pathfinding.map.IPFMap;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -57,7 +58,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
      * True if this environment is a clone, created only for simulation
      */
     boolean isSimulation;
-    
+
     /**
      * Create a shallow copy of the environment with the same defs
      * @param original 
@@ -100,7 +101,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         
         jShop2Representation = new SpyVsSpyJShop2Representation(this);
         registerRepresentation(jShop2Representation);
-
+        
     }
 
     @Override
@@ -448,6 +449,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
          * @{link #nodes}
          */
         Map<Integer, List<Integer>> neighbours;
+        
+        IPFMap<Integer> mapForPathFinding;
 
         public StaticDefs(int maxPlayers, int numTrapTypes, int[] trapCounts, int numItemTypes, double rewardDeath, double rewardReachGoal, double rewardNothing, double attackSuccessProbability, int destination, List<Integer> startingLocations, Map<Integer, List<Integer>> neighbours) {
             this.maxPlayers = maxPlayers;
@@ -461,6 +464,26 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             this.destination = destination;
             this.startingLocations = startingLocations;
             this.neighbours = neighbours;
+            
+            this.mapForPathFinding = new IPFMap<Integer>() {
+                @Override
+                public Collection<Integer> getNeighbors(Integer node) {
+                    return defs.neighbours.get(node);
+                }
+
+                @Override
+                public int getNodeCost(Integer node) {
+                    //default cost is 0
+                    return 0;
+                }
+
+                @Override
+                public int getArcCost(Integer node, Integer node1) {
+                    //default cost is 1
+                    return 1;
+                }
+            };
+            
         }
     }
 }
