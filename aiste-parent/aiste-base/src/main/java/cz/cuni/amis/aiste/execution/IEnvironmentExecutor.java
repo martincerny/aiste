@@ -42,7 +42,7 @@ public interface IEnvironmentExecutor {
      * @param type
      * @param controller 
      */
-    void addAgentController(IAgentType type, IAgentController controller, IEnvironmentRepresentation representation);
+    void addAgentController(IAgentExecutionDescriptor executionDescriptor);
     
     /**
      * Executes the environment, until it reaches a terminal state.

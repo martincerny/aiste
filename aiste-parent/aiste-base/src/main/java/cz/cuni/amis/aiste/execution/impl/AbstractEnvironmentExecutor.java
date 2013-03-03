@@ -24,6 +24,7 @@ import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
+import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
@@ -68,10 +69,13 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     }
 
     @Override
-    public void addAgentController(IAgentType type, IAgentController controller, IEnvironmentRepresentation representation) {
+    public void addAgentController(IAgentExecutionDescriptor descriptor) {
         if(environment == null){
             throw new IllegalStateException("Environment not set");
         }
+        IEnvironmentRepresentation representation = descriptor.getRepresentation();
+        IAgentController controller = descriptor.getController();
+        
         if(!environment.getRepresentations().contains(representation)){
             throw new AgentInstantiationException("Trying to instantiate controller with representation that does not belong to the environment");
         }
@@ -79,7 +83,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
             throw new AgentInstantiationException("Controller " + controller + " is not applicable to representation " + representation);
         }
 
-        AgentBody newBody = environment.createAgentBody(type);
+        AgentBody newBody = environment.createAgentBody(descriptor.getAgentType());
         controller.init(environment, representation, newBody, stepDelay);
         
         controllers.add(controller);        

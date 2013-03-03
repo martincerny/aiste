@@ -18,6 +18,7 @@ package cz.cuni.amis.aiste.execution;
 
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IAgentType;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 
 /**
  * Information needed to execute an agent in an environment.
@@ -34,11 +35,8 @@ public interface IAgentExecutionDescriptor {
      * Get the class of the controller to be instantiated
      * @return 
      */
-    Class<IAgentController> getControllerClass();
+    IAgentController getController();
     
-    /**
-     * Get number of agents to be instantiated
-     * @return 
-     */
-    int getCount();
+    IEnvironmentRepresentation getRepresentation();
+
 }

@@ -1,0 +1,67 @@
+/*
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package cz.cuni.amis.aiste.experiments;
+
+import cz.cuni.amis.aiste.environment.IAction;
+import cz.cuni.amis.aiste.environment.IEnvironment;
+import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.AbstractExperiment;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
+import cz.cuni.amis.utils.collections.ListConcatenation;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ *
+ * @author Martin Cerny
+ */
+public class AisteExperiment extends AbstractExperiment {
+
+    IEnvironment environment;
+    
+    List<IAgentExecutionDescriptor> descriptors;
+
+    public AisteExperiment(IEnvironment environment, List<IAgentExecutionDescriptor> descriptors, long timeout) {
+        super(timeout);
+        this.environment = environment;
+        this.descriptors = descriptors;
+    }
+
+    public List<IAgentExecutionDescriptor> getDescriptors() {
+        return descriptors;
+    }
+
+    public IEnvironment getEnvironment() {
+        return environment;
+    }
+    
+    
+    
+    @Override
+    public ILoggingHeaders getExperimentParametersHeaders() {
+        return LoggingHeadersConcatenation.concatenate(new LoggingHeaders("envClass", "agentCount"), environment.getEnvironmentParametersHeaders());
+    }
+
+    @Override
+    public List<Object> getExperimentParameters() {
+        return new ListConcatenation<Object>(Arrays.asList(new Object[] {environment.getClass().getSimpleName(), descriptors.size()}), environment.getEnvironmentParametersValues());
+    }
+
+}

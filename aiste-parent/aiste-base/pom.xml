@@ -27,5 +27,9 @@
             <groupId>cz.cuni.amis.planning4j</groupId>
             <artifactId>jjshop2</artifactId>
         </dependency>
+        <dependency>
+            <groupId>cz.cuni.amis</groupId>
+            <artifactId>amis-experiments</artifactId>
+        </dependency>   
     </dependencies>
 </project>

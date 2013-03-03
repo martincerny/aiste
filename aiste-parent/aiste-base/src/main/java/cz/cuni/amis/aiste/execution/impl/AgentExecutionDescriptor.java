@@ -19,6 +19,7 @@ package cz.cuni.amis.aiste.execution.impl;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 
 /**
  *
@@ -26,22 +27,18 @@ import cz.cuni.amis.aiste.environment.IAgentType;
  */
 public class AgentExecutionDescriptor implements IAgentExecutionDescriptor{
     private IAgentType agentType;
-    
-    private Class<IAgentController> controllerClass;
-    
-    private int count;
 
-    public AgentExecutionDescriptor(IAgentType agentType, Class<IAgentController> controllerClass) {
-        this(agentType, controllerClass, 1);
-    }
+    private IAgentController controller;
+    
+    private IEnvironmentRepresentation representation;
 
-    
-    
-    public AgentExecutionDescriptor(IAgentType agentType, Class<IAgentController> controllerClass, int count) {
+    public AgentExecutionDescriptor(IAgentType agentType, IAgentController controller, IEnvironmentRepresentation representation) {
         this.agentType = agentType;
-        this.controllerClass = controllerClass;
-        this.count = count;
+        this.controller = controller;
+        this.representation = representation;
     }
+
+    
 
     @Override
     public IAgentType getAgentType() {
@@ -49,14 +46,15 @@ public class AgentExecutionDescriptor implements IAgentExecutionDescriptor{
     }
 
     @Override
-    public Class<IAgentController> getControllerClass() {
-        return controllerClass;
+    public IAgentController getController() {
+        return  controller;
     }
 
     @Override
-    public int getCount() {
-        return count;
+    public IEnvironmentRepresentation getRepresentation() {
+        return representation;
     }
+
     
     
 }
