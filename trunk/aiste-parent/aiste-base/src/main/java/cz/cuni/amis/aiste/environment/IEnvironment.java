@@ -17,6 +17,8 @@
 package cz.cuni.amis.aiste.environment;
 
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
+import cz.cuni.amis.experiments.ILogDataProvider;
+import cz.cuni.amis.experiments.ILoggingHeaders;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +29,7 @@ import java.util.Map;
  * should be able to start afresh (without keeping the registered executors).
  * @author Martin Cerny
  */
-public interface IEnvironment<ACTION extends IAction> {
+public interface IEnvironment<ACTION extends IAction> extends ILogDataProvider {
     
     /**
      * Initializes the environment for use.
@@ -72,7 +74,7 @@ public interface IEnvironment<ACTION extends IAction> {
      * @return 
      */
     List<AgentBody> getAllBodies();
-
+       
     /**
      * Get all agent bodies present in the environment that have not yet been removed.
      * @return 
@@ -122,4 +124,14 @@ public interface IEnvironment<ACTION extends IAction> {
      * Gets all representations this environment has.
      */
     List<IEnvironmentRepresentation> getRepresentations();
+    
+    /**
+     * Return all log data providers per agent (i.e. that log agent-specific data).
+     * @return the providers or null, if per-agent logging is not supported.
+     */
+    Map<AgentBody, ILogDataProvider> getPerAgentLogDataProviders();
+    
+    ILoggingHeaders getEnvironmentParametersHeaders();
+    
+    List<Object> getEnvironmentParametersValues();
 }

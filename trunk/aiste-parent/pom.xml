@@ -154,6 +154,11 @@
             </dependency>   
             <dependency>
                 <groupId>cz.cuni.amis</groupId>
+                <artifactId>amis-experiments</artifactId>
+                <version>3.5.1-SNAPSHOT</version>
+            </dependency>   
+            <dependency>
+                <groupId>cz.cuni.amis</groupId>
                 <artifactId>amis-path-finding</artifactId>
                 <version>3.5.0</version>
             </dependency>                     

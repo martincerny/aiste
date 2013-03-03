@@ -16,12 +16,15 @@
  */
 package cz.cuni.amis.aiste.environment;
 
+import cz.cuni.amis.experiments.ILogDataProvider;
+
 /**
  * An abstract agent controller. To be compatible with default execution and matchmaking
- * all concrete implementing classes should provide a no-argument constructor.
+ * all concrete implementing classes should provide a no-argument constructor. The controller
+ * logs data and is responsible for logging any neccessary data from its associated environment representation.
  * @author Martin Cerny
  */
-public interface IAgentController<ACTION extends IAction, REPRESENTATION extends IEnvironmentRepresentation> {
+public interface IAgentController<ACTION extends IAction, REPRESENTATION extends IEnvironmentRepresentation> extends ILogDataProvider {
 
     
     /**

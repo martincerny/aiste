@@ -23,6 +23,16 @@ import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
+import cz.cuni.amis.experiments.IBareLoggingOutput;
+import cz.cuni.amis.experiments.ILogIdentifier;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.ClassLogIdentifier;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.metrics.MetricCollection;
+import cz.cuni.amis.utils.collections.ListConcatenation;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -34,6 +44,41 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     protected REPRESENTATION representation;
     protected AgentBody body;
     protected long stepDelay;    
+    protected IBareLoggingOutput runtimeLoggingOutput;
+    protected final ILoggingHeaders runtimeLoggingHeaders;
+    protected final ILogIdentifier logIdentifier;
+    
+    /**
+     * Controller parameters are added to both runtime and per-experiment logs.
+     */
+    protected final ILoggingHeaders controllerParametersHeaders;
+    protected final List<Object> controllerParametersValues;
+
+    /**
+     * Add all metrics used by this controller to this member in contructor.
+     */
+    protected MetricCollection metrics;
+    
+    public AbstractAgentController(){
+        this(LoggingHeaders.EMPTY_LOGGING_HEADERS);
+    }
+    
+    public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders) {
+        this(runtimeLoggingHeaders, null, null);
+    }        
+    public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, Object ... controllerParameterValues) {
+        this(runtimeLoggingHeaders, controllerParametersHeaders, Arrays.<Object>asList(controllerParameterValues));
+    }
+        
+    public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, List<Object> controllerParameterValues) {
+        this.runtimeLoggingHeaders = runtimeLoggingHeaders;
+        this.controllerParametersHeaders = controllerParametersHeaders;
+        this.controllerParametersValues = controllerParameterValues;
+        
+        this.logIdentifier = new ClassLogIdentifier(getClass());
+        metrics = new MetricCollection();
+    }
+    
     
     @Override
     public void init(IEnvironment<ACTION> environment, REPRESENTATION representation, AgentBody body, long stepDelay) {
@@ -45,6 +90,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
         this.representation = representation;
         this.body = body;
         this.stepDelay = stepDelay;
+        metrics.reset();
     }
 
     /**
@@ -61,6 +107,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
 
     @Override
     public void shutdown() {
+        metrics.stopMeasurement();
     }
 
     @Override
@@ -82,6 +129,31 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     
     public REPRESENTATION getRepresentation(){
         return representation;
+    }
+
+    @Override
+    public ILoggingHeaders getRuntimeLoggingHeaders() {
+        return runtimeLoggingHeaders;
+    }
+
+    @Override
+    public void setRuntimeLoggingOutput(IBareLoggingOutput loggingOutput) {
+        this.runtimeLoggingOutput = loggingOutput;
+    }
+
+    @Override
+    public ILogIdentifier getIdentifier() {
+        return logIdentifier;
+    }
+
+    @Override
+    public List<Object> getPerExperimentLoggingData() {
+        return new ListConcatenation<Object>(controllerParametersValues, metrics.getValues());
+    }
+
+    @Override
+    public ILoggingHeaders getPerExperimentLoggingHeaders() {
+        return LoggingHeadersConcatenation.concatenate(controllerParametersHeaders, metrics.getHeaders());
     }
 
   

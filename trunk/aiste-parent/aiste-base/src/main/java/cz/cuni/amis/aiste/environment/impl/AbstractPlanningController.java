@@ -18,6 +18,10 @@ package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.*;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.metrics.IncrementalMetric;
+import cz.cuni.amis.experiments.impl.metrics.IntegerAverageMetric;
+import cz.cuni.amis.experiments.impl.metrics.TimeMeasuringMetric;
 import cz.cuni.amis.utils.future.IFutureWithListeners;
 import java.util.*;
 import org.apache.log4j.Logger;
@@ -36,18 +40,57 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     private Queue<PLANNER_ACTION> currentPlan;
     private Queue<IAction> actionsToPerform;
 
-
     
     public enum ValidationMethod { NONE, EXTERNAL_VALIDATOR, ENVIRONMENT_SIMULATION_NEXT_STEP, ENVIRONMENT_SIMULATION_WHOLE_PLAN };
     
     private ValidationMethod validationMethod;
 
  
+    protected TimeMeasuringMetric timeSpentPlanning;
+    protected TimeMeasuringMetric timeSpentTranslating;
+    protected TimeMeasuringMetric timeSpentValidating;
+    
+    protected IncrementalMetric numPlannerExecutions;
+    protected IncrementalMetric numSuccesfulPlanning;
+    protected IncrementalMetric numUnsuccesfulPlanning;
+    protected IncrementalMetric numPlanningExceptions;
+    
+    protected IntegerAverageMetric averagePlanLength;
+    protected IntegerAverageMetric averageTimePerSuccesfulPlanning;
+    protected IntegerAverageMetric averageTimePerUnsuccesfulPlanning;
+    
+    long lastPlanningStartTime = 0;
     
     public AbstractPlanningController(ValidationMethod validationMethod) {
         this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<PLANNER_ACTION>();
         actionsToPerform = new ArrayDeque<IAction>();
+        
+        /**
+         * Initialize metrics
+         */
+        timeSpentPlanning = new TimeMeasuringMetric("planningTime");
+        metrics.addMetric(timeSpentPlanning);
+        timeSpentTranslating = new TimeMeasuringMetric("translatingTime");
+        metrics.addMetric(timeSpentTranslating);
+        timeSpentValidating = new TimeMeasuringMetric("validatingTime");
+        metrics.addMetric(timeSpentValidating);
+        
+        numPlannerExecutions = new IncrementalMetric("numPlannerExecutions");
+        metrics.addMetric(numPlannerExecutions);
+        numSuccesfulPlanning = new IncrementalMetric("numSuccesfulPlanning");
+        metrics.addMetric(numSuccesfulPlanning);
+        numUnsuccesfulPlanning = new IncrementalMetric("numUnsuccesfulPlanning");
+        metrics.addMetric(numUnsuccesfulPlanning);
+        numPlanningExceptions = new IncrementalMetric("numPlanningExceptions");
+        metrics.addMetric(numPlanningExceptions);
+
+        averagePlanLength = new IntegerAverageMetric("avgPlanLength");
+        metrics.addMetric(averagePlanLength);
+        averageTimePerSuccesfulPlanning = new IntegerAverageMetric("avgSuccesfulPlanningTime");
+        metrics.addMetric(averageTimePerSuccesfulPlanning);
+        averageTimePerUnsuccesfulPlanning = new IntegerAverageMetric("avgUnsuccesfulPlanningTime");
+        metrics.addMetric(averageTimePerUnsuccesfulPlanning);
     }
 
     @Override
@@ -91,10 +134,12 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                 }
                 case COMPUTATION_EXCEPTION: {
                     logger.info("Exception during planning:", planFuture.getException());
+                    numPlanningExceptions.increment();
                     break;
                 }
                 case FUTURE_IS_READY: {
                     PLANNING_RESULT planningResult = planFuture.get();
+                    long planningTime = System.currentTimeMillis() - lastPlanningStartTime;
                     if (isPlanningResultSucces(planningResult)) {
                         List<PLANNER_ACTION> plannerActions = getActionsFromPlanningResult(planningResult);
                         if(logger.isTraceEnabled()){
@@ -102,8 +147,15 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                             getDebugRepresentationOfPlannerActions(plannerActions, planSB);
                             logger.trace(planSB.toString());
                         }
+
+                        numSuccesfulPlanning.increment();
+                        averageTimePerSuccesfulPlanning.addSample(planningTime);
+                        averagePlanLength.addSample(plannerActions.size());
+                        
                         currentPlan = new ArrayDeque<PLANNER_ACTION>(plannerActions);                        
                     } else {
+                        numUnsuccesfulPlanning.increment();
+                        averageTimePerUnsuccesfulPlanning.addSample(planningTime);                        
                         if (logger.isDebugEnabled()) {
                             logger.debug("No plan found.");
                         }
@@ -113,6 +165,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
             }
             
             if (planFuture.isDone()) {
+                timeSpentPlanning.taskFinished();
                 planFuture = null;
             }
         }
@@ -123,15 +176,19 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     startPlanning();
                 }
             } else {
+                timeSpentValidating.taskStarted();
                 if(!validatePlan()){
                     logger.info("Plan invalidated.");                    
                     currentPlan.clear();
                     actionsToPerform.clear();
                 }
+                timeSpentValidating.taskFinished();
 
+                timeSpentTranslating.taskStarted();
                 while(actionsToPerform.isEmpty() && !currentPlan.isEmpty()){
                     actionsToPerform.addAll(representation.translateAction(currentPlan.poll(), body));
                 }
+                timeSpentTranslating.taskFinished();
             }
         }
         if(!actionsToPerform.isEmpty()){
@@ -204,10 +261,14 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     protected final void startPlanning() {
         if (planFuture != null && !planFuture.isDone()) {
             planFuture.cancel(true);
-        }
+        }        
+        lastPlanningStartTime = System.currentTimeMillis();
+        timeSpentPlanning.taskStarted();
+        numPlannerExecutions.increment();
+        
         planFuture = startPlanningProcess();
     }
-    
+  
     
     
 }
