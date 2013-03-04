@@ -25,6 +25,8 @@ import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.pathfinding.map.IPFMap;
 import java.util.*;
 import org.apache.log4j.Logger;
@@ -394,6 +396,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
     public SpyVsSpyJShop2Representation getjShop2Representation() {
         return jShop2Representation;
     }
+
 
     
     

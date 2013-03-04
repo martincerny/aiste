@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.execution;
+package cz.cuni.amis.aiste.execution.impl;
 
-import cz.cuni.amis.aiste.environment.IAgentController;
-import java.util.List;
-import java.util.Map;
+import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
+import cz.cuni.amis.utils.objectmanager.IObjectFactory;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface IEnvironmentExecutionResult {
-    List<IAgentExecutionResult> getAgentResults();
-    Map<IAgentController, IAgentExecutionResult> getPerAgentResults();
-    long getNumberOfStepsElapsed();
+public class DefaultEnvironmentExecutorFactory implements IObjectFactory<IEnvironmentExecutor> {
+
+    private long stepDelay;
+
+    public DefaultEnvironmentExecutorFactory(long stepDelay) {
+        this.stepDelay = stepDelay;
+    }
+    
+    
+    
+    @Override
+    public IEnvironmentExecutor newObject() {
+        return new DefaultEnvironmentExecutor(stepDelay);
+    }
+    
 }

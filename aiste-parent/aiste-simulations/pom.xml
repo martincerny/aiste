@@ -40,6 +40,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <basedir>${project.build.outputDirectory}</basedir>
                     <commandlineArgs>${exec.defaultArgs}</commandlineArgs>
                     <classpathScope>runtime</classpathScope>
                     <executable>java</executable>

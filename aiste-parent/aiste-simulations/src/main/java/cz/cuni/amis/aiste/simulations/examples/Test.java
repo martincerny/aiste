@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.simulations.examples;
 
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
 
 /**
@@ -30,7 +31,7 @@ public class Test {
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
         executor.setEnvironment(b);
-        executor.addAgentController(b.theType, c, b /* The environment is its own representation */);
+        executor.addAgentController(new AgentExecutionDescriptor(b.theType, c, b /* The environment is its own representation */));
         IEnvironmentExecutionResult result = executor.executeEnvironment(100);
         System.out.println("Result: " + result.getAgentResults().get(0).getTotalReward());
     }

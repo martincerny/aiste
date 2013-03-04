@@ -20,8 +20,14 @@ import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
+import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutor;
+import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
+import cz.cuni.amis.aiste.experiments.AisteExperiment;
+import cz.cuni.amis.aiste.experiments.AisteExperimentRunner;
+import cz.cuni.amis.experiments.utils.ExperimentUtils;
 import cz.cuni.amis.planning4j.IAsyncPlanner;
 import cz.cuni.amis.planning4j.IValidator;
 import cz.cuni.amis.planning4j.external.ExternalPlanner;
@@ -32,6 +38,9 @@ import cz.cuni.amis.planning4j.external.plannerspack.PlannersPackUtils;
 import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
 import cz.cuni.amis.planning4j.validation.external.ValValidator;
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -62,12 +71,17 @@ public class Test {
         SpyVsSpy b = generator.generateEnvironment();
         b.setRandomSeed(1234878864L);
 
-        DefaultEnvironmentExecutor executor = new DefaultEnvironmentExecutor(150);
-        executor.setDebugMode(true);
-        executor.setEnvironment(b);
         
         IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
+        IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
+
+        //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
+        
+        List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[] {
+            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation()),
+            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation()),
+        });
+        AisteExperiment experiment = new AisteExperiment(b, descriptors, 100000);
 
 //        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
@@ -75,13 +89,7 @@ public class Test {
         //IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
         //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
 
-        IEnvironmentExecutionResult result = executor.executeEnvironment(100);
-
-        System.out.println("Results: ");
-        for(int i = 0; i < result.getAgentResults().size(); i++){
-            System.out.println("Player " + i + ": " + result.getAgentResults().get(i).getTotalReward());
-        }
-         
+        ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(100)));        
 
         /*
         SpyVsSpy b = new SpyVsSpy();

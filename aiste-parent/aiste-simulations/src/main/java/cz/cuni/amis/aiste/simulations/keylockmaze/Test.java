@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.simulations.keylockmaze;
 
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
 
 /**
@@ -30,7 +31,7 @@ public class Test {
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
         executor.setEnvironment(b);
-        executor.addAgentController(KeyLockAgentType.getInstance(), player, b);
+        executor.addAgentController(new AgentExecutionDescriptor(KeyLockAgentType.getInstance(), player, b));
         
         IEnvironmentExecutionResult result = executor.executeEnvironment(300 /*Max steps*/);
         

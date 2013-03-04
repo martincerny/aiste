@@ -75,6 +75,8 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
             environmentStoppedLatch.await();
         } catch (InterruptedException ex) {
             throw new SimulationException("Waiting for simulation to finish interrupted", ex);
+        } finally {
+            stopSimulation();
         }
         return gatherExecutionResult();
     }
@@ -124,7 +126,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
                         }
                     }
                     lastExecutionTime = System.currentTimeMillis();
-                    if (getEnvironment().isFinished() || stepsPerformed >= maxSteps) {
+                    if (getEnvironment().isFinished() || (maxSteps != 0 && stepsPerformed >= maxSteps)) {
                         stopExecution();
                         return;
                     }

@@ -16,9 +16,12 @@
  */
 package cz.cuni.amis.aiste.execution.impl;
 
+import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -26,11 +29,16 @@ import java.util.List;
  */
 public class EnvironmentExecutionResult implements IEnvironmentExecutionResult {
     List<IAgentExecutionResult> agentResults;
+    Map<IAgentController, IAgentExecutionResult> perAgentResults;
     long numberOfStepsElapsed;
 
     public EnvironmentExecutionResult(List<IAgentExecutionResult> agentResults, long numberOfStepsElapsed) {
         this.agentResults = agentResults;
         this.numberOfStepsElapsed = numberOfStepsElapsed;
+        perAgentResults = new HashMap<IAgentController, IAgentExecutionResult>(agentResults.size());
+        for(IAgentExecutionResult result : agentResults){
+            perAgentResults.put(result.getController(), result);
+        }
     }
     
     @Override
@@ -41,6 +49,11 @@ public class EnvironmentExecutionResult implements IEnvironmentExecutionResult {
     @Override
     public long getNumberOfStepsElapsed() {
         return numberOfStepsElapsed;
+    }
+
+    @Override
+    public Map<IAgentController, IAgentExecutionResult> getPerAgentResults() {
+        return perAgentResults;
     }
     
     
