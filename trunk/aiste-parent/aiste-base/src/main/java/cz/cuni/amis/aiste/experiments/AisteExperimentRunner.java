@@ -17,14 +17,23 @@
 
 package cz.cuni.amis.aiste.experiments;
 
+import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
+import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
 import cz.cuni.amis.experiments.EExperimentRunResult;
 import cz.cuni.amis.experiments.ILogDataProvider;
+import cz.cuni.amis.experiments.ILoggingHeaders;
 import cz.cuni.amis.experiments.impl.AbstractExperimentRunner;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
+import cz.cuni.amis.utils.collections.ListConcatenation;
 import cz.cuni.amis.utils.objectmanager.IObjectFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,7 +43,8 @@ import java.util.List;
 public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperiment> {
     private IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory;
     private long maxSteps;
-    
+
+    private IEnvironmentExecutor environmentExecutor;
     private IEnvironmentExecutionResult lastExecutionResult;
 
     public AisteExperimentRunner(IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory) {
@@ -45,17 +55,24 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         this.environmentExecutorFactory = environmentExecutorFactory;
         this.maxSteps = maxSteps;
     }
+
     
 
+    
+    
     @Override
     protected EExperimentRunResult runExperimentInternal(AisteExperiment experiment) {
-        IEnvironmentExecutor environmentExecutor = environmentExecutorFactory.newObject();
-        environmentExecutor.setEnvironment(experiment.getEnvironment());
-        for(IAgentExecutionDescriptor descriptor : experiment.getDescriptors()){
-            environmentExecutor.addAgentController(descriptor);
+        environmentExecutor = environmentExecutorFactory.newObject();
+        try {
+            environmentExecutor.setEnvironment(experiment.getEnvironment());
+            for(IAgentExecutionDescriptor descriptor : experiment.getDescriptors()){
+                environmentExecutor.addAgentController(descriptor);
+            }
+            lastExecutionResult = environmentExecutor.executeEnvironment(maxSteps);
+            return EExperimentRunResult.SUCCESS;
+        } finally {
+            environmentExecutor.shutdown();
         }
-        lastExecutionResult = environmentExecutor.executeEnvironment(maxSteps);
-        return EExperimentRunResult.SUCCESS;
     }
 
     @Override
@@ -67,8 +84,35 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         }
         return providers;
     }
-    
-    
+
+    @Override
+    protected ILoggingHeaders getAdditionalLoggingHeaders(AisteExperiment experiment, ILogDataProvider provider) {
+        if(! (provider instanceof IAgentController)){
+            return super.getAdditionalLoggingHeaders(experiment, provider);
+        } else {
+            return LoggingHeadersConcatenation.concatenate(super.getAdditionalLoggingHeaders(experiment, provider), new LoggingHeaders("reward", "stepsElapsed") );
+        }
+    }
+
+    @Override
+    protected List<Object> getAdditionalLoggingDataValues(AisteExperiment experiment, ILogDataProvider provider) {
+        if(! (provider instanceof IAgentController)){
+            return super.getAdditionalLoggingDataValues(experiment, provider);            
+        } else {
+            IAgentController controller = (IAgentController)provider;
+            double reward = lastExecutionResult.getPerAgentResults().get(controller).getTotalReward();
+            List<Object> data = Arrays.asList(new Object[] {reward, lastExecutionResult.getNumberOfStepsElapsed()});
+            return ListConcatenation.concatenate(super.getAdditionalLoggingDataValues(experiment, provider), data);
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        super.shutdown();
+        if(environmentExecutor != null){
+            environmentExecutor.shutdown();
+        }
+    }
     
     
 }

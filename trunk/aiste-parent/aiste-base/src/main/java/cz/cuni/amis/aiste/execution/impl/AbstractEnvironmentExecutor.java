@@ -157,6 +157,13 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
             }
         }
     }
+
+    @Override
+    public void shutdown() {
+        stopSimulation();
+    }
+    
+    
     
     /**
      * Descendants may call this method to gather rewards from the environment.

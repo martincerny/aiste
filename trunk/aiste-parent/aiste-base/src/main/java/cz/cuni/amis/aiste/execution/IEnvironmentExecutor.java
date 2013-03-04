@@ -55,4 +55,9 @@ public interface IEnvironmentExecutor {
      * @param maxSteps maximum number of steps or zero for infinity
      */
     IEnvironmentExecutionResult executeEnvironment(long maxSteps);
+    
+    /**
+     * Release all resources associated with this executor
+     */
+    public void shutdown();
 }

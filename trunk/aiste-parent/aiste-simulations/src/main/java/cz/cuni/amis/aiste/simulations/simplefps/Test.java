@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.simulations.simplefps;
 
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
 
 /**
@@ -31,8 +32,8 @@ public class Test {
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
         executor.setEnvironment(fpsEnvironment);
-        executor.addAgentController(SimpleFPSAgentType.getInstance(), player1, fpsEnvironment);
-        executor.addAgentController(SimpleFPSAgentType.getInstance(), player2, fpsEnvironment);
+        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player1, fpsEnvironment));
+        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player2, fpsEnvironment));
         
         IEnvironmentExecutionResult result = executor.executeEnvironment(50 /*Max steps*/);
         

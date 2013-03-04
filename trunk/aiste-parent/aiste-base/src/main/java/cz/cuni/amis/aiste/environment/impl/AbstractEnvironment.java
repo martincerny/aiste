@@ -24,6 +24,12 @@ import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
+import cz.cuni.amis.experiments.IBareLoggingOutput;
+import cz.cuni.amis.experiments.ILogDataProvider;
+import cz.cuni.amis.experiments.ILogIdentifier;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.ClassLogIdentifier;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -45,6 +51,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     private final double failureReward;
     private List<IEnvironmentRepresentation> representations;
 
+    protected IBareLoggingOutput runtimeLoggingOutput;
 
     /**
      * Bodies that are active - ie. have been added and not yet removed.
@@ -231,8 +238,52 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
         removedBodies.add(body);
         totalRewards.put(body,  totalRewards.get(body) + failureReward);
     }
+
+    /**
+     * This implementation just returns null -> per agent logging not supported
+     * @return 
+     */
+    @Override
+    public Map<AgentBody, ILogDataProvider> getPerAgentLogDataProviders() {
+        return null;
+    }
+
+    @Override
+    public ILoggingHeaders getEnvironmentParametersHeaders() {
+        return LoggingHeaders.EMPTY_LOGGING_HEADERS;
+    }
+
+    @Override
+    public List<Object> getEnvironmentParametersValues() {
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public ILogIdentifier getIdentifier() {
+        return new ClassLogIdentifier(getClass());
+    }
+
+    @Override
+    public ILoggingHeaders getRuntimeLoggingHeaders() {
+        return LoggingHeaders.EMPTY_LOGGING_HEADERS;
+    }
+
+    @Override
+    public ILoggingHeaders getPerExperimentLoggingHeaders() {
+        return new LoggingHeaders("StepsPerformed");
+    }
+
+    @Override
+    public List<Object> getPerExperimentLoggingData() {
+        return Collections.<Object>singletonList(timeStep);
+    }
+
+    @Override
+    public void setRuntimeLoggingOutput(IBareLoggingOutput loggingOutput) {
+        runtimeLoggingOutput = loggingOutput;
+    }
     
-    
+ 
     
     
 }

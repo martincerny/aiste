@@ -268,6 +268,14 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         
         planFuture = startPlanningProcess();
     }
+
+    @Override
+    public void shutdown() {
+        super.shutdown();
+        if (planFuture != null && !planFuture.isDone()) {
+            planFuture.cancel(true);
+        }        
+    }
   
     
     
