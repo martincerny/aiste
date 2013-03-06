@@ -37,9 +37,9 @@ public class SpyVsSpyMapNode {
     Set<Integer> items;
 
     /**
-     * Whether a weapon can be picked up at given locatin
+     * Number of weapons that may be pickud up at given location
      */
-    boolean weapon;
+    int numWeapons;
     
     /**
      * The indices of trap removers that can be picked up at given location
@@ -65,11 +65,11 @@ public class SpyVsSpyMapNode {
         this.items = new HashSet<Integer>(original.items);
         this.posX = original.posX;
         this.posY = original.posY;
-        this.weapon = original.weapon;
+        this.numWeapons = original.numWeapons;
         this.numTrapRemovers =  Arrays.copyOf(original.numTrapRemovers, original.numTrapRemovers.length);
     }
     
-    public SpyVsSpyMapNode(int index, Set<Integer> traps, Set<Integer> items, Set<Integer> trapRemovers, int numTraps, boolean weapon, int posX, int posY) {
+    public SpyVsSpyMapNode(int index, Set<Integer> traps, Set<Integer> items, Set<Integer> trapRemovers, int numTraps, int numWeapons, int posX, int posY) {
         this.index = index;
         this.traps = new HashSet<Integer>(traps);
         this.items = new HashSet<Integer>(items);
@@ -79,7 +79,7 @@ public class SpyVsSpyMapNode {
         }
         this.posX = posX;
         this.posY = posY;
-        this.weapon = weapon;
+        this.numWeapons = numWeapons;
     }
 
     public SpyVsSpyMapNode(int index, int numTraps, int posX, int posY) {
@@ -115,14 +115,12 @@ public class SpyVsSpyMapNode {
         return posY;
     }   
 
-    public boolean isWeapon() {
-        return weapon;
+    public int getNumWeapons() {
+        return numWeapons;
     }
-    
-    
     
     @Override
     public String toString() {
-        return "MapNode index: " + index + " at [" + posX + "," + posY + "], traps:" + traps + ", items: " + items + ", trapRemovers: " + Arrays.toString(numTrapRemovers);
+        return "MapNode index: " + index + " at [" + posX + "," + posY + "], traps:" + traps + ", items: " + items + ", trapRemovers: " + Arrays.toString(numTrapRemovers) + ", numWeapons: " + numWeapons;
     }
 }
