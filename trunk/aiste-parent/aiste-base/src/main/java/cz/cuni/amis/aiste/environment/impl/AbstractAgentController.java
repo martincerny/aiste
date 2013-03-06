@@ -32,6 +32,7 @@ import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.experiments.impl.metrics.MetricCollection;
 import cz.cuni.amis.utils.collections.ListConcatenation;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,7 +45,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     protected REPRESENTATION representation;
     protected AgentBody body;
     protected long stepDelay;    
-    protected IBareLoggingOutput runtimeLoggingOutput;
+    private IBareLoggingOutput runtimeLoggingOutput;
     protected final ILoggingHeaders runtimeLoggingHeaders;
     protected final ILogIdentifier logIdentifier;
     
@@ -64,14 +65,18 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     }
     
     public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders) {
-        this(runtimeLoggingHeaders, null, null);
+        this(runtimeLoggingHeaders, LoggingHeaders.EMPTY_LOGGING_HEADERS, Collections.EMPTY_LIST);
     }        
     public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, Object ... controllerParameterValues) {
         this(runtimeLoggingHeaders, controllerParametersHeaders, Arrays.<Object>asList(controllerParameterValues));
     }
         
     public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, List<Object> controllerParameterValues) {
-        this.runtimeLoggingHeaders = runtimeLoggingHeaders;
+        if(runtimeLoggingHeaders.getColumnCount() > 0){
+            this.runtimeLoggingHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("step"), runtimeLoggingHeaders);
+        } else {
+            this.runtimeLoggingHeaders = runtimeLoggingHeaders;
+        }
         this.controllerParametersHeaders = controllerParametersHeaders;
         this.controllerParametersValues = controllerParameterValues;
         
@@ -156,6 +161,12 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
         return LoggingHeadersConcatenation.concatenate(controllerParametersHeaders, metrics.getHeaders());
     }
 
-  
+    /**
+     * Access to log only through this method, so that data added by superclasses is transparently logged.
+     * @param values 
+     */
+    protected void logRuntime(Object ... values){
+        runtimeLoggingOutput.logData(Collections.<Object>singletonList(environment.getTimeStep()), Arrays.asList(values));        
+    }
     
 }

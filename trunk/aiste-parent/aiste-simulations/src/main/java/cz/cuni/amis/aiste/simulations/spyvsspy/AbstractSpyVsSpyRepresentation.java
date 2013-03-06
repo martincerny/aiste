@@ -18,10 +18,7 @@
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.environment.AgentBody;
-import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
-import cz.cuni.amis.aiste.environment.IEnvironment;
-import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironmentRepresentation;
 
 /**

@@ -56,18 +56,23 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         this.maxSteps = maxSteps;
     }
 
+    @Override
+    protected void prepareExperiment(AisteExperiment experiment) {
+        super.prepareExperiment(experiment);
+        environmentExecutor = environmentExecutorFactory.newObject();
+        environmentExecutor.setEnvironment(experiment.getEnvironment());
+        for(IAgentExecutionDescriptor descriptor : experiment.getDescriptors()){
+            environmentExecutor.addAgentController(descriptor);
+        }
+    }
+
     
 
     
     
     @Override
     protected EExperimentRunResult runExperimentInternal(AisteExperiment experiment) {
-        environmentExecutor = environmentExecutorFactory.newObject();
         try {
-            environmentExecutor.setEnvironment(experiment.getEnvironment());
-            for(IAgentExecutionDescriptor descriptor : experiment.getDescriptors()){
-                environmentExecutor.addAgentController(descriptor);
-            }
             lastExecutionResult = environmentExecutor.executeEnvironment(maxSteps);
             return EExperimentRunResult.SUCCESS;
         } finally {

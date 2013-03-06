@@ -31,7 +31,7 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyRepresentation 
+public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription>
     implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy> {
     
     /*

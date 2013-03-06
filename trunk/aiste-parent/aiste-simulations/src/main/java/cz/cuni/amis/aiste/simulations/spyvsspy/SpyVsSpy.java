@@ -22,12 +22,15 @@ import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
+import cz.cuni.amis.aiste.environment.IPlanningRepresentation;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.experiments.ILoggingHeaders;
 import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
 import cz.cuni.amis.pathfinding.map.IPFMap;
+import cz.cuni.amis.utils.collections.ListConcatenation;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -56,6 +59,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
     SpyVsSpyPDDLRepresentation pDDLRepresentation;
     SpyVsSpyJShop2Representation jShop2Representation;
     
+    Map<AgentBody, ChangesSinceMarker> markerData;
+    
     /**
      * True if this environment is a clone, created only for simulation
      */
@@ -81,6 +86,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
         this.rand = new Random();
         this.isSimulation = original.isSimulation;
+        markerData = new HashMap<AgentBody, ChangesSinceMarker>();
     }
 
     public SpyVsSpy(List<SpyVsSpyMapNode> nodes, int maxPlayers, List<Integer> startingLocations, Map<Integer, List<Integer>> neighbours, int numTrapTypes, int[] trapCounts, int numItemTypes, int destination) {
@@ -103,9 +109,11 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         
         jShop2Representation = new SpyVsSpyJShop2Representation(this);
         registerRepresentation(jShop2Representation);
-        
-    }
 
+        markerData = new HashMap<AgentBody, ChangesSinceMarker>();
+        
+    }    
+    
     @Override
     public Map<? extends IAgentType, ? extends IAgentInstantiationDescriptor> getInstantiationDescriptors() {
         return Collections.singletonMap(SpyVsSpyAgentType.getInstance(), new AgentInstantiationDescriptor(1, defs.maxPlayers));
@@ -136,6 +144,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             currentNode.numTrapRemovers[trapRemoverIndex] += killedAgentInfo.numTrapRemoversCarried[trapRemoverIndex];
             killedAgentInfo.numTrapRemoversCarried[trapRemoverIndex] = 0;
         }
+        
+        if(killedAgentInfo.hasWeapon){
+            currentNode.weapon = true;
+            killedAgentInfo.hasWeapon = false;
+        }
+        
         //traps are not dropped, they are available, until they are all used
 
         //set reward, clear action
@@ -147,6 +161,15 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         if (defs.startingLocations.size() > 1) {
             while (randomStartLocation == killedAgentInfo.locationIndex) {
                 randomStartLocation = rand.nextInt(defs.startingLocations.size());
+            }
+        }
+        
+        //note changes for markers
+        for(Map.Entry<AgentBody, ChangesSinceMarker> markerEntry : markerData.entrySet()){
+            if(markerEntry.getKey().equals(killedAgent)){
+                markerEntry.getValue().agentHasDied = true;
+            } else {
+                markerEntry.getValue().numOtherAgentsDeaths++;
             }
         }
 
@@ -192,6 +215,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         }
         
         //evaluate attack actions
+        //agents killed by attack are first gathered and then all killed instantly, to properly resolve mutual attacks
+        Set<AgentBody> agentsToKillByAttack = new HashSet<AgentBody>();
         for (AgentBody agentBody : actionsToPerform.keySet()) {
             SpyVsSpyAction action = actionsToPerform.get(agentBody);
             SpyVsSpyBodyInfo bodyInfo = bodyInfos.get(agentBody.getId());
@@ -203,11 +228,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     agentFailedAction(agentBody);
                     continue;
                 }
-                if (rand.nextDouble() < defs.attackSuccessProbability) {
+                if (bodyInfo.hasWeapon || rand.nextDouble() < defs.attackSuccessProbability) {
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
-                    killAgent(getAllBodies().get(action.getActionTarget()), actionsToPerform, reward);
+                    bodyInfo.hasWeapon = false; //weapon is for one use only
+                    
+                    AgentBody targetBody = getAllBodies().get(action.getActionTarget());                    
+                    agentsToKillByAttack.add(targetBody);
                 } else {
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Unsuccesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
@@ -215,6 +243,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     agentFailedAction(agentBody);
                 }
             }
+        }
+        
+        for(AgentBody bodyToKill : agentsToKillByAttack){
+            killAgent(bodyToKill, actionsToPerform, reward);
         }
 
         //evaluate remove trap actions
@@ -253,6 +285,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         && bodyInfo.numTrapsCarried[targetTrap] > 0) {
                     location.traps.add(targetTrap);
                     bodyInfo.numTrapsCarried[targetTrap]--;
+                    
+                    //update marker data
+                    for(ChangesSinceMarker changes : markerData.values()){
+                        changes.numTrapsSet++;
+                    }
+                    
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
@@ -277,6 +315,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     if (checkTrapSet(agentBody, actionsToPerform, reward)) {
                         bodyInfo.numTrapRemoversCarried[targetTrap]++;
                         location.numTrapRemovers[targetTrap]--;
+                        
+                        //update marker data
+                        for(ChangesSinceMarker changes : markerData.values()){
+                            changes.numRemoversTaken++;
+                        }
+                        
                         if (logger.isDebugEnabled() && !isSimulation) {
                             logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                         }
@@ -303,6 +347,41 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     if (checkTrapSet(agentBody, actionsToPerform, reward)) {
                         bodyInfo.itemsCarried.add(targetItem);
                         location.items.remove(targetItem);
+                        
+                        //update marker data
+                        for(ChangesSinceMarker changes : markerData.values()){
+                            changes.numItemsTaken++;
+                        }
+                        
+                        if (logger.isDebugEnabled() && !isSimulation) {
+                            logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                        }
+                    }
+                } else {
+                    if (logger.isDebugEnabled() && !isSimulation) {
+                        logger.debug("Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
+                    }
+                    agentFailedAction(agentBody);
+                }
+            }
+        }
+        
+        //evaluate pickup weapon actions
+        for (AgentBody agentBody : actionsToPerform.keySet()) {
+            SpyVsSpyAction action = actionsToPerform.get(agentBody);
+            SpyVsSpyBodyInfo bodyInfo = bodyInfos.get(agentBody.getId());
+            if (action.getType() == SpyVsSpyAction.ActionType.PICKUP_WEAPON) {
+                SpyVsSpyMapNode location = nodes.get(bodyInfo.locationIndex);
+                if (location.weapon) {
+                    if (checkTrapSet(agentBody, actionsToPerform, reward)) {
+                        bodyInfo.hasWeapon = true;
+                        location.weapon = false;
+                        
+                        //update marker data
+                        for(ChangesSinceMarker changes : markerData.values()){
+                            changes.numWeaponsTaken++;
+                        }
+                        
                         if (logger.isDebugEnabled() && !isSimulation) {
                             logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                         }
@@ -323,6 +402,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             if (action.getType() == SpyVsSpyAction.ActionType.MOVE) {
                 if (defs.neighbours.get(bodyInfo.locationIndex).contains(action.getActionTarget())) {
                     bodyInfo.locationIndex = action.getActionTarget();
+
+                    //update marker data
+                    for(ChangesSinceMarker changes : markerData.values()){
+                        changes.numAgentMoves++;
+                    }
+                    
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
@@ -397,9 +482,42 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         return jShop2Representation;
     }
 
+    @Override
+    public ILoggingHeaders getEnvironmentParametersHeaders() {
+        return LoggingHeadersConcatenation.concatenate(super.getEnvironmentParametersHeaders(), 
+                new LoggingHeaders("numNodes", "numTrapTypes", "numItemTypes", "attackSuccesProb"));
+    }
 
+    @Override
+    public List<Object> getEnvironmentParametersValues() {
+        return ListConcatenation.concatenate(super.getEnvironmentParametersValues(), Arrays.asList(new Object[]{nodes.size(), defs.numTrapTypes, defs.numItemTypes, defs.attackSuccessProbability }));
+    }
+
+    public synchronized void setMarker(AgentBody body){
+        markerData.put(body, new ChangesSinceMarker());
+    }
     
+    public ChangesSinceMarker getChangesSinceMarker(AgentBody body){
+        if(markerData.containsKey(body)){
+            return markerData.get(body);
+        } else {
+            return new ChangesSinceMarker();
+        }
+    }
     
+    /**
+     * Class that allows the implementation of markers for {@link IPlanningRepresentation#environmentChangedConsiderablySinceLastMarker() }
+     */
+    public static class ChangesSinceMarker {
+        int numWeaponsTaken = 0;
+        int numItemsTaken = 0;
+        int numTrapsSet = 0;
+        int numAgentMoves = 0;
+        int numOtherAgentsDeaths = 0;
+        int numRemoversTaken = 0;
+        boolean agentHasDied = false;                
+    }
+
     /**
      * Static definitions that do not change throughout simulation - used for creating simulable copies
      */

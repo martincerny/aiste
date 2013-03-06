@@ -32,7 +32,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation implements ISimulableJShop2Representation<SpyVsSpyAction, SpyVsSpy> {
+public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepresentation<JSHOP2, IJShop2Problem, Predicate> implements ISimulableJShop2Representation<SpyVsSpyAction, SpyVsSpy> {
 
     private final Logger logger = Logger.getLogger(SpyVsSpyJShop2Representation.class);
 
@@ -51,9 +51,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyRepresentation
     String[] additionalConstantNames;
     
     Map<AgentBody, JSHOP2> jshops = new HashMap<AgentBody, JSHOP2>();
-    
-    boolean termsInitialized = false;
-    
+        
     /**
      * Set of action ids that correspond to no real action
      */

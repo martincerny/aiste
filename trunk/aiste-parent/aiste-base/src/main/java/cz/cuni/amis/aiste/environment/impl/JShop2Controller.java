@@ -79,8 +79,8 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     
     @Override
     protected IFutureWithListeners<List<Plan>> startPlanningProcess() {
-        final JShop2PlanningFuture future = new JShop2PlanningFuture();
         final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, representation.getProblem(body));
+        final JShop2PlanningFuture future = new JShop2PlanningFuture(planningProcess);
         new Thread(new Runnable() {
 
             @Override
@@ -92,7 +92,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
                             if (planningResult != null) {
                                 future.setResult(planningResult);
                             } else {
-                                //null result signalls cancellation
+                                //null result signals cancellation
                                 future.cancel(true);
                             }
                         }
@@ -116,23 +116,43 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     }
 
     private class JShop2PlanningFuture extends FutureWithListeners<List<Plan>> {
+
+        JShop2PlanningProcess process;
+
+        public JShop2PlanningFuture(JShop2PlanningProcess process) {
+            this.process = process;
+        }
+        
+        
+        
+        @Override
+        protected boolean cancelComputation(boolean mayInterruptIfRunning) {
+            if(!mayInterruptIfRunning){
+                return super.cancelComputation(mayInterruptIfRunning);
+            } else {
+                process.cancel();
+                return true;
+            }
+        }
+        
     }
 
     private class JShop2PlanningProcess {
 
         JSHOP2 jshop;
         IJShop2Problem problem;
+        boolean cancelled;
 
         public JShop2PlanningProcess(JSHOP2 jshop, IJShop2Problem problem) {
             this.jshop = jshop;
             this.problem = problem;
+            cancelled = false;
         }
 
 
 
         public List<Plan> execute() {
                 //initialization is now done in representation.getDomain()... Curse static objects!
-		//TermConstant.initialize(domain.getDomainConstantCount() + problem.getProblemConstants().length);
 
 		jshop.getDomain().setProblemConstants(problem.getProblemConstants());
 
@@ -144,5 +164,12 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
                 
                 return p;
 	}
+        
+        public void cancel(){
+            if(!cancelled){
+                jshop.cancel();
+            } 
+            cancelled = true;
+        }
     }
 }

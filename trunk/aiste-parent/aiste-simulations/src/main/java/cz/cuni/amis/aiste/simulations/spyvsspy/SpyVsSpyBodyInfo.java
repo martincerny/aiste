@@ -40,6 +40,8 @@ public class SpyVsSpyBodyInfo  {
     Set<Integer> itemsCarried;
     
     int[] numTrapRemoversCarried;
+    
+    boolean hasWeapon;
 
     public SpyVsSpyBodyInfo(SpyVsSpyBodyInfo original) {
         this.body = original.body;
@@ -47,6 +49,7 @@ public class SpyVsSpyBodyInfo  {
         this.numTrapsCarried = Arrays.copyOf(original.numTrapsCarried, original.numTrapsCarried.length);
         this.numTrapRemoversCarried = Arrays.copyOf(original.numTrapRemoversCarried, original.numTrapRemoversCarried.length);
         this.itemsCarried = new HashSet<Integer>(original.itemsCarried);        
+        this.hasWeapon = original.hasWeapon;
     }
     
     
@@ -57,13 +60,15 @@ public class SpyVsSpyBodyInfo  {
         this.numTrapsCarried = Arrays.copyOf(numTrapsCarried, numTrapsCarried.length);
         numTrapRemoversCarried = new int[numTraps];
         itemsCarried = new HashSet<Integer>();
+        hasWeapon = false;
     }
 
     @Override
     public String toString() {
         
-        return "SpyVsSpyBodyInfo id: " + body.getId() + ", locationIndex: " + locationIndex + ", numTrapsCarried: " + Arrays.toString(numTrapsCarried) + ", itemsCarried: " + itemsCarried + ", numTrapRemoversCarried: " + Arrays.toString(numTrapRemoversCarried);
+        return "SpyVsSpyBodyInfo id: " + body.getId() + ", locationIndex: " + locationIndex + ", numTrapsCarried: " + Arrays.toString(numTrapsCarried) + ", itemsCarried: " + itemsCarried + ", numTrapRemoversCarried: " + Arrays.toString(numTrapRemoversCarried) + ", hasWeapon:" + hasWeapon;
     }
+
     
     
     

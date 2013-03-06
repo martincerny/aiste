@@ -30,6 +30,7 @@ import cz.cuni.amis.experiments.ILogIdentifier;
 import cz.cuni.amis.experiments.ILoggingHeaders;
 import cz.cuni.amis.experiments.impl.ClassLogIdentifier;
 import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.NullLoggingOutput;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -68,7 +69,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     /**
      * Constructor that creates a shallow copy of specified environment.
      * Namely: everything related bodies are the same list (changes will propagate)
-     * totalRewards are copied
+     * totalRewards are copied, logging output is NOT copied.
      * @param original 
      */
     protected AbstractEnvironment(AbstractEnvironment original){
@@ -81,6 +82,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
         this.activeBodies = original.activeBodies;
         this.removedBodies = original.removedBodies;
         this.instanceCount = original.instanceCount;
+        this.runtimeLoggingOutput = NullLoggingOutput.NULL_LOG;
         
         //total rewards are the only thing that is deeply copied
         this.totalRewards = new HashMap<AgentBody, Double>(original.totalRewards);
