@@ -20,7 +20,6 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
-import cz.cuni.amis.aiste.simulations.utils.SeedableRandomGraphGenerator;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.IPlanner;
 import cz.cuni.amis.planning4j.IPlanningResult;
@@ -29,11 +28,6 @@ import cz.cuni.amis.planning4j.pddl.PDDLProblem;
 import cz.cuni.amis.planning4j.utils.Planning4JUtils;
 import java.util.*;
 import org.apache.log4j.Logger;
-import org.jgrapht.EdgeFactory;
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.VertexFactory;
-import org.jgrapht.generate.RandomGraphGenerator;
-import org.jgrapht.graph.SimpleGraph;
 import umontreal.iro.lecuyer.probdist.BinomialDist;
 import umontreal.iro.lecuyer.probdist.DiscreteDistributionInt;
 import umontreal.iro.lecuyer.probdist.NegativeBinomialDist;
@@ -55,6 +49,8 @@ public class SpyVsSpyGenerator implements IRandomizable{
     private int numItemTypes;
 
     private int numTrapTypes;
+    
+    private int numWeapons;
 
     private double itemTrappedProbability;
 
@@ -67,7 +63,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
 
     private Random rand;
     
-    public SpyVsSpyGenerator(int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, IPlanner plannerToTestDomain) {
+    public SpyVsSpyGenerator(int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons, IPlanner plannerToTestDomain) {
         this.maxPlayers = maxPlayers;
         this.numNodes = numNodes;
         this.meanNodeDegree = meanNodeDegree;
@@ -75,6 +71,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
         this.numTrapTypes = numTrapTypes;
         this.itemTrappedProbability = itemTrappedProbability;
         this.plannerToTestDomain = plannerToTestDomain;
+        this.numWeapons = numWeapons;
         rand = new Random();
     }
 
@@ -241,7 +238,13 @@ public class SpyVsSpyGenerator implements IRandomizable{
                     nodeWithItem.getNumTrapRemovers()[trapRemoverType]++;
                 }
             }
-
+            
+            //Generate weapons
+            List<Integer> weaponLocations = new ArrayList<Integer>(RandomUtils.randomSampleOfIntegerRange(0, numNodes, numWeapons, rand));
+            for(int weaponLocation : weaponLocations){
+                nodes.get(weaponLocation).numWeapons = 1;
+            }
+            
 
 
             int destination = rand.nextInt(numNodes);

@@ -145,10 +145,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             killedAgentInfo.numTrapRemoversCarried[trapRemoverIndex] = 0;
         }
         
-        if(killedAgentInfo.hasWeapon){
-            currentNode.weapon = true;
-            killedAgentInfo.hasWeapon = false;
-        }
+        currentNode.numWeapons += killedAgentInfo.numWeapons;
+        killedAgentInfo.numWeapons = 0;
         
         //traps are not dropped, they are available, until they are all used
 
@@ -228,11 +226,11 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     agentFailedAction(agentBody);
                     continue;
                 }
-                if (bodyInfo.hasWeapon || rand.nextDouble() < defs.attackSuccessProbability) {
+                if (bodyInfo.numWeapons > 0 || rand.nextDouble() < defs.attackSuccessProbability) {
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug("Succesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
-                    bodyInfo.hasWeapon = false; //weapon is for one use only
+                    bodyInfo.numWeapons--; //weapon is for one use only
                     
                     AgentBody targetBody = getAllBodies().get(action.getActionTarget());                    
                     agentsToKillByAttack.add(targetBody);
@@ -372,10 +370,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             SpyVsSpyBodyInfo bodyInfo = bodyInfos.get(agentBody.getId());
             if (action.getType() == SpyVsSpyAction.ActionType.PICKUP_WEAPON) {
                 SpyVsSpyMapNode location = nodes.get(bodyInfo.locationIndex);
-                if (location.weapon) {
+                if (location.numWeapons > 0) {
                     if (checkTrapSet(agentBody, actionsToPerform, reward)) {
-                        bodyInfo.hasWeapon = true;
-                        location.weapon = false;
+                        bodyInfo.numWeapons++;
+                        location.numWeapons--;
                         
                         //update marker data
                         for(ChangesSinceMarker changes : markerData.values()){

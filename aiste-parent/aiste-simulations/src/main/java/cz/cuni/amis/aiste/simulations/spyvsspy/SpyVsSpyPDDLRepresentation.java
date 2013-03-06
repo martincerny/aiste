@@ -43,6 +43,7 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     PDDLType trapType;
     PDDLType trapRemoverType;
     PDDLType oponentType;
+    PDDLType weaponType;
     
     PDDLObjectInstance[] itemConstants;
     PDDLObjectInstance[] locationConstants;
@@ -55,19 +56,21 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     PDDLPredicate oponentCarryingObjectPredicate;
     PDDLPredicate trapSetPredicate;
     PDDLPredicate removesTrapPredicate;
-    PDDLPredicate attackedOponent;
-    PDDLPredicate metOponent;
+    PDDLPredicate killedOponentPredicate;
+    PDDLPredicate metOponentPredicate;
 
     PDDLSimpleAction moveAction;
     PDDLSimpleAction takeObjectAction;
     PDDLSimpleAction removeTrapAction;
     PDDLSimpleAction setTrapAction;
     PDDLSimpleAction attackAction;
-
+    PDDLSimpleAction attackWithWeaponAction;
+    
     public static final String LOCATION_PREFIX = "location";
     public static final String ITEM_PREFIX = "item";
     public static final String TRAP_PREFIX = "trap";
     public static final String REMOVER_PREFIX = "remover";
+    public static final String WEAPON_PREFIX = "weapon";
     public static final String SEPARATOR = "_";
 
     public SpyVsSpyPDDLRepresentation(SpyVsSpy environment) {
@@ -81,9 +84,11 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         itemType = new PDDLType("item", interactiveObjectType);
         trapType = new PDDLType("trap", interactiveObjectType);
         trapRemoverType = new PDDLType("trapRemover", interactiveObjectType);
+        weaponType = new PDDLType("weapon", interactiveObjectType);
 
 
         locationType = new PDDLType("location");
+        oponentType = new PDDLType("oponent");
 
         locationConstants = new PDDLObjectInstance[environment.nodes.size()];
         for (int i = 0; i < environment.nodes.size(); i++) {
@@ -96,6 +101,11 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         carryingObjectPredicate = new PDDLPredicate("carrying", new PDDLParameter("obj", interactiveObjectType));
         trapSetPredicate = new PDDLPredicate("trapSet", new PDDLParameter("trap", trapType), new PDDLParameter("loc", locationType));
         removesTrapPredicate = new PDDLPredicate("removesTrap", new PDDLParameter("remover", trapRemoverType), new PDDLParameter("trap", trapType));
+        
+        killedOponentPredicate = new PDDLPredicate("killedOponent", new PDDLParameter("oponent", oponentType));
+        metOponentPredicate = new PDDLPredicate("metOponent", new PDDLParameter("oponent", oponentType));
+        oponentCarryingObjectPredicate = new PDDLPredicate("oponentCarrying", new PDDLParameter("oponent", oponentType), new PDDLParameter("obj", interactiveObjectType));
+        oponentAtPredicate = new PDDLPredicate("oponentAt", new PDDLParameter("oponent", oponentType), new PDDLParameter("loc", locationType));
 
         moveAction = new PDDLSimpleAction("move", new PDDLParameter("from", locationType), new PDDLParameter("to", locationType));
         moveAction.setPreconditionList(
@@ -129,6 +139,20 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         setTrapAction.setPositiveEffects(objectAtPredicate.stringAfterSubstitution("?trap", "?loc"));
         setTrapAction.setNegativeEffects(carryingObjectPredicate.stringAfterSubstitution("?trap"));
 
+        attackWithWeaponAction = new PDDLSimpleAction("attackWithWeapon", new PDDLParameter("oponent", oponentType), new PDDLParameter("weapon", weaponType), new PDDLParameter("loc", locationType));
+        attackWithWeaponAction.setPreconditionList(
+                carryingObjectPredicate.stringAfterSubstitution("?weapon"),
+                oponentAtPredicate.stringAfterSubstitution("?oponent", "?loc")
+                );
+        attackWithWeaponAction.setPositiveEffects(metOponentPredicate.stringAfterSubstitution("?oponent"),
+                killedOponentPredicate.stringAfterSubstitution("?oponent"),
+                "(forall (?item - " + interactiveObjectType.getTypeName() + ") "
+                    + "(when (" + oponentCarryingObjectPredicate.stringAfterSubstitution("?oponent", "?item") + ")"
+                    + " (and (not ( " + oponentCarryingObjectPredicate.stringAfterSubstitution("?oponent", "?item") + "))"
+                        + objectAtPredicate.stringAfterSubstitution("?item", "?loc") + ")"
+                    
+                );
+        
         itemConstants = new PDDLObjectInstance[environment.defs.numItemTypes];
         for (int i = 0; i < environment.defs.numItemTypes; i++) {
             itemConstants[i] = new PDDLObjectInstance(ITEM_PREFIX + SEPARATOR + i, itemType);
@@ -140,12 +164,14 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     
     @Override
     public PDDLDomain getDomain(AgentBody body) {
-        PDDLDomain domain = new PDDLDomain("SpyVsSpy", EnumSet.of(PDDLRequirement.TYPING, PDDLRequirement.STRIPS));
+        PDDLDomain domain = new PDDLDomain("SpyVsSpy", EnumSet.of(PDDLRequirement.TYPING, PDDLRequirement.STRIPS, PDDLRequirement.CONDITIONAL_EFFECTS));
         domain.addType(locationType);
         domain.addType(interactiveObjectType);
         domain.addType(itemType);
         domain.addType(trapType);
         domain.addType(trapRemoverType);
+        domain.addType(oponentType);
+        domain.addType(weaponType);
 
         domain.addPredicate(playerAtPredicate);
         domain.addPredicate(adjacentPredicate);
@@ -153,12 +179,17 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         domain.addPredicate(objectAtPredicate);
         domain.addPredicate(carryingObjectPredicate);
         domain.addPredicate(removesTrapPredicate);
+        domain.addPredicate(oponentAtPredicate);
+        domain.addPredicate(oponentCarryingObjectPredicate);
+        domain.addPredicate(metOponentPredicate);
+        domain.addPredicate(killedOponentPredicate);
 
 
         domain.addAction(moveAction);
         domain.addAction(takeObjectAction);
         domain.addAction(setTrapAction);
         domain.addAction(removeTrapAction);
+//        domain.addAction(attackWithWeaponAction);
         return domain;
     }
 
