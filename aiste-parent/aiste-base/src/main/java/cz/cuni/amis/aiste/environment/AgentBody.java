@@ -26,6 +26,10 @@ import cz.cuni.amis.aiste.environment.IAgentType;
 public class AgentBody {
 
    
+    /**
+     * Id must be unique withini single environment instance.
+     * It is the single member used in equals and hashCode.
+     */
     private int id;
     
     private IAgentType type;
@@ -52,6 +56,26 @@ public class AgentBody {
     @Override
     public String toString() {
         return type.getName() + ": " + id;
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final AgentBody other = (AgentBody) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        return true;
     }
 
 

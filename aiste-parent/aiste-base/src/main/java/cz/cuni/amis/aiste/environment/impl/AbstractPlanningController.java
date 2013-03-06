@@ -19,6 +19,7 @@ package cz.cuni.amis.aiste.environment.impl;
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.experiments.impl.metrics.IncrementalMetric;
 import cz.cuni.amis.experiments.impl.metrics.IntegerAverageMetric;
 import cz.cuni.amis.experiments.impl.metrics.TimeMeasuringMetric;
@@ -54,6 +55,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     protected IncrementalMetric numSuccesfulPlanning;
     protected IncrementalMetric numUnsuccesfulPlanning;
     protected IncrementalMetric numPlanningExceptions;
+    protected IncrementalMetric numStepsIdle;
     
     protected IntegerAverageMetric averagePlanLength;
     protected IntegerAverageMetric averageTimePerSuccesfulPlanning;
@@ -62,6 +64,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     long lastPlanningStartTime = 0;
     
     public AbstractPlanningController(ValidationMethod validationMethod) {
+        super(new LoggingHeaders("planningStatus"), new LoggingHeaders("validationMethod"), validationMethod);
         this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<PLANNER_ACTION>();
         actionsToPerform = new ArrayDeque<IAction>();
@@ -84,6 +87,8 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         metrics.addMetric(numUnsuccesfulPlanning);
         numPlanningExceptions = new IncrementalMetric("numPlanningExceptions");
         metrics.addMetric(numPlanningExceptions);
+        numStepsIdle = new IncrementalMetric("numStepsIdle");
+        metrics.addMetric(numStepsIdle);        
 
         averagePlanLength = new IntegerAverageMetric("avgPlanLength");
         metrics.addMetric(averagePlanLength);
@@ -122,9 +127,18 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     @Override
     public void onSimulationStep(double reward) {
         super.onSimulationStep(reward);
+        if(planFuture == null){
+            logRuntime("PERFORMING_PLAN");
+        } else {
+            logRuntime(planFuture.getStatus());            
+        }
         if (planFuture != null) {
             switch (planFuture.getStatus()) {
-                case FUTURE_IS_BEING_COMPUTED: //do nothing and wait
+                case FUTURE_IS_BEING_COMPUTED: //do nothing and wait                    
+                    if(representation.environmentChangedConsiderablySinceLastMarker(body)){
+                        //the plan currently computed is probably useless. Restart the planning process.
+                        startPlanning();
+                    }
                     break;
                 case CANCELED: {
                     if (logger.isDebugEnabled()) {
@@ -193,6 +207,8 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         }
         if(!actionsToPerform.isEmpty()){
             getEnvironment().act(getBody(), actionsToPerform.poll());            
+        } else {
+            numStepsIdle.increment();
         }
         
     }
@@ -262,6 +278,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         if (planFuture != null && !planFuture.isDone()) {
             planFuture.cancel(true);
         }        
+        representation.setMarker(body);
         lastPlanningStartTime = System.currentTimeMillis();
         timeSpentPlanning.taskStarted();
         numPlannerExecutions.increment();

@@ -27,4 +27,15 @@ public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION
     public PROBLEM getProblem(AgentBody body);
     public List<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner, AgentBody body);    
     
+    /**
+     * Sets a marker for further retrieval with {@link #environmentChangedConsiderablySinceLastMarker() }
+     */
+    public void setMarker(AgentBody body);
+    
+    /**
+     * True if environment changed so much since the marked time, that plans
+     * based on the state at the time of the marker are probably useless.
+     * @return 
+     */
+    public boolean environmentChangedConsiderablySinceLastMarker(AgentBody body);
 }

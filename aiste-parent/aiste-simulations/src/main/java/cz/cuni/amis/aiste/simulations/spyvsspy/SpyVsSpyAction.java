@@ -28,13 +28,15 @@ public class SpyVsSpyAction implements IAction{
         MOVE,
         PICKUP_ITEM,
         PICKUP_TRAP_REMOVER,
+        PICKUP_WEAPON,
         SET_TRAP,
         REMOVE_TRAP,
-        ATTACK_AGENT,
+        ATTACK_AGENT,        
         NO_OP
     }
     
     public static final SpyVsSpyAction NO_OP_ACTION = new SpyVsSpyAction(ActionType.NO_OP, -1);
+    public static final SpyVsSpyAction PICKUP_WEAPON_ACTION = new SpyVsSpyAction(ActionType.PICKUP_WEAPON, -1);
     
     private ActionType type;
     
