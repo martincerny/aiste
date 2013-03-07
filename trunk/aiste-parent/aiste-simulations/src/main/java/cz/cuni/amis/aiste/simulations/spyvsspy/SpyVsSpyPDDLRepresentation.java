@@ -19,8 +19,9 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
-import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
+import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePDDLRepresentation;
+import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.pddl.*;
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     public static final String TRAP_PREFIX = "trap";
     public static final String REMOVER_PREFIX = "remover";
     public static final String WEAPON_PREFIX = "weapon";
+    public static final String OPONENT_PREFIX = "oponent";
     public static final String SEPARATOR = "_";
 
     public SpyVsSpyPDDLRepresentation(SpyVsSpy environment) {
@@ -210,10 +212,11 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
             trapRemoverInstances.add(new ArrayList<PDDLObjectInstance>());
         }
         
-        SpyVsSpyBodyInfo bodyInfo = environment.bodyInfos.get(body.getId());        
-
         List<String> initialLiterals = new ArrayList<String>();
-        initialLiterals.add(playerAtPredicate.stringAfterSubstitution(locationConstants[bodyInfo.locationIndex]));
+        
+        boolean hasSomeWeapons = false;
+        int weaponIndex = 0;
+        
         for (SpyVsSpyMapNode n : environment.nodes) {
             PDDLObjectInstance nodeInstance = locationConstants[n.index];
             for (Integer neighbourIndex : environment.defs.neighbours.get(n.index)) {
@@ -235,25 +238,98 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                     initialLiterals.add(objectAtPredicate.stringAfterSubstitution(newTrapRemoverInstance, nodeInstance));
                 }
             }
-        }
-
-        for (int carriedItemType : bodyInfo.itemsCarried) {
-            initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(itemConstants[carriedItemType]));
-        }
-
-        for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
-            for (int i = 0; i < bodyInfo.numTrapsCarried[trapTypeIndex]; i++) {
-                PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
-                initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapInstance));
-            }
-            for (int i = 0; i < bodyInfo.numTrapRemoversCarried[trapTypeIndex]; i++) {
-                PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, trapTypeIndex, problem);
-                initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapRemoverInstance));
+            
+            for(int i = 0; i < n.numWeapons; i++){
+                hasSomeWeapons = true;
+                PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
+                problem.addObject(newWeaponInstance);                
+                weaponIndex++;
+                initialLiterals.add(objectAtPredicate.stringAfterSubstitution(newWeaponInstance, nodeInstance));
             }
         }
+
+        
+
+        
+        boolean hasSomeOponents = false;
+        for(int currentBodyID = 0; currentBodyID < environment.bodyInfos.size(); currentBodyID++){
+            SpyVsSpyBodyInfo bodyInfo = environment.bodyInfos.get(currentBodyID);
+            if(currentBodyID == body.getId()){
+                //generate facts for the current player
+                initialLiterals.add(playerAtPredicate.stringAfterSubstitution(locationConstants[bodyInfo.locationIndex]));
+
+                for (int carriedItemType : bodyInfo.itemsCarried) {
+                    initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(itemConstants[carriedItemType]));
+                }
+
+                for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
+                    for (int i = 0; i < bodyInfo.numTrapsCarried[trapTypeIndex]; i++) {
+                        PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
+                        initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapInstance));
+                    }
+                    for (int i = 0; i < bodyInfo.numTrapRemoversCarried[trapTypeIndex]; i++) {
+                        PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, trapTypeIndex, problem);
+                        initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newTrapRemoverInstance));
+                    }
+                }      
+                
+                for(int i = 0; i < bodyInfo.numWeapons; i++){
+                    hasSomeWeapons = true;
+                    PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
+                    problem.addObject(newWeaponInstance);                
+                    weaponIndex++;
+                    initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newWeaponInstance));
+                }
+                
+            }
+            else {
+                //generate facts for oponents
+                hasSomeOponents = true;
+                PDDLObjectInstance oponent = new PDDLObjectInstance(OPONENT_PREFIX + SEPARATOR + currentBodyID, oponentType);
+                problem.addObject(oponent);
+                initialLiterals.add(oponentAtPredicate.stringAfterSubstitution(oponent, locationConstants[bodyInfo.locationIndex]));
+
+                for (int carriedItemType : bodyInfo.itemsCarried) {
+                    initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, itemConstants[carriedItemType]));
+                }
+
+                for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
+                    for (int i = 0; i < bodyInfo.numTrapsCarried[trapTypeIndex]; i++) {
+                        PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
+                        initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newTrapInstance));
+                    }
+                    for (int i = 0; i < bodyInfo.numTrapRemoversCarried[trapTypeIndex]; i++) {
+                        PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, trapTypeIndex, problem);
+                        initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newTrapRemoverInstance));
+                    }
+                }      
+                
+                for(int i = 0; i < bodyInfo.numWeapons; i++){
+                    hasSomeWeapons = true;
+                    PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
+                    problem.addObject(newWeaponInstance);                
+                    weaponIndex++;
+                    initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newWeaponInstance));
+                }
+                
+                
+            }
+        }
+        
+        if(!hasSomeOponents){
+            //create dummy oponent, so that FF does not complain
+            PDDLObjectInstance dummyOponent = new PDDLObjectInstance(OPONENT_PREFIX + SEPARATOR + "dummy", oponentType);
+            problem.addObject(dummyOponent);            
+        }
+        
+        if(!hasSomeWeapons){
+            //create dummy weapon, so that FF does not complain
+            PDDLObjectInstance dummyWeapon = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + "dummy", weaponType);
+            problem.addObject(dummyWeapon);                        
+        }            
 
         /*
-         * Generate removesTrap predicat
+         * Generate removesTrap predicate
          */
         for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
             for (PDDLObjectInstance trapRemover : trapRemoverInstances.get(trapTypeIndex)) {
@@ -299,36 +375,34 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     }
 
     @Override
-    public List<? extends SpyVsSpyAction> translateAction(ActionDescription actionFromPlanner, AgentBody body) {
-        List<SpyVsSpyAction> actions = new ArrayList<SpyVsSpyAction>(1);
+    public IReactivePlan<SpyVsSpyAction> translateAction(ActionDescription actionFromPlanner, AgentBody body) {
         if (actionFromPlanner.getName().equalsIgnoreCase(moveAction.getName())) {
             int targetLocation = extractActionParameter(actionFromPlanner, 1, LOCATION_PREFIX);
-            actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
+            return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));
 
         } else if (actionFromPlanner.getName().equalsIgnoreCase(takeObjectAction.getName())) {
             String objectParameter = actionFromPlanner.getParameters().get(0).toLowerCase();
             if (objectParameter.startsWith(REMOVER_PREFIX.toLowerCase())) {
                 int targetRemover = extractActionParameter(actionFromPlanner, 0, REMOVER_PREFIX);
-                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, targetRemover));
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, targetRemover));
             } else if (objectParameter.startsWith(ITEM_PREFIX.toLowerCase())) {
                 int targetItem = extractActionParameter(actionFromPlanner, 0, ITEM_PREFIX);
-                actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));
             } else {
                 throw new AisteException("Unrecognized item to pickup: " + objectParameter);
             }
 
         } else if (actionFromPlanner.getName().equalsIgnoreCase(removeTrapAction.getName())) {
             int targetTrap = extractActionParameter(actionFromPlanner, 1, TRAP_PREFIX);
-            actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, targetTrap));
+            return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, targetTrap));
 
         } else if (actionFromPlanner.getName().equalsIgnoreCase(setTrapAction.getName())) {
             int targetTrap = extractActionParameter(actionFromPlanner, 0, TRAP_PREFIX);                
-            actions.add(new SpyVsSpyAction(SpyVsSpyAction.ActionType.SET_TRAP, targetTrap));
+            return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.SET_TRAP, targetTrap));
 
         } else {
             throw new AisteException("Unrecognized action name: " + actionFromPlanner.getName());
         }
-        return actions;
     }
  
     

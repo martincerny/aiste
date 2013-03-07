@@ -16,8 +16,6 @@
  */
 package cz.cuni.amis.aiste.environment;
 
-import java.util.List;
-
 /**
  *
  * @author Martin Cerny
@@ -25,7 +23,7 @@ import java.util.List;
 public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction> extends IEnvironmentRepresentation {
     public DOMAIN getDomain(AgentBody body);
     public PROBLEM getProblem(AgentBody body);
-    public List<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner, AgentBody body);    
+    public IReactivePlan<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner, AgentBody body);    
     
     /**
      * Sets a marker for further retrieval with {@link #environmentChangedConsiderablySinceLastMarker() }
