@@ -200,12 +200,14 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     } else {
                         if(!planValidatedForThisRound){
                             timeSpentValidating.taskStarted();
-                            if (!validatePlan()) {
-                                logger.info("Plan invalidated.");
-                                clearPlan();
-                            }
+                            boolean planValid = validatePlan();
                             timeSpentValidating.taskFinished();
                             planValidatedForThisRound = true;
+                            if (!planValid) {
+                                logger.info("Plan invalidated.");
+                                clearPlan();
+                                continue;
+                            }
                         }
 
                         timeSpentTranslating.taskStarted();

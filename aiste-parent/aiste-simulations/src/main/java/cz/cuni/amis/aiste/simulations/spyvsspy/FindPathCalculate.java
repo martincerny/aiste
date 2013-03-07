@@ -73,7 +73,7 @@ public class FindPathCalculate extends BodySpecificCalculate{
         if(logger.isDebugEnabled()){
             logger.debug(body.getId() + ": Searching for path from " + fromId + " to " + toId);
         }
-        AStarResult<Integer> result = astar.findPath(new AStarGoal(fromId, toId));
+        AStarResult<Integer> result = astar.findPath(new SpyVsSpyAStarGoal(fromId, toId, representation.environment));
 
         TermList pathTerm;
         if(!result.isSuccess()){
@@ -96,47 +96,6 @@ public class FindPathCalculate extends BodySpecificCalculate{
         }
         //cache.put(searchRequest, pathTerm);
         return pathTerm;
-    }
-    
-    private class AStarGoal implements IPFGoal<Integer> {
-
-        private int start;
-        private int goal;
-        SpyVsSpyMapNode goalNode;
-
-        public AStarGoal(int start, int goal) {
-            this.start = start;
-            this.goal = goal;
-            goalNode = representation.environment.nodes.get(goal);
-        }
-        
-
-        @Override
-        public Integer getStart() {
-            return start;
-        }
-
-        @Override
-        public boolean isGoalReached(Integer node) {
-            return node == goal;
-        }
-
-        @Override
-        public int getEstimatedCostToGoal(Integer node) {
-            SpyVsSpyMapNode n = representation.environment.nodes.get(node);
-            int xDist = Math.abs(n.posX - goalNode.posX);
-            int yDist = Math.abs(n.posY - goalNode.posY);
-            return xDist + yDist;
-        }
-
-        @Override
-        public void setOpenList(IHeap<Integer> iheap) {
-        }
-
-        @Override
-        public void setCloseList(Set<Integer> set) {
-        }
-        
     }
     
     
