@@ -35,6 +35,12 @@ import java.util.List;
 public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription>
     implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy> {
     
+    /**
+     * If set to false, problems and domains will not include predicates and actions that cover agent attacks.
+     * This reduces the domain and may speed up planning.
+     */
+    boolean includeAttacks;
+    
     /*
      * PDDL generating stuf
      */
@@ -75,7 +81,13 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     public static final String OPONENT_PREFIX = "oponent";
     public static final String SEPARATOR = "_";
 
-    public SpyVsSpyPDDLRepresentation(SpyVsSpy environment) {
+    public SpyVsSpyPDDLRepresentation(SpyVsSpy environment){
+        this(environment, true);
+    }
+            
+    
+    public SpyVsSpyPDDLRepresentation(SpyVsSpy environment, boolean includeAttacks) {
+        this.includeAttacks = includeAttacks;
         this.environment = environment;
         
         /*
@@ -172,8 +184,12 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         domain.addType(itemType);
         domain.addType(trapType);
         domain.addType(trapRemoverType);
+        
         domain.addType(oponentType);
-        domain.addType(weaponType);
+        
+        if(includeAttacks){
+            domain.addType(weaponType);
+        }
 
         domain.addPredicate(playerAtPredicate);
         domain.addPredicate(adjacentPredicate);
@@ -182,10 +198,12 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         domain.addPredicate(carryingObjectPredicate);
         domain.addPredicate(removesTrapPredicate);
         domain.addPredicate(oponentAtPredicate);
-        domain.addPredicate(oponentCarryingObjectPredicate);
         domain.addPredicate(metOponentPredicate);
-        domain.addPredicate(killedOponentPredicate);
-
+        
+        if(includeAttacks){
+            domain.addPredicate(oponentCarryingObjectPredicate);
+            domain.addPredicate(killedOponentPredicate);
+        }
 
         domain.addAction(moveAction);
         domain.addAction(takeObjectAction);
@@ -239,12 +257,14 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                 }
             }
             
-            for(int i = 0; i < n.numWeapons; i++){
-                hasSomeWeapons = true;
-                PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
-                problem.addObject(newWeaponInstance);                
-                weaponIndex++;
-                initialLiterals.add(objectAtPredicate.stringAfterSubstitution(newWeaponInstance, nodeInstance));
+            if(includeAttacks){            
+                for(int i = 0; i < n.numWeapons; i++){
+                    hasSomeWeapons = true;
+                    PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
+                    problem.addObject(newWeaponInstance);                
+                    weaponIndex++;
+                    initialLiterals.add(objectAtPredicate.stringAfterSubstitution(newWeaponInstance, nodeInstance));
+                }
             }
         }
 
@@ -273,12 +293,14 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                     }
                 }      
                 
-                for(int i = 0; i < bodyInfo.numWeapons; i++){
-                    hasSomeWeapons = true;
-                    PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
-                    problem.addObject(newWeaponInstance);                
-                    weaponIndex++;
-                    initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newWeaponInstance));
+                if(includeAttacks){
+                    for(int i = 0; i < bodyInfo.numWeapons; i++){
+                        hasSomeWeapons = true;
+                        PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
+                        problem.addObject(newWeaponInstance);                
+                        weaponIndex++;
+                        initialLiterals.add(carryingObjectPredicate.stringAfterSubstitution(newWeaponInstance));
+                    }
                 }
                 
             }
@@ -289,30 +311,31 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                 problem.addObject(oponent);
                 initialLiterals.add(oponentAtPredicate.stringAfterSubstitution(oponent, locationConstants[bodyInfo.locationIndex]));
 
-                for (int carriedItemType : bodyInfo.itemsCarried) {
-                    initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, itemConstants[carriedItemType]));
-                }
+                if(includeAttacks) {
+                    for (int carriedItemType : bodyInfo.itemsCarried) {
+                        initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, itemConstants[carriedItemType]));
+                    }
 
-                for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
-                    for (int i = 0; i < bodyInfo.numTrapsCarried[trapTypeIndex]; i++) {
-                        PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
-                        initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newTrapInstance));
+                    for (int trapTypeIndex = 0; trapTypeIndex < environment.defs.numTrapTypes; trapTypeIndex++) {
+                        for (int i = 0; i < bodyInfo.numTrapsCarried[trapTypeIndex]; i++) {
+                            PDDLObjectInstance newTrapInstance = addTrap(trapInstances, trapTypeIndex, problem);
+                            initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newTrapInstance));
+                        }
+                        for (int i = 0; i < bodyInfo.numTrapRemoversCarried[trapTypeIndex]; i++) {
+                            PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, trapTypeIndex, problem);
+                            initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newTrapRemoverInstance));
+                        }
+                    }      
+
+                    for(int i = 0; i < bodyInfo.numWeapons; i++){
+                        hasSomeWeapons = true;
+                        PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
+                        problem.addObject(newWeaponInstance);                
+                        weaponIndex++;
+                        initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newWeaponInstance));
                     }
-                    for (int i = 0; i < bodyInfo.numTrapRemoversCarried[trapTypeIndex]; i++) {
-                        PDDLObjectInstance newTrapRemoverInstance = addTrapRemover(trapRemoverInstances, trapTypeIndex, problem);
-                        initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newTrapRemoverInstance));
-                    }
-                }      
                 
-                for(int i = 0; i < bodyInfo.numWeapons; i++){
-                    hasSomeWeapons = true;
-                    PDDLObjectInstance newWeaponInstance = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + weaponIndex, weaponType);
-                    problem.addObject(newWeaponInstance);                
-                    weaponIndex++;
-                    initialLiterals.add(oponentCarryingObjectPredicate.stringAfterSubstitution(oponent, newWeaponInstance));
                 }
-                
-                
             }
         }
         
@@ -322,11 +345,13 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
             problem.addObject(dummyOponent);            
         }
         
-        if(!hasSomeWeapons){
-            //create dummy weapon, so that FF does not complain
-            PDDLObjectInstance dummyWeapon = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + "dummy", weaponType);
-            problem.addObject(dummyWeapon);                        
-        }            
+        if(includeAttacks){
+            if(!hasSomeWeapons){
+                //create dummy weapon, so that FF does not complain
+                PDDLObjectInstance dummyWeapon = new PDDLObjectInstance(WEAPON_PREFIX + SEPARATOR + "dummy", weaponType);
+                problem.addObject(dummyWeapon);                        
+            }            
+        }
 
         /*
          * Generate removesTrap predicate

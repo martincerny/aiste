@@ -23,12 +23,17 @@ import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
 import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.environment.IPlanningRepresentation;
+import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
+import cz.cuni.amis.aiste.environment.ReactivePlanStatus;
+import cz.cuni.amis.aiste.environment.impl.AbstractReactivePlan;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.experiments.ILoggingHeaders;
 import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
+import cz.cuni.amis.pathfinding.alg.astar.AStar;
+import cz.cuni.amis.pathfinding.alg.astar.AStarResult;
 import cz.cuni.amis.pathfinding.map.IPFMap;
 import cz.cuni.amis.utils.collections.ListConcatenation;
 import java.util.*;
@@ -604,5 +609,99 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             };
             
         }
+    }
+    
+    public abstract class AbstractPathFindingPlan extends AbstractReactivePlan<SpyVsSpyAction> {
+        protected int agentId;
+        
+        private int lastPathFindingTarget;
+        private boolean lastPathFindingSuccess = false;
+        private List<Integer> foundPath;
+        private int foundPathIndex;
+        
+        private AStar<Integer> astar;
+
+        public AbstractPathFindingPlan(int agentId) {
+            this.agentId = agentId;
+            lastPathFindingTarget = -1;
+        }
+
+        protected abstract int getTargetLocationId();
+        
+        protected AStar<Integer> createAStar(){
+            return new AStar<Integer>(defs.mapForPathFinding);            
+        }
+        
+        @Override
+        protected void updateStepForNextAction() {
+            foundPathIndex++;
+        }
+
+        @Override
+        public SpyVsSpyAction peek() {
+            refreshPathIfNeccessary();
+            if(!lastPathFindingSuccess){
+                throw new IllegalStateException("Path finding was not succesful, no actions available");
+            }
+            if(foundPathIndex >= foundPath.size()){
+                throw new IllegalStateException("There are no more path elements available");
+            }
+            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, foundPath.get(foundPathIndex));
+        }
+
+        @Override
+        public ReactivePlanStatus getStatus() {
+            refreshPathIfNeccessary();
+            if(bodyInfos.get(agentId).locationIndex == lastPathFindingTarget){
+                return ReactivePlanStatus.COMPLETED;
+            }
+            else if(!lastPathFindingSuccess){
+                return ReactivePlanStatus.FAILED;
+            }
+            else {
+                return ReactivePlanStatus.EXECUTING;
+            }
+        }
+
+        protected void refreshPathIfNeccessary() {
+            int newPathFindingTarget = getTargetLocationId();
+            if(newPathFindingTarget != lastPathFindingTarget || foundPath == null){
+                if(astar == null){
+                    astar =  createAStar();
+                }
+                AStarResult<Integer> result = astar.findPath(new SpyVsSpyAStarGoal(bodyInfos.get(agentId).locationIndex, newPathFindingTarget, SpyVsSpy.this));
+                if(result.isSuccess()){
+                    lastPathFindingSuccess = true;
+                    foundPath = result.getPath();
+                } else {
+                    lastPathFindingSuccess = false;
+                    foundPath = null;
+                }
+                //the first element is always the agent's current location, so we skip it
+                foundPathIndex = 1;
+                lastPathFindingTarget = newPathFindingTarget;
+            }
+        }
+    }
+    
+    public class PursueOponentPlan extends AbstractPathFindingPlan {
+        private int oponentId;
+
+        public PursueOponentPlan(int agentId, int oponentId) {
+            super(agentId);
+            this.oponentId = oponentId;
+        }
+
+        @Override
+        protected int getTargetLocationId() {
+            return bodyInfos.get(oponentId).locationIndex;
+        }
+
+        @Override
+        public IReactivePlan<SpyVsSpyAction> cloneForSimulation(ISimulableEnvironment<SpyVsSpyAction> environmentCopy) {
+            return ((SpyVsSpy)environmentCopy).new PursueOponentPlan(agentId, oponentId);
+        }
+        
+        
     }
 }
