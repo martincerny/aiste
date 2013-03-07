@@ -16,14 +16,24 @@
  */
 package cz.cuni.amis.aiste.environment;
 
+import java.util.List;
+
 /**
  *
  * @author Martin Cerny
  */
-public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction> extends IEnvironmentRepresentation {
+public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, GOAL extends IPlanningGoal> extends IEnvironmentRepresentation {
     public DOMAIN getDomain(AgentBody body);
-    public PROBLEM getProblem(AgentBody body);
+    public PROBLEM getProblem(AgentBody body, GOAL goal);
     public IReactivePlan<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner, AgentBody body);    
+    
+    /**
+     * Gets a list of goals that are relevant to given body.
+     * The list is sorted by priority (highest first).
+     * @param body
+     * @return 
+     */
+    public List<GOAL> getRelevantGoals(AgentBody body);
     
     /**
      * Sets a marker for further retrieval with {@link #environmentChangedConsiderablySinceLastMarker() }

@@ -17,9 +17,12 @@
 
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
+import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironmentRepresentation;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -32,15 +35,42 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
     public AbstractSpyVsSpyRepresentation() {
     }
 
-    public boolean isGoalState(AgentBody body) {
+    public List<SpyVsSpyPlanningGoal> getRelevantGoals(AgentBody body) {
+        List<SpyVsSpyPlanningGoal> goals = new ArrayList<SpyVsSpyPlanningGoal>(2);
+        if (environment.getAllBodies().size() > 1) {
+            int oponentId;
+            if (body.getId() == 0) {
+                oponentId = 1;
+            } else {
+                oponentId = 0;
+            }
+            goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.KILL_OPONENT, oponentId, 100));
+        } 
+        goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, 50));
+        return goals;
+    }
+    
+    
+    public boolean isGoalState(AgentBody body, SpyVsSpyPlanningGoal goal) {
         SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
-        if (info.locationIndex != environment.defs.destination) {
-            return false;
+        switch (goal.getType()) {
+            case DIRECT_WIN: {
+                if (info.locationIndex != environment.defs.destination) {
+                    return false;
+                }
+                if (info.itemsCarried.size() != environment.defs.numItemTypes) {
+                    return false;
+                }
+                return true;
+            }
+            case KILL_OPONENT: {
+                return environment.agentsKilledThisRound.contains(environment.getAllBodies().get(goal.getParameter()));
+            }
+            default: {
+                throw new AisteException("Unrecognized goal type: " + goal.getType());
+            }
+
         }
-        if (info.itemsCarried.size() != environment.defs.numItemTypes) {
-            return false;
-        }
-        return true;
     }
 
     @Override

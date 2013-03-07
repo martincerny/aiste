@@ -34,7 +34,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepresentation<JSHOP2, IJShop2Problem, Predicate> implements ISimulableJShop2Representation<SpyVsSpyAction, SpyVsSpy> {
+public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepresentation<JSHOP2, IJShop2Problem, Predicate> implements ISimulableJShop2Representation<SpyVsSpyAction, SpyVsSpy, SpyVsSpyPlanningGoal> {
 
     private final Logger logger = Logger.getLogger(SpyVsSpyJShop2Representation.class);
 
@@ -145,6 +145,11 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         
     }
 
+    @Override
+    public java.util.List<SpyVsSpyPlanningGoal> getRelevantGoals(AgentBody body) {
+        return Collections.singletonList(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, 100));
+    }
+
     
     
     @Override
@@ -177,7 +182,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
     }
 
     @Override
-    public IJShop2Problem getProblem(AgentBody body) {
+    public IJShop2Problem getProblem(AgentBody body, SpyVsSpyPlanningGoal goal) {
         
         /**
          * Create static predicates

@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin
  */
-public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION,PLANNING_RESULT, REPRESENTATION extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, IAction>> extends AbstractAgentController<IAction, REPRESENTATION> {
+public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION,PLANNING_RESULT, REPRESENTATION extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, IAction, IPlanningGoal>> extends AbstractAgentController<IAction, REPRESENTATION> {
 
     private final Logger logger = Logger.getLogger(AbstractPlanningController.class);
 
@@ -41,10 +41,12 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     private Queue<PLANNER_ACTION> currentPlan;
     private IReactivePlan actionsToPerform;
 
-    protected void clearPlan() {
-        currentPlan.clear();
-        actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
-    }
+    protected IPlanningGoal executedGoal;
+    protected IPlanningGoal goalForPlanning;
+
+    protected int numFailuresSinceLastImportantEnvChange = 0;
+    
+
 
     
     public enum ValidationMethod { NONE, EXTERNAL_VALIDATOR, ENVIRONMENT_SIMULATION_NEXT_STEP, ENVIRONMENT_SIMULATION_WHOLE_PLAN };
@@ -68,8 +70,9 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     
     long lastPlanningStartTime = 0;
     
+    
     public AbstractPlanningController(ValidationMethod validationMethod) {
-        super(new LoggingHeaders("planningStatus"), new LoggingHeaders("validationMethod"), validationMethod);
+        super(new LoggingHeaders("planningStatus", "actionIssued"), new LoggingHeaders("validationMethod"), validationMethod);
         this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<PLANNER_ACTION>();
         actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
@@ -122,21 +125,66 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
 
     protected abstract List<PLANNER_ACTION> getActionsFromPlanningResult(PLANNING_RESULT result);
     
-    protected void getDebugRepresentationOfPlannerActions(List<PLANNER_ACTION> plannerActions, StringBuilder planSB) {
+    protected void getDebugRepresentationOfPlannerActions(Collection<PLANNER_ACTION> plannerActions, StringBuilder planSB) {
         for(PLANNER_ACTION act : plannerActions){
             planSB.append(" ").append(act.toString()).append("");
         }
     }
     
+    protected void clearPlan() {
+        currentPlan.clear();
+        executedGoal = null;
+        actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
+    }
+
+    protected void processPlanningFailure() {
+        if(!representation.environmentChangedConsiderablySinceLastMarker(body)){
+            numFailuresSinceLastImportantEnvChange++;
+        } else {
+            numFailuresSinceLastImportantEnvChange = 0;
+        }
+    }    
+    
+    /**
+     * Selects a goal for pursuit. By default, this is the highest priority goal.
+     * @return 
+     */
+    protected IPlanningGoal selectGoal(){        
+        List<IPlanningGoal> relevantGoals = representation.getRelevantGoals(body);
+        
+        //If we have failed to find plans for high priority goals and environment has not changed, lets try some 
+        //lower priority ones
+        if(numFailuresSinceLastImportantEnvChange < relevantGoals.size()){
+            return relevantGoals.get(numFailuresSinceLastImportantEnvChange);
+        } else {
+            //tried all relevant goals but all failed, lets try it once more
+            representation.setMarker(body);
+            numFailuresSinceLastImportantEnvChange = 0;
+            return relevantGoals.get(0);
+        }
+    }
     
     @Override
     public void onSimulationStep(double reward) {
         super.onSimulationStep(reward);
-        if(planFuture == null){
-            logRuntime("PERFORMING_PLAN");
-        } else {
-            logRuntime(planFuture.getStatus());            
+        
+        if (logger.isTraceEnabled()) {
+            StringBuilder planSB = new StringBuilder(body.getId() + ": Current plan: ");
+            getDebugRepresentationOfPlannerActions(currentPlan, planSB);
+            logger.trace(planSB.toString());
         }
+        
+        
+        //The current goal was invalidated by a new one. Lets go for it.
+        IPlanningGoal newGoal = selectGoal();
+        if(!newGoal.equals(goalForPlanning)){
+            goalForPlanning = newGoal;
+            startPlanning();
+        }
+        
+        boolean planValidatedForThisRound = false;
+        
+        
         if (planFuture != null) {
             switch (planFuture.getStatus()) {
                 case FUTURE_IS_BEING_COMPUTED: //do nothing and wait                    
@@ -147,13 +195,14 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     break;
                 case CANCELED: {
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Plan calculation cancelled.");
+                        logger.debug(body.getId() + ": Plan calculation cancelled.");
                     }
                     break;
                 }
                 case COMPUTATION_EXCEPTION: {
-                    logger.info("Exception during planning:", planFuture.getException());
+                    logger.info(body.getId() + ": Exception during planning:", planFuture.getException());
                     numPlanningExceptions.increment();
+                    processPlanningFailure();
                     break;
                 }
                 case FUTURE_IS_READY: {
@@ -161,23 +210,34 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     long planningTime = System.currentTimeMillis() - lastPlanningStartTime;
                     if (isPlanningResultSucces(planningResult)) {
                         List<PLANNER_ACTION> plannerActions = getActionsFromPlanningResult(planningResult);
-                        if(logger.isTraceEnabled()){
-                            StringBuilder planSB = new StringBuilder("Plan before conversion: ");
+                        if(logger.isDebugEnabled()){
+                            StringBuilder planSB = new StringBuilder(body.getId() + ": Plan before conversion: ");
                             getDebugRepresentationOfPlannerActions(plannerActions, planSB);
-                            logger.trace(planSB.toString());
+                            logger.debug(planSB.toString());
                         }
 
                         numSuccesfulPlanning.increment();
                         averageTimePerSuccesfulPlanning.addSample(planningTime);
                         averagePlanLength.addSample(plannerActions.size());
                         
-                        currentPlan = new ArrayDeque<PLANNER_ACTION>(plannerActions);                        
+                        timeSpentValidating.taskStarted();
+                        boolean planValid = validatePlan();
+                        timeSpentValidating.taskFinished();
+
+                        
+                        currentPlan.clear();
+                        currentPlan.addAll(plannerActions);                        
+                        executedGoal = goalForPlanning;
+                        
+                        //found plan, reset failure count
+                        numFailuresSinceLastImportantEnvChange = 0;
                     } else {
                         numUnsuccesfulPlanning.increment();
                         averageTimePerUnsuccesfulPlanning.addSample(planningTime);                        
                         if (logger.isDebugEnabled()) {
-                            logger.debug("No plan found.");
+                            logger.debug(body.getId() + ": No plan found.");
                         }
+                        processPlanningFailure();
                     }
 
                 }
@@ -189,7 +249,6 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
             }
         }
 
-        boolean planValidatedForThisRound = false;
         findNextAction: do {
             switch (actionsToPerform.getStatus()) {
                 case COMPLETED: {
@@ -204,7 +263,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                             timeSpentValidating.taskFinished();
                             planValidatedForThisRound = true;
                             if (!planValid) {
-                                logger.info("Plan invalidated.");
+                                logger.info(body.getId() + ": Plan invalidated. Clearing plan.");
                                 clearPlan();
                                 continue;
                             }
@@ -217,7 +276,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     break;
                 }
                 case FAILED : {
-                    logger.info("Reactive plan failed.");
+                    logger.info(body.getId() + ": Reactive plan failed. Clearing plan.");
                     clearPlan();
                     break;
                 }
@@ -225,16 +284,25 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     break findNextAction;
                 }
             }
-        } while (!currentPlan.isEmpty());
+        } while (!currentPlan.isEmpty());        
+        
+        IAction nextAction = null;
         if(!actionsToPerform.getStatus().isFinished()){
-            getEnvironment().act(getBody(), actionsToPerform.nextAction());            
+            nextAction = actionsToPerform.nextAction();            
+            getEnvironment().act(getBody(), nextAction);            
         } else {
             numStepsIdle.increment();
         }
         
+        if(planFuture == null){
+            logRuntime("PERFORMING_PLAN", nextAction);
+        } else {
+            logRuntime(planFuture.getStatus(), nextAction);            
+        }
+        
     }
 
-    protected boolean validateWithExternalValidator(List<PLANNER_ACTION> currentPlan){
+    protected boolean validateWithExternalValidator(List<PLANNER_ACTION> currentPlan, IReactivePlan unexecutedReactivePlan){
         throw new UnsupportedOperationException("Planning controller class " + getClass() + " does not support external validation");
     }
     
@@ -242,15 +310,15 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
      * Validate current plan
      * @return true, if plan is valid, false otherwise
      */
-    protected boolean validatePlan() {
+    protected boolean validatePlan(Collection<PLANNER_ACTION> planToValidate) {
         switch (validationMethod){
             case NONE :
                 return true;
             case EXTERNAL_VALIDATOR: {
-                long validationStart = System.currentTimeMillis();
+                long validationStart = System.currentTimeMillis();sdf
                 boolean result = validateWithExternalValidator(null);
                 if(logger.isDebugEnabled()){
-                    logger.debug("Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
+                    logger.debug(body.getId() + ": Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
                 }
                 return result;
             }
@@ -270,10 +338,10 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     try {
                         currentReactivePlan = actionsToPerform.cloneForSimulation(environmentCopy);
                     } catch (UnsupportedOperationException ex){
-                        throw new AisteException("Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
+                        throw new AisteException(body.getId() + ": Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
                     }
 
-                    Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(currentPlan);
+                    Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(planToValidate);
                     do {
                         while (!currentReactivePlan.getStatus().isFinished()){
                             environmentCopy.simulateOneStep(Collections.singletonMap(body, currentReactivePlan.nextAction()));
@@ -289,7 +357,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                             currentReactivePlan = simulableRepresentaion.translateAction(currentPlanCopy.poll(), body);
                         }
                     } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
-                    return simulableRepresentaion.isGoalState(body);
+                    return simulableRepresentaion.isGoalState(body, executedGoal);
                 } finally {
                     simulableRepresentaion.setEnvironment(environment);
                 }
@@ -303,6 +371,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     @Override
     public void start() {
         super.start();
+        goalForPlanning = selectGoal();
         startPlanning();
     }
 
@@ -316,6 +385,10 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         lastPlanningStartTime = System.currentTimeMillis();
         timeSpentPlanning.taskStarted();
         numPlannerExecutions.increment();
+        
+        if(logger.isDebugEnabled()){
+            logger.debug(body.getId() + ": Starting planning process. Current goal: " + goalForPlanning);
+        }
         
         planFuture = startPlanningProcess();
     }

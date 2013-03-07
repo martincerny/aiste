@@ -64,5 +64,11 @@ public class SpyVsSpyAction implements IAction{
     public String getLoggableRepresentation() {
         return type + ": " + actionTarget;
     }
+
+    @Override
+    public String toString() {
+        return getLoggableRepresentation();
+    }
+ 
     
 }

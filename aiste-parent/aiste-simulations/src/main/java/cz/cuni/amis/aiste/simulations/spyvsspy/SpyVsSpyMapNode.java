@@ -16,6 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +25,7 @@ import java.util.Set;
  *
  * @author Martin Cerny
  */
-public class SpyVsSpyMapNode {
+public class SpyVsSpyMapNode implements Serializable {
 
     /**
      * The indices of traps set at the given location

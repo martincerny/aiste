@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin
  */
-public class Planning4JController extends AbstractPlanningController<PDDLDomain, PDDLProblem, ActionDescription, IPlanningResult, IPDDLRepresentation<IAction>> {
+public class Planning4JController extends AbstractPlanningController<PDDLDomain, PDDLProblem, ActionDescription, IPlanningResult, IPDDLRepresentation<IAction, IPlanningGoal>> {
 
     private final Logger logger = Logger.getLogger(Planning4JController.class);
 
@@ -88,7 +88,7 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
     }
 
     @Override
-    public void init(IEnvironment<IAction> environment, IPDDLRepresentation<IAction> representation, AgentBody body, long stepDelay) {
+    public void init(IEnvironment<IAction> environment, IPDDLRepresentation<IAction, IPlanningGoal> representation, AgentBody body, long stepDelay) {
         super.init(environment, representation, body, stepDelay);
         domainProvider = new PDDLObjectDomainProvider(representation.getDomain(body));
     }
@@ -105,13 +105,13 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
 
     @Override
     protected IFutureWithListeners<IPlanningResult> startPlanningProcess() {
-        return planner.planAsync(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody())));
+        return planner.planAsync(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody(), goalForPlanning)));
     }
 
     @Override
     protected boolean validateWithExternalValidator(List<ActionDescription> currentPlan) {
         try{
-            IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody())), new ArrayList<ActionDescription>(currentPlan));
+            IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody(), executedGoal)), new ArrayList<ActionDescription>(currentPlan));
             if (!validationResult.isValid()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Validation output:\n" + validationResult.getValidationOutput());

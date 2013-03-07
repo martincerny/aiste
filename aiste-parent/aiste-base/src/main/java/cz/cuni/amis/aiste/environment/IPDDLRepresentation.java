@@ -24,5 +24,5 @@ import cz.cuni.amis.planning4j.pddl.PDDLProblem;
  *
  * @author Martin Cerny
  */
-public interface IPDDLRepresentation<ACTION extends IAction> extends IPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription, ACTION> {
+public interface IPDDLRepresentation<ACTION extends IAction, GOAL extends IPlanningGoal> extends IPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription, ACTION, GOAL> {
 }

@@ -82,7 +82,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
     
     
 
-    public SpyVsSpy generateEnvironment() {
+    public SpyVsSpyEnvironmentDefinition generateEnvironment() {
 
         generateCycle: for (int trial = 0; trial < MAX_GENERATOR_ROUNDS; trial++) {
 
@@ -252,8 +252,8 @@ public class SpyVsSpyGenerator implements IRandomizable{
             /**
              * I create one instance to test (I will need to create a body and mess with it) and another identical to return, if the test is succesful
              */
-            SpyVsSpy spyVsSpyToTest = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
-            SpyVsSpy spyVsSpyToReturn = new SpyVsSpy(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
+            SpyVsSpyEnvironmentDefinition envDef = new SpyVsSpyEnvironmentDefinition(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
+            SpyVsSpy spyVsSpyToTest = new SpyVsSpy(envDef);
             
             
             if(plannerToTestDomain != null){
@@ -267,7 +267,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
                 
                 for(AgentBody body : spyVsSpyToTest.getActiveBodies()){
                     PDDLDomain domain = representation.getDomain(body);
-                    PDDLProblem problem = representation.getProblem(body);
+                    PDDLProblem problem = representation.getProblem(body, new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, 0));
                     IPlanningResult testResult = Planning4JUtils.plan(plannerToTestDomain, domain, problem);
                     if(!testResult.isSuccess()){
                         logger.info("Domain could not be solved for player " + body.getId() + ", generating new one.");
@@ -300,7 +300,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
                 logger.debug("====== Map end ======");
             }
             
-            return spyVsSpyToReturn;
+            return envDef;
         }
         
         throw new AisteException("After " + MAX_GENERATOR_ROUNDS + " trials, no environment created that would be solvable from all starting positions. Bad parameters?");

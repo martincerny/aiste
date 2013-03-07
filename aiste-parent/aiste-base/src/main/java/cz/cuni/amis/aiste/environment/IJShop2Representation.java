@@ -24,5 +24,5 @@ import JSHOP2.Predicate;
  *
  * @author Martin Cerny
  */
-public interface IJShop2Representation<ACTION extends IAction> extends IPlanningRepresentation<JSHOP2, IJShop2Problem, Predicate, ACTION>  {
+public interface IJShop2Representation<ACTION extends IAction, GOAL extends IPlanningGoal> extends IPlanningRepresentation<JSHOP2, IJShop2Problem, Predicate, ACTION, GOAL>  {
 }

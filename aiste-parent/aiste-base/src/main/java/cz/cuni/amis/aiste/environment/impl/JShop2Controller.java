@@ -22,6 +22,7 @@ import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.utils.future.FutureStatus;
 import cz.cuni.amis.utils.future.FutureWithListeners;
 import cz.cuni.amis.utils.future.IFutureWithListeners;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2Problem, Predicate, List<Plan>, IJShop2Representation<IAction>> {
+public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2Problem, Predicate, List<Plan>, IJShop2Representation<IAction, IPlanningGoal>> {
 
     private JSHOP2 jshop;
     
@@ -38,7 +39,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     }
 
     @Override
-    public void init(IEnvironment<IAction> environment, IJShop2Representation<IAction> representation, AgentBody body, long stepDelay) {
+    public void init(IEnvironment<IAction> environment, IJShop2Representation<IAction, IPlanningGoal> representation, AgentBody body, long stepDelay) {
         super.init(environment, representation, body, stepDelay);
         jshop = representation.getDomain(body);
     }
@@ -64,7 +65,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     }
 
     @Override
-    protected void getDebugRepresentationOfPlannerActions(List<Predicate> plannerActions, StringBuilder planSB) {
+    protected void getDebugRepresentationOfPlannerActions(Collection<Predicate> plannerActions, StringBuilder planSB) {
         for(Predicate act : plannerActions){
             JShop2Utils.GroundActionInfo info = JShop2Utils.getGroundInfo(act);
             planSB.append(" (").append(jshop.getDomain().getPrimitiveTasks()[info.actionId]);
@@ -79,7 +80,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     
     @Override
     protected IFutureWithListeners<List<Plan>> startPlanningProcess() {
-        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, representation.getProblem(body));
+        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, representation.getProblem(body, goalForPlanning));
         final JShop2PlanningFuture future = new JShop2PlanningFuture(planningProcess);
         new Thread(new Runnable() {
 

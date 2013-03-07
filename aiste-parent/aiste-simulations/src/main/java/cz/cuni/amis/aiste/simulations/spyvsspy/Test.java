@@ -18,12 +18,11 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController;
+import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
-import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutor;
 import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.experiments.AisteExperiment;
 import cz.cuni.amis.aiste.experiments.AisteExperimentRunner;
@@ -38,6 +37,11 @@ import cz.cuni.amis.planning4j.external.plannerspack.PlannersPackUtils;
 import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
 import cz.cuni.amis.planning4j.validation.external.ValValidator;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -48,7 +52,7 @@ import java.util.List;
  */
 public class Test {
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException, ClassNotFoundException {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
         
         ItSimplePlannerInformation info = plannerManager.suggestPlanners(PDDLRequirement.ADL).get(0);
@@ -63,25 +67,42 @@ public class Test {
  //       IValidator validator = new ValValidator(plannersDirectory);
         IValidator validator = null;
         
-        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,100,3,5,8,0.5, 5, planner);
-//        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, 1, planner);
-//        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, 0, planner);        
-        generator.setRandomSeed(1745646655);        
- 
-        SpyVsSpy b = generator.generateEnvironment();
-        b.setRandomSeed(1234878864L);
+        
+        
+        File envTempFile = new File("env.obj");
+        SpyVsSpyEnvironmentDefinition envDef;
+        
+        if(!envTempFile.exists()){        
+            //SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,100,3,5,8,0.5, 5, planner);
+            SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, 1, planner);
+    //        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, 0, planner);        
+            generator.setRandomSeed(1745646655);        
+
+            envDef = generator.generateEnvironment();
+            
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(envTempFile));
+            os.writeObject(envDef);
+            os.close();
+        } else {
+            ObjectInputStream is = new ObjectInputStream(new FileInputStream(envTempFile));
+            envDef = (SpyVsSpyEnvironmentDefinition)is.readObject();
+        }
+        
+        SpyVsSpy environment = new SpyVsSpy(envDef);        
+        environment.setRandomSeed(1234878864L);
 
         
         IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
+//        IAgentController player1 = new DoNothingAgentController();
         IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
 
         //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
         
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[] {
-            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation()),
-            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation()),
+            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment.getjShop2Representation()),
+            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment.getpDDLRepresentation()),
         });
-        AisteExperiment experiment = new AisteExperiment(b, descriptors, 100000);
+        AisteExperiment experiment = new AisteExperiment(environment, descriptors, 100000);
 
 //        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
