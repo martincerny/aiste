@@ -109,9 +109,13 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
     }
 
     @Override
-    protected boolean validateWithExternalValidator(List<ActionDescription> currentPlan) {
-        try{
-            IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody(), executedGoal)), new ArrayList<ActionDescription>(currentPlan));
+    protected boolean validateWithExternalValidator(Queue<ActionDescription> currentPlan, IReactivePlan unexecutedReactivePlan, IPlanningGoal goal) {
+        if(!unexecutedReactivePlan.getStatus().isFinished()){
+            //validation with unexecuted reactive tasks does not make sense
+            return true;
+        }
+        try {
+            IValidationResult validationResult = validator.validate(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody(), goal)), new ArrayList<ActionDescription>(currentPlan));
             if (!validationResult.isValid()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Validation output:\n" + validationResult.getValidationOutput());
