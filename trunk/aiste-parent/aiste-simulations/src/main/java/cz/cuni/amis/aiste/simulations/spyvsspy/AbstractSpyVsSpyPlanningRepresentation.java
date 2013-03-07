@@ -18,12 +18,13 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;
+import java.util.List;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION> extends AbstractSpyVsSpyRepresentation implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, SpyVsSpyAction, SpyVsSpy> 
+public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION> extends AbstractSpyVsSpyRepresentation implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, SpyVsSpyAction, SpyVsSpy, SpyVsSpyPlanningGoal> 
 {
 
     @Override
@@ -60,6 +61,6 @@ public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PL
         
         return false;
     }
-
+    
     
 }

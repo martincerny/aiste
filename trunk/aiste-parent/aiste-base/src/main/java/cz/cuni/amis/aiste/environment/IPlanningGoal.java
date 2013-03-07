@@ -17,15 +17,17 @@
 package cz.cuni.amis.aiste.environment;
 
 /**
- *
+ * A common interface for all objects that represent a planning goal.
+ * Implementations need to work well with equals and hashCode! Priority should NOT
+ * be included in equals and hashCode, because goals are (usually) equal without respect to their priorities.
  * @author Martin Cerny
  */
-public interface ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, ENVIRONMENT extends IEnvironment, GOAL extends IPlanningGoal> 
-extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION, GOAL>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {    
+public interface IPlanningGoal {
     /**
-     * Check whether given body is in goal state. Useful especially for simulations.
-     * @param body
+     * Priority of the goal.
+     * It should hold that if a goal has two times higher priority, its expected 
+     * value is twice as much (in terms of reward).
      * @return 
      */
-    public boolean isGoalState(AgentBody body, GOAL goal);
+    public int getPriority();
 }

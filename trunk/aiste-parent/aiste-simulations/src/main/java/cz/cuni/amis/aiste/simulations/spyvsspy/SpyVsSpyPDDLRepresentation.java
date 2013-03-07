@@ -21,10 +21,12 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePDDLRepresentation;
+import cz.cuni.amis.aiste.environment.impl.CompoundReactivePlan;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.pddl.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -33,7 +35,7 @@ import java.util.List;
  * @author Martin Cerny
  */
 public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresentation<PDDLDomain, PDDLProblem, ActionDescription>
-    implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy> {
+    implements ISimulablePDDLRepresentation<SpyVsSpyAction, SpyVsSpy, SpyVsSpyPlanningGoal> {
     
     /**
      * If set to false, problems and domains will not include predicates and actions that cover agent attacks.
@@ -160,10 +162,13 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                 );
         attackWithWeaponAction.setPositiveEffects(metOponentPredicate.stringAfterSubstitution("?oponent"),
                 killedOponentPredicate.stringAfterSubstitution("?oponent"),
-                "(forall (?item - " + interactiveObjectType.getTypeName() + ") "
+                "forall (?item - " + interactiveObjectType.getTypeName() + ") "
                     + "(when (" + oponentCarryingObjectPredicate.stringAfterSubstitution("?oponent", "?item") + ")"
-                    + " (and (not ( " + oponentCarryingObjectPredicate.stringAfterSubstitution("?oponent", "?item") + "))"
-                        + objectAtPredicate.stringAfterSubstitution("?item", "?loc") + ")"
+                    + " ( " + PDDLOperators.makeAnd(
+                        PDDLOperators.makeNot(oponentCarryingObjectPredicate.stringAfterSubstitution("?oponent", "?item")), 
+                        objectAtPredicate.stringAfterSubstitution("?item", "?loc") 
+                      )
+                    + "))"
                     
                 );
         
@@ -209,12 +214,15 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         domain.addAction(takeObjectAction);
         domain.addAction(setTrapAction);
         domain.addAction(removeTrapAction);
-//        domain.addAction(attackWithWeaponAction);
+        
+        if(includeAttacks){
+            domain.addAction(attackWithWeaponAction);
+        }
         return domain;
     }
 
     @Override
-    public PDDLProblem getProblem(AgentBody body) {
+    public PDDLProblem getProblem(AgentBody body, SpyVsSpyPlanningGoal goal) {
         PDDLProblem problem = new PDDLProblem("SpyVsSpyProblem", "SpyVsSpy");
         for (int i = 0; i < environment.nodes.size(); i++) {
             problem.addObject(locationConstants[i]);
@@ -367,14 +375,31 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         problem.setInitialLiterals(initialLiterals);
 
         List<String> goalConditions = new ArrayList<String>();
-        goalConditions.add(playerAtPredicate.stringAfterSubstitution(locationConstants[environment.defs.destination]));
-        for (PDDLObjectInstance item : itemConstants) {
-            goalConditions.add(carryingObjectPredicate.stringAfterSubstitution(item));
+        
+        switch (goal.getType()) {
+            case DIRECT_WIN: {
+                goalConditions.add(playerAtPredicate.stringAfterSubstitution(locationConstants[environment.defs.destination]));
+                for (PDDLObjectInstance item : itemConstants) {
+                    goalConditions.add(carryingObjectPredicate.stringAfterSubstitution(item));
+                }
+                break;
+            }
+            case KILL_OPONENT: {
+                goalConditions.add(killedOponentPredicate.stringAfterSubstitution(OPONENT_PREFIX + SEPARATOR + goal.getParameter()));
+                break;
+            }
+            default: {
+                throw new AisteException("Unrecognized goal type: " + goal.getType());
+            }
+
         }
 
         problem.setGoalCondition(PDDLOperators.makeAnd(goalConditions));
         return problem;
     }
+
+    
+    
 
     protected PDDLObjectInstance addTrapRemover(List<List<PDDLObjectInstance>> trapRemoverInstances, int newTrapRemoverType, PDDLProblem problem) {
         int newRemoverIndex = trapRemoverInstances.get(newTrapRemoverType).size();
@@ -412,7 +437,10 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                 return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, targetRemover));
             } else if (objectParameter.startsWith(ITEM_PREFIX.toLowerCase())) {
                 int targetItem = extractActionParameter(actionFromPlanner, 0, ITEM_PREFIX);
-                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, targetItem));               
+            } else if (objectParameter.startsWith(WEAPON_PREFIX.toLowerCase())) {
+                int targetItem = extractActionParameter(actionFromPlanner, 0, WEAPON_PREFIX);
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_WEAPON, targetItem));               
             } else {
                 throw new AisteException("Unrecognized item to pickup: " + objectParameter);
             }
@@ -425,6 +453,12 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
             int targetTrap = extractActionParameter(actionFromPlanner, 0, TRAP_PREFIX);                
             return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.SET_TRAP, targetTrap));
 
+        } else if (actionFromPlanner.getName().equalsIgnoreCase(attackWithWeaponAction.getName())){
+            int targetOponent = extractActionParameter(actionFromPlanner, 0, OPONENT_PREFIX);
+            return new CompoundReactivePlan<SpyVsSpyAction>(                    
+                    environment.new PursueOponentPlan(body.getId(), targetOponent),
+                    new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.ATTACK_AGENT, targetOponent))
+                );
         } else {
             throw new AisteException("Unrecognized action name: " + actionFromPlanner.getName());
         }

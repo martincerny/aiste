@@ -23,6 +23,6 @@ import JSHOP2.Predicate;
  *
  * @author Martin Cerny
  */
-public interface ISimulableJShop2Representation<ACTION extends IAction, ENVIRONMENT extends IEnvironment> 
-extends ISimulablePlanningRepresentation<JSHOP2, IJShop2Problem, Predicate, ACTION, ENVIRONMENT>, IJShop2Representation<ACTION> {
+public interface ISimulableJShop2Representation<ACTION extends IAction, ENVIRONMENT extends IEnvironment, GOAL extends IPlanningGoal> 
+extends ISimulablePlanningRepresentation<JSHOP2, IJShop2Problem, Predicate, ACTION, ENVIRONMENT, GOAL>, IJShop2Representation<ACTION, GOAL> {
 }

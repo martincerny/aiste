@@ -14,18 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment;
+package cz.cuni.amis.aiste.environment.impl;
 
 /**
- *
+ * A simple baseline agent that just does nothing.
  * @author Martin Cerny
  */
-public interface ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, ENVIRONMENT extends IEnvironment, GOAL extends IPlanningGoal> 
-extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION, GOAL>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {    
-    /**
-     * Check whether given body is in goal state. Useful especially for simulations.
-     * @param body
-     * @return 
-     */
-    public boolean isGoalState(AgentBody body, GOAL goal);
+public class DoNothingAgentController extends AbstractAgentController {
+
+    public DoNothingAgentController() {
+    }
+
+    
+    
+    @Override
+    public Class getRepresentationClass() {
+        //No op agent works with any representation
+        return Object.class;
+    }
+    
 }

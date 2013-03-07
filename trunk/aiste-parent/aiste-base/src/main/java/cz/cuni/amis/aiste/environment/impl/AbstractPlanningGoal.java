@@ -14,18 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.environment;
+package cz.cuni.amis.aiste.environment.impl;
+
+import cz.cuni.amis.aiste.environment.IPlanningGoal;
 
 /**
  *
  * @author Martin Cerny
  */
-public interface ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, ENVIRONMENT extends IEnvironment, GOAL extends IPlanningGoal> 
-extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION, GOAL>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {    
-    /**
-     * Check whether given body is in goal state. Useful especially for simulations.
-     * @param body
-     * @return 
-     */
-    public boolean isGoalState(AgentBody body, GOAL goal);
+public abstract class AbstractPlanningGoal implements IPlanningGoal{
+    int priority;
+
+    public AbstractPlanningGoal(int priority) {
+        this.priority = priority;
+    }
+
+    @Override
+    public int getPriority() {
+        return priority;
+    }
+    
+    
 }

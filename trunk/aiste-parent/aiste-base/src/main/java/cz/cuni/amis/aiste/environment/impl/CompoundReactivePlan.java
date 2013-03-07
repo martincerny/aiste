@@ -80,7 +80,7 @@ public class CompoundReactivePlan<ACTION extends IAction> implements IReactivePl
     }
 
     protected void skipCompletePlans() {
-        while(subPlans.get(subPlanIndex).getStatus() == ReactivePlanStatus.COMPLETED && subPlanIndex < subPlans.size()){
+        while(subPlanIndex < subPlans.size() && subPlans.get(subPlanIndex).getStatus() == ReactivePlanStatus.COMPLETED ){
             subPlanIndex++;
         }
     }

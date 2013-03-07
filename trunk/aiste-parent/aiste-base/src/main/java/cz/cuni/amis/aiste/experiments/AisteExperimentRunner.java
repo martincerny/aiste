@@ -24,6 +24,7 @@ import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
 import cz.cuni.amis.experiments.EExperimentRunResult;
+import cz.cuni.amis.experiments.ExperimentException;
 import cz.cuni.amis.experiments.ILogDataProvider;
 import cz.cuni.amis.experiments.ILoggingHeaders;
 import cz.cuni.amis.experiments.impl.AbstractExperimentRunner;
@@ -105,7 +106,11 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
             return super.getAdditionalLoggingDataValues(experiment, provider);            
         } else {
             IAgentController controller = (IAgentController)provider;
-            double reward = lastExecutionResult.getPerAgentResults().get(controller).getTotalReward();
+            IAgentExecutionResult agentResult = lastExecutionResult.getPerAgentResults().get(controller);
+            if(agentResult == null){
+                throw new ExperimentException("The environment has not provided reward for controller " + controller);
+            }
+            double reward = agentResult.getTotalReward();
             List<Object> data = Arrays.asList(new Object[] {reward, lastExecutionResult.getNumberOfStepsElapsed()});
             return ListConcatenation.concatenate(super.getAdditionalLoggingDataValues(experiment, provider), data);
         }
