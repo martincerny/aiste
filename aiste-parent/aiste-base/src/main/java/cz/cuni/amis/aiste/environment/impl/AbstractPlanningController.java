@@ -39,7 +39,12 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
     private IFutureWithListeners<PLANNING_RESULT> planFuture = null;
 
     private Queue<PLANNER_ACTION> currentPlan;
-    private Queue<IAction> actionsToPerform;
+    private IReactivePlan actionsToPerform;
+
+    protected void clearPlan() {
+        currentPlan.clear();
+        actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
+    }
 
     
     public enum ValidationMethod { NONE, EXTERNAL_VALIDATOR, ENVIRONMENT_SIMULATION_NEXT_STEP, ENVIRONMENT_SIMULATION_WHOLE_PLAN };
@@ -67,7 +72,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         super(new LoggingHeaders("planningStatus"), new LoggingHeaders("validationMethod"), validationMethod);
         this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<PLANNER_ACTION>();
-        actionsToPerform = new ArrayDeque<IAction>();
+        actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
         
         /**
          * Initialize metrics
@@ -184,29 +189,43 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
             }
         }
 
-        if(actionsToPerform.isEmpty()){        
-            if (currentPlan.isEmpty()) {
-                if (planFuture == null || planFuture.isCancelled()) {
-                    startPlanning();
-                }
-            } else {
-                timeSpentValidating.taskStarted();
-                if(!validatePlan()){
-                    logger.info("Plan invalidated.");                    
-                    currentPlan.clear();
-                    actionsToPerform.clear();
-                }
-                timeSpentValidating.taskFinished();
+        boolean planValidatedForThisRound = false;
+        findNextAction: do {
+            switch (actionsToPerform.getStatus()) {
+                case COMPLETED: {
+                    if (currentPlan.isEmpty()) {
+                        if (planFuture == null || planFuture.isCancelled()) {
+                            startPlanning();
+                        }
+                    } else {
+                        if(!planValidatedForThisRound){
+                            timeSpentValidating.taskStarted();
+                            if (!validatePlan()) {
+                                logger.info("Plan invalidated.");
+                                clearPlan();
+                            }
+                            timeSpentValidating.taskFinished();
+                            planValidatedForThisRound = true;
+                        }
 
-                timeSpentTranslating.taskStarted();
-                while(actionsToPerform.isEmpty() && !currentPlan.isEmpty()){
-                    actionsToPerform.addAll(representation.translateAction(currentPlan.poll(), body));
+                        timeSpentTranslating.taskStarted();
+                        actionsToPerform = representation.translateAction(currentPlan.poll(), body);
+                        timeSpentTranslating.taskFinished();
+                    }
+                    break;
                 }
-                timeSpentTranslating.taskFinished();
+                case FAILED : {
+                    logger.info("Reactive plan failed.");
+                    clearPlan();
+                    break;
+                }
+                case EXECUTING : {
+                    break findNextAction;
+                }
             }
-        }
-        if(!actionsToPerform.isEmpty()){
-            getEnvironment().act(getBody(), actionsToPerform.poll());            
+        } while (!currentPlan.isEmpty());
+        if(!actionsToPerform.getStatus().isFinished()){
+            getEnvironment().act(getBody(), actionsToPerform.nextAction());            
         } else {
             numStepsIdle.increment();
         }
@@ -237,24 +256,37 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                 throw new UnsupportedOperationException("One-step validation is not supported yet.");
             }
             case ENVIRONMENT_SIMULATION_WHOLE_PLAN : {
-                List<IAction> restOfPlanCopy = new ArrayList<IAction>(actionsToPerform.size() + currentPlan.size());
                 
                 //those casts are safe, beacause types are enforced in constructor if validation is set to environment simulation
                 ISimulableEnvironment environmentCopy = ((ISimulableEnvironment)environment).cloneForSimulation();
                 ISimulablePlanningRepresentation simulableRepresentaion = (ISimulablePlanningRepresentation)representation;
                 simulableRepresentaion.setEnvironment(environmentCopy);
                 
-                try {
-                    restOfPlanCopy.addAll(actionsToPerform);
-                    for(PLANNER_ACTION ac : currentPlan){
-                        restOfPlanCopy.addAll(representation.translateAction(ac, body));
+                
+                try {                    
+                    IReactivePlan currentReactivePlan;
+                    try {
+                        currentReactivePlan = actionsToPerform.cloneForSimulation(environmentCopy);
+                    } catch (UnsupportedOperationException ex){
+                        throw new AisteException("Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
                     }
-                    for(IAction act : restOfPlanCopy){
-                        environmentCopy.simulateOneStep(Collections.singletonMap(body, act));
-                        if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
+
+                    Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(currentPlan);
+                    do {
+                        while (!currentReactivePlan.getStatus().isFinished()){
+                            environmentCopy.simulateOneStep(Collections.singletonMap(body, currentReactivePlan.nextAction()));
+                            if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
+                                return false;
+                            }                        
+                        }
+                        if(currentReactivePlan.getStatus() == ReactivePlanStatus.FAILED){
                             return false;
-                        }                        
-                    }
+                        }
+                        
+                        if(!currentPlanCopy.isEmpty()){
+                            currentReactivePlan = simulableRepresentaion.translateAction(currentPlanCopy.poll(), body);
+                        }
+                    } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
                     return simulableRepresentaion.isGoalState(body);
                 } finally {
                     simulableRepresentaion.setEnvironment(environment);

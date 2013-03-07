@@ -21,10 +21,12 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.SpyVsSpyJSHOP2;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IJShop2Problem;
+import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulableJShop2Representation;
+import cz.cuni.amis.aiste.environment.impl.EmptyReactivePlan;
 import cz.cuni.amis.aiste.environment.impl.JShop2Problem;
 import static cz.cuni.amis.aiste.environment.impl.JShop2Utils.*;
-import cz.cuni.amis.planning4j.ActionDescription;
+import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -280,7 +282,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
 
 
     @Override
-    public java.util.List<? extends SpyVsSpyAction> translateAction(Predicate actionFromPlanner, AgentBody body) {
+    public IReactivePlan<? extends SpyVsSpyAction> translateAction(Predicate actionFromPlanner, AgentBody body) {
         if (!actionFromPlanner.isGround()) {
             throw new AisteException("Cannot translate non-ground action");
         }
@@ -296,21 +298,21 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             if(locationId == null){
                 throw new AisteException("Constant index " + constantIndex + " (" + domain.getConstant(constantIndex) + ") does not correspond to a valid location");
             }
-            return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, locationId));
+            return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, locationId));
         } else if(info.actionId ==  SpyVsSpyJSHOP2.PRIMITIVE_TAKE){
             int constantIndex = info.params.get(0);
             if(constantsToItemId.containsKey(constantIndex)){
-                return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, constantsToItemId.get(constantIndex)));
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, constantsToItemId.get(constantIndex)));
             } else if (constantsToTrapRemoverType.containsKey(constantIndex)){
-                return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, constantsToTrapRemoverType.get(constantIndex)));
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, constantsToTrapRemoverType.get(constantIndex)));
             } else {
                 throw new AisteException("Unrecognized object to take");
             }
         } else if(info.actionId ==  SpyVsSpyJSHOP2.PRIMITIVE_REMOVE_TRAP){
-            return Collections.singletonList(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, constantsToTrapType.get(info.params.get(0))));
+            return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, constantsToTrapType.get(info.params.get(0))));
         }
         else if (ignoredActionsId.contains(info.actionId)){
-            return Collections.EMPTY_LIST;
+            return EmptyReactivePlan.<SpyVsSpyAction>emptyPlan();
         }
         else {
             throw new AisteException("Unrecognized action: " + actionName);
