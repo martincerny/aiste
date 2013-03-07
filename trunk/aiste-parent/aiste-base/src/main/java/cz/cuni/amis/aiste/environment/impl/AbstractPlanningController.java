@@ -31,7 +31,10 @@ import org.apache.log4j.Logger;
  *
  * @author Martin
  */
-public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION,PLANNING_RESULT, REPRESENTATION extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, IAction, IPlanningGoal>> extends AbstractAgentController<IAction, REPRESENTATION> {
+public abstract class AbstractPlanningController
+//sorry for the overuse of generics. But except for this part its pretty convenient
+<DOMAIN, PROBLEM, PLANNER_ACTION,PLANNING_RESULT, REPRESENTATION extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, IAction, IPlanningGoal>> 
+extends AbstractAgentController<IAction, REPRESENTATION> {
 
     private final Logger logger = Logger.getLogger(AbstractPlanningController.class);
 
@@ -131,6 +134,15 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         }
     }
     
+    /**
+     * Estimate cost of (partially executed) plan.
+     * @param actions
+     * @return 
+     */
+    protected double getPlanCost(Queue<PLANNER_ACTION> actions){
+        return actions.size();
+    }
+    
     protected void clearPlan() {
         currentPlan.clear();
         executedGoal = null;
@@ -182,6 +194,11 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
             startPlanning();
         }
         
+        /**
+         * There are several places where current plan may get validated:
+         * After it was received from planner, or before executing next action.
+         * This flag prevents the plan from being validated twice.
+         */
         boolean planValidatedForThisRound = false;
         
         
@@ -221,16 +238,38 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                         averagePlanLength.addSample(plannerActions.size());
                         
                         timeSpentValidating.taskStarted();
-                        boolean planValid = validatePlan();
+                        ArrayDeque<PLANNER_ACTION> newPlanDeque = new ArrayDeque<PLANNER_ACTION>(plannerActions);
+                        boolean planValid = validatePlan(newPlanDeque, EmptyReactivePlan.EMPTY_PLAN, goalForPlanning);
                         timeSpentValidating.taskFinished();
+                        
+                        if(planValid) {
+                            boolean overwriteCurrentPlan = false;
+                            if(currentPlan.isEmpty() && actionsToPerform.getStatus().isFinished()){
+                                overwriteCurrentPlan = true;
+                            } else if (goalForPlanning.getPriority() > executedGoal.getPriority()){
+                                overwriteCurrentPlan = true;
+                            }else if(getPlanCost(currentPlan) > getPlanCost(newPlanDeque)){
+                                overwriteCurrentPlan = true;
+                            } else if(!validatePlan(currentPlan, actionsToPerform, executedGoal)){
+                                overwriteCurrentPlan = true;
+                            } else {
+                                //I have just validated the current plan
+                                planValidatedForThisRound = true;
+                            }
+                            
+                            if(overwriteCurrentPlan){
+                                currentPlan.clear();
+                                currentPlan.addAll(plannerActions);                        
+                                executedGoal = goalForPlanning;
 
+                                //found plan, reset failure count
+                                numFailuresSinceLastImportantEnvChange = 0;
+                                
+                                //current plan was overwritten with new plan, which was validated
+                                planValidatedForThisRound = true;
+                            }
+                        }
                         
-                        currentPlan.clear();
-                        currentPlan.addAll(plannerActions);                        
-                        executedGoal = goalForPlanning;
-                        
-                        //found plan, reset failure count
-                        numFailuresSinceLastImportantEnvChange = 0;
                     } else {
                         numUnsuccesfulPlanning.increment();
                         averageTimePerUnsuccesfulPlanning.addSample(planningTime);                        
@@ -259,7 +298,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                     } else {
                         if(!planValidatedForThisRound){
                             timeSpentValidating.taskStarted();
-                            boolean planValid = validatePlan();
+                            boolean planValid = validatePlan(currentPlan, actionsToPerform, executedGoal);
                             timeSpentValidating.taskFinished();
                             planValidatedForThisRound = true;
                             if (!planValid) {
@@ -302,7 +341,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
         
     }
 
-    protected boolean validateWithExternalValidator(List<PLANNER_ACTION> currentPlan, IReactivePlan unexecutedReactivePlan){
+    protected boolean validateWithExternalValidator(Queue<PLANNER_ACTION> planToValidate, IReactivePlan unexecutedReactivePlan, IPlanningGoal goal){
         throw new UnsupportedOperationException("Planning controller class " + getClass() + " does not support external validation");
     }
     
@@ -310,13 +349,13 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
      * Validate current plan
      * @return true, if plan is valid, false otherwise
      */
-    protected boolean validatePlan(Collection<PLANNER_ACTION> planToValidate) {
+    protected boolean validatePlan(Queue<PLANNER_ACTION> planToValidate, IReactivePlan unexecutedReactivePlan, IPlanningGoal goal) {
         switch (validationMethod){
             case NONE :
                 return true;
             case EXTERNAL_VALIDATOR: {
-                long validationStart = System.currentTimeMillis();sdf
-                boolean result = validateWithExternalValidator(null);
+                long validationStart = System.currentTimeMillis();
+                boolean result = validateWithExternalValidator(planToValidate, unexecutedReactivePlan, goal);
                 if(logger.isDebugEnabled()){
                     logger.debug(body.getId() + ": Validation took " + (System.currentTimeMillis() - validationStart) + "ms");
                 }
@@ -336,7 +375,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                 try {                    
                     IReactivePlan currentReactivePlan;
                     try {
-                        currentReactivePlan = actionsToPerform.cloneForSimulation(environmentCopy);
+                        currentReactivePlan = unexecutedReactivePlan.cloneForSimulation(environmentCopy);
                     } catch (UnsupportedOperationException ex){
                         throw new AisteException(body.getId() + ": Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
                     }
@@ -357,7 +396,7 @@ public abstract class AbstractPlanningController<DOMAIN, PROBLEM, PLANNER_ACTION
                             currentReactivePlan = simulableRepresentaion.translateAction(currentPlanCopy.poll(), body);
                         }
                     } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
-                    return simulableRepresentaion.isGoalState(body, executedGoal);
+                    return simulableRepresentaion.isGoalState(body, goal);
                 } finally {
                     simulableRepresentaion.setEnvironment(environment);
                 }
