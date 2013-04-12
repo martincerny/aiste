@@ -74,7 +74,7 @@ public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnv
     @Override
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, SimpleFPSAction> actionsToPerform) {
         
-        //moje informace o prostredi dostanu od agenta takto:
+        // informace o prostredi dostanu od agenta takto:
         //bodyInfos.get(body.getId())
         
         //krok simulace vraci reward, ktery dostali agenti za provedene akce
