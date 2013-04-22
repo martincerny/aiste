@@ -1,0 +1,38 @@
+(Defdomain SimpleTest
+   (
+        ;;operators
+        ;;format : 
+        ;; operator
+        ;;   preconditions
+        ;;   negative effects
+        ;;   possitive effects
+        ;;   [cost] - optional
+
+            (:operator (!swap ?l1 ?l2)
+             ( (adjacent ?l1 ?l2) ( empty ?l1 ) (value_at ?l2 ?val) )
+             (( empty ?l1 ) (value_at ?l2 ?val)) 
+             (( empty ?l2 ) (value_at ?l1 ?val)))
+
+(:operator (!start_positioning ?loc)
+  () 
+  ()
+  ((positioning ?loc)))
+
+(:operator (!stop_positioning ?loc)
+  () 
+  ((positioning ?loc))
+  ())
+
+
+
+(:method (position ?loc ?val)
+Done     ((value_at ?l1 ?val))
+         ()
+Swap     ( (adjacent ?loc ?loc2) (not (positioning ?loc2)) (player_at ?from))
+         ( (move_directly ?from ?to) )
+)
+
+
+
+)
+)
