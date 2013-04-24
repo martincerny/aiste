@@ -11,7 +11,8 @@
             (:operator (!swap ?l1 ?l2)
              ( (adjacent ?l1 ?l2) ( empty ?l1 ) (value_at ?l2 ?val) )
              (( empty ?l1 ) (value_at ?l2 ?val)) 
-             (( empty ?l2 ) (value_at ?l1 ?val)))
+             (( empty ?l2 ) (value_at ?l1 ?val))
+              )
 
 (:operator (!start_emptying ?loc)
   () 
@@ -29,7 +30,7 @@
 Done     ((empty ?loc))
          ()
 Recursion( (adjacent ?loc2 ?loc) (not (emptying ?loc2) ) )
-         ( (!start_emptying ?loc) (make_empty ?loc2) (swap ?loc2 ?loc1) (!stop_emptying ?loc) )
+         ( (!start_emptying ?loc) (make_empty ?loc2) (!swap ?loc2 ?loc) (!stop_emptying ?loc) )
 )
 
 
