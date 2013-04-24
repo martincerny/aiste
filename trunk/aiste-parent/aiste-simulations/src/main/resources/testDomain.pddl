@@ -1,0 +1,15 @@
+(define (domain TestDomain)
+	(:requirements :strips)
+	(:types  location value)
+	(:predicates 
+		(valueAt ?loc - location ?val - value)
+		(adjacent ?loc1 - location ?loc2 - location)
+		(empty ?loc - location)
+	)
+        (:action swap 
+            :parameters (?l1 - location ?l2 - location)
+            :precondition (and (adjacent ?l1 ?l2) ( empty ?l1 ) (value_at ?l2 ?val) )
+            :effect (and (not(( empty ?l1 ))  (not (value_at ?l2 ?val))) 
+                ( empty ?l2 ) (value_at ?l1 ?val))
+        )
+)
