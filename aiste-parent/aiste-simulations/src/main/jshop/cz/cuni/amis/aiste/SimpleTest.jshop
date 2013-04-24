@@ -13,23 +13,23 @@
              (( empty ?l1 ) (value_at ?l2 ?val)) 
              (( empty ?l2 ) (value_at ?l1 ?val)))
 
-(:operator (!start_positioning ?loc)
+(:operator (!start_emptying ?loc)
   () 
   ()
-  ((positioning ?loc)))
+  ((emptying ?loc)))
 
-(:operator (!stop_positioning ?loc)
+(:operator (!stop_emptying ?loc)
   () 
-  ((positioning ?loc))
+  ((emptying ?loc))
   ())
 
 
 
-(:method (position ?loc ?val)
-Done     ((value_at ?l1 ?val))
+(:method (make_empty ?loc)
+Done     ((empty ?loc))
          ()
-Swap     ( (adjacent ?loc ?loc2) (not (positioning ?loc2)) (player_at ?from))
-         ( (move_directly ?from ?to) )
+Recursion( (adjacent ?loc2 ?loc) (not (emptying ?loc2) ) )
+         ( (!start_emptying ?loc) (make_empty ?loc2) (swap ?loc2 ?loc1) (!stop_emptying ?loc) )
 )
 
 
