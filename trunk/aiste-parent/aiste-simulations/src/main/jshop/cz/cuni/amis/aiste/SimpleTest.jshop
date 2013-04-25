@@ -9,9 +9,9 @@
         ;;   [cost] - optional
 
             (:operator (!swap ?l1 ?l2)
-             ( (adjacent ?l1 ?l2) ( empty ?l1 ) (value_at ?l2 ?val) )
-             (( empty ?l1 ) (value_at ?l2 ?val)) 
-             (( empty ?l2 ) (value_at ?l1 ?val))
+              ( (adjacent ?l1 ?l2) ( empty ?l1 ) (value_at ?l2 ?val) )
+              (( empty ?l1 ) (value_at ?l2 ?val)) 
+              (( empty ?l2 ) (value_at ?l1 ?val))
               )
 
 (:operator (!start_emptying ?loc)

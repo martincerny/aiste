@@ -68,7 +68,7 @@ public class TestSimpleHTNVsPDDL {
         IPDDLFileDomainProvider pddlDomain = new PDDLFileDomainProvider(new File("classes/testDomain.pddl"));
 
         try {
-            for (int num_positions = 2; num_positions < 5000; num_positions += 1) {
+            for (int num_positions = 100; num_positions < 5000; num_positions += 100) {
                 for (int repetition = 0; repetition < 1; repetition++) {
                     //measure JSHOP
                     long startTimeJSHOP = System.currentTimeMillis();
