@@ -21,7 +21,7 @@ import JSHOP2.Predicate;
 import JSHOP2.State;
 import JSHOP2.TaskAtom;
 import JSHOP2.TaskList;
-import cz.cuni.amis.aiste.SimpleTest;
+import cz.cuni.amis.aiste.SimpleTest2;
 import cz.cuni.amis.aiste.environment.impl.JShop2Utils;
 import cz.cuni.amis.experiments.impl.CSVLoggingOutput;
 import cz.cuni.amis.experiments.impl.LoggingHeaders;
@@ -41,20 +41,17 @@ import cz.cuni.amis.planning4j.pddl.PDDLType;
 import cz.cuni.amis.planning4j.utils.Planning4JUtils;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  *
  * @author Martin Cerny
  */
-public class TestSimpleHTNVsPDDL {
+public class TestSimpleHTNVsPDDL2 {
 
     public static void main(String args[]) throws IOException {
         JSHOP2 jshop = new JSHOP2();
-        SimpleTest testJShopDomain = new SimpleTest(jshop);
+        SimpleTest2 testJShopDomain = new SimpleTest2(jshop);
 
         CSVLoggingOutput jshopOutput = new CSVLoggingOutput(new File("jshop.csv"));
         jshopOutput.init(new LoggingHeaders("Size", "Repetition", "Success",  "Total", "Init", "Creation"));
@@ -65,25 +62,25 @@ public class TestSimpleHTNVsPDDL {
         ItSimplePlannerInformation plannerInfo = PlannersPackUtils.getMetricFF();
         PlannersPackUtils.getPlannerListManager().extractAndPreparePlanner(plannerInfo);
         IPlanner<IPDDLFileDomainProvider, IPDDLObjectProblemProvider> planner = Planning4JUtils.getTranslatingPlanner(new ExternalPlanner(new ItSimplePlannerExecutor(plannerInfo)), IPDDLFileDomainProvider.class, IPDDLObjectProblemProvider.class);
-        IPDDLFileDomainProvider pddlDomain = new PDDLFileDomainProvider(new File("classes/testDomain.pddl"));
+        IPDDLFileDomainProvider pddlDomain = new PDDLFileDomainProvider(new File("classes/testDomain2.pddl"));
 
         try {
-            for (int num_positions = 100; num_positions < 5000; num_positions += 100) {
+            for (int num_positions = 2; num_positions < 800; num_positions += 1) {
                 for (int repetition = 0; repetition < 1; repetition++) {
                     //measure JSHOP
                     long startTimeJSHOP = System.currentTimeMillis();
                     jshop.initialize(testJShopDomain, num_positions * 2 + 20);
                     long initTimeJSHOP = System.currentTimeMillis() - startTimeJSHOP;
                     State initState = new State(testJShopDomain);
-                    for (int i = 0; i < num_positions - 1; i++) {
-                        initState.add(new Predicate(SimpleTest.CONST_ADJACENT, 0, JShop2Utils.createTermList(jshop, i, i + 1)));
-                        initState.add(new Predicate(SimpleTest.CONST_ADJACENT, 0, JShop2Utils.createTermList(jshop, i + 1, i)));
-
-                        initState.add(new Predicate(SimpleTest.CONST_VALUE_AT, 0, JShop2Utils.createTermList(jshop, i, num_positions + i)));
-                    }
-                    initState.add(new Predicate(SimpleTest.CONST_EMPTY, 0, JShop2Utils.createTermList(jshop, num_positions - 1)));
                     jshop.setState(initState);
-                    TaskList task = new TaskList(new TaskAtom(new Predicate(SimpleTest.METHOD_MAKE_EMPTY, 0, JShop2Utils.createTermList(jshop, 0)), false, false));
+
+                    Vector tasks = new Vector(num_positions);
+                    for (int i = 0; i < num_positions ; i++) {
+                        tasks.add(new TaskList(new TaskAtom(new Predicate(SimpleTest2.METHOD_ACHIEVE, 0, JShop2Utils.createTermList(jshop, i)), false, false)));
+                    }
+                    
+                    TaskList task = TaskList.createTaskList(tasks, false);                    
+                    
 
                     long problemCreationTimeJSHOP = System.currentTimeMillis() - startTimeJSHOP - initTimeJSHOP;
                     LinkedList plansJSHOP = jshop.findPlans(task, 1);
@@ -93,29 +90,23 @@ public class TestSimpleHTNVsPDDL {
                     boolean successJShop = !plansJSHOP.isEmpty();
 
                     jshopOutput.logData(Arrays.asList(new Object[]{num_positions, repetition, successJShop,  totalSolvingTimeJSHOP, initTimeJSHOP, problemCreationTimeJSHOP}));
-/*
+
                     //measure PDDL
                     long startTimePDDL = System.currentTimeMillis();
-                    PDDLProblem problem = new PDDLProblem("testProblem", "TestDomain");
+                    PDDLProblem problem = new PDDLProblem("testProblem", "TestDomain2");
 
-                    PDDLType locationType = new PDDLType("location");
-                    PDDLType valueType = new PDDLType("value");
+                    problem.setInitialLiterals("achieved loc_0");
 
-                    List<String> initialLiterals = new ArrayList<String>();
-                    for (int i = 0; i < num_positions - 1; i++) {
-                        PDDLObjectInstance locationInstance = new PDDLObjectInstance("loc_" + i, locationType);
+                    StringBuilder goalConditionBuilder = new StringBuilder("and ");
+                    
+                    for (int i = 0; i < num_positions ; i++) {
+                        PDDLObjectInstance locationInstance = new PDDLObjectInstance("loc_" + i);
                         problem.addObject(locationInstance);
 
-                        PDDLObjectInstance valueInstance = new PDDLObjectInstance("val_" + i, valueType);
-                        problem.addObject(valueInstance);
-                        initialLiterals.add("value_at " + locationInstance.getNameForPDDL() + " " + valueInstance.getNameForPDDL() + "");
-                        //initialLiterals.add("adjacent " + locationInstance.getNameForPDDL() + " loc_" + (i + 1) + "");
-                        initialLiterals.add("adjacent loc_" + (i + 1) + " " + locationInstance.getNameForPDDL() + "");
+                        goalConditionBuilder.append("(achieved " + locationInstance.getNameForPDDL() + ") ");
                     }
-                    initialLiterals.add("empty loc_" + (num_positions - 1));
-                    problem.addObject(new PDDLObjectInstance("loc_" + (num_positions - 1), locationType));
-                    problem.setInitialLiterals(initialLiterals);
-                    problem.setGoalCondition("empty loc_0");
+                    
+                    problem.setGoalCondition(goalConditionBuilder.toString());
 
                     long problemCreationTimePDDL = System.currentTimeMillis() - startTimePDDL;
                     IPlanningResult planPDDL = planner.plan(pddlDomain, new PDDLObjectProblemProvider(problem));
@@ -123,7 +114,7 @@ public class TestSimpleHTNVsPDDL {
                     long totalSolvingTimePDDL = System.currentTimeMillis() - startTimePDDL;
 
                     pddlOutput.logData(Arrays.asList(new Object[]{num_positions, repetition,planPDDL.isSuccess(), totalSolvingTimePDDL, problemCreationTimePDDL}));
-*/
+
                 }
             }
 

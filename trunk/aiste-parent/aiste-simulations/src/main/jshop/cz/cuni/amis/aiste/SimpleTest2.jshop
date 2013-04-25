@@ -1,0 +1,27 @@
+(Defdomain SimpleTest2
+   (
+        ;;operators
+        ;;format : 
+        ;; operator
+        ;;   preconditions
+        ;;   negative effects
+        ;;   possitive effects
+        ;;   [cost] - optional
+
+            (:operator (!achieve_a ?l1)
+              ( )
+              ( )
+              (( achieved ?l1 ) ) 
+              )
+
+
+
+(:method (achieve ?loc)
+Done     ()
+         ((!achieve_a ?loc))
+)
+
+
+
+)
+)
