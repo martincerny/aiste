@@ -54,7 +54,7 @@ public class Test {
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
 
-        ItSimplePlannerInformation info = PlannersPackUtils.getSGPlan6();
+        ItSimplePlannerInformation info = PlannersPackUtils.getMetricFF();
 
         File plannersDirectory = new File("target");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
@@ -110,7 +110,7 @@ public class Test {
         for (int i = 0; i < 50; i++) {
             try {
                 //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
-                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30, 3, 3, 2, 0.3, 5, planner);
+                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30, 3, 3, 2, 0.3, 5, null);
                 generator.setRandomSeed(rand.nextLong());
 
                 envDef = generator.generateEnvironment();
