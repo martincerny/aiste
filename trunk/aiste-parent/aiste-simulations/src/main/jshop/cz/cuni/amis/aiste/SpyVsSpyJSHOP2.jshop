@@ -37,13 +37,30 @@
                 ()
             )
 
+            (:operator (!attack_with_weapon ?weapon ?oponent) 
+                ( (weapon ?weapon)
+                  (carrying ?weapon)
+                  (oponent_at ?oponent ?loc) 
+                  (player_at ?loc)
+                )
+                ( (forall (?item) ((oponent_carrying ?item)) ((oponent_carrying ?item)) ) ) ;; Oponent loses all its posessionss
+                ( 
+                    (forall (?item) ((oponent_carrying ?item)) ((object_at ?item ?loc)) )  ;; The oponent's possession falls on the ground
+                    (killed_oponent ?oponent)
+                )
+            )
 
-            ;;(:operator (!sample_soil ?x ?s ?p)
-            ;; (    (rover ?x) (store ?s) (waypoint ?p) (at ?x ?p)
-            ;;      (at_soil_sample ?p) (equipped_for_soil_analysis ?x)
-            ;;      (store_of ?s ?x) (empty ?s))
-            ;; ((empty ?s) (at_soil_sample ?p))
-            ;; ((full ?s) (have_soil_analysis ?x ?p)))
+            ;;Hunting differs from attacking, becuase it gets translated to follow behaviour, until the enemy is caught and attacked
+            ;;Thus it is not possible to say, where will oponent's belongings be left
+            (:operator (!hunt_with_weapon ?weapon ?oponent) 
+                ( (weapon ?weapon)
+                  (carrying ?weapon)
+                )
+                ( (forall (?item) ((oponent_carrying ?item)) ((oponent_carrying ?item)) ) ) ;; Oponent loses all its posessionss
+                ( 
+                    (killed_oponent ?oponent)
+                )
+            )
             
 
 
@@ -144,12 +161,7 @@ NoRemovers    (     (trap_set ?trap ?loc)
 )
 
 (:method (take ?item) 
-TakeUnsecured       ((object_at ?item ?loc) (secure ?loc ) )
-                    ((take ?item ?loc)) 
-TakeHaveRemovers    ((object_at ?item ?loc) 
-                        (forall (?trap) ((trap_set ?trap ?loc)) ((removes_trap ?remover ?trap) (carrying ?remover))))
-                    ((take ?item ?loc)) 
-TakeSecured       ((object_at ?item ?loc) )
+                   (:sort-by ?loc location_security (object_at ?item ?loc))
                     ((take ?item ?loc)) 
 )
 
@@ -159,6 +171,17 @@ TakeSecured       ((object_at ?item ?loc) )
      ( (!start_securing ?loc) (secure_loc ?loc) (!finish_securing ?loc) (move ?loc) (!take ?item) ) 
 )
 
+(:method (get_armed)
+HasWeapon    ( (weapon ?w) (carrying ?w) )
+            ()
+FindWeapon   (:sort-by ?loc  location_security ((weapon ?w) (object_at ?w ?loc) ) )
+            ( (take ?w ?loc))
+)
+
+(:method (kill ?oponent)
+            ()
+            ((get_armed) (!hunt_with_weapon ?w ?oponent))
+)
 
 ;Domain axioms
 ;"Type inheritance"
@@ -166,6 +189,7 @@ TakeSecured       ((object_at ?item ?loc) )
     ((item ?x))
     ((trap ?x)) 
     ((trap_remover ?x))
+    ((weapon ?x))
 )
 (:- (secure ?loc) 
     (not (trap_set ?trap ?loc) )

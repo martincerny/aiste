@@ -21,6 +21,9 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironmentRepresentation;
+import cz.cuni.amis.aiste.environment.impl.CompoundReactivePlan;
+import cz.cuni.amis.aiste.environment.impl.SequencePlan;
+import cz.cuni.amis.aiste.simulations.spyvsspy.SpyVsSpy.PursueOponentPlan;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,8 +38,52 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
     public AbstractSpyVsSpyRepresentation() {
     }
 
+    private boolean agentUnableToReachGoal(AgentBody body) {
+        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
+        for(int itemType = 0; itemType < environment.defs.numItemTypes; itemType++){
+            //If there is an item that I do not have and it is not "laying" somewhere, I am unable to reach the goal
+            if(!info.itemsCarried.contains(itemType)){
+                boolean itemFoundInEnvironment = false;
+                for(SpyVsSpyMapNode node : environment.nodes){
+                    if(node.items.contains(itemType)){
+                        //the item can be found
+                        itemFoundInEnvironment = true;
+                        break;
+                    }
+                }
+                if(!itemFoundInEnvironment){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Relevant goals for all planning representations
+     * @param body
+     * @return 
+     */
     public List<SpyVsSpyPlanningGoal> getRelevantGoals(AgentBody body) {
+        if(environment.getAllBodies().size() > 2){
+            throw new UnsupportedOperationException("Relevant goal selection not supported for more than two agents");
+        }
+        
         List<SpyVsSpyPlanningGoal> goals = new ArrayList<SpyVsSpyPlanningGoal>(2);
+        
+        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
+        if(info.numWeapons == 0){
+            //arming yourself is as important as winning the game: It may easily come to that
+            int priorityOfArming = (int)environment.defs.rewardReachGoal;
+            goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.GET_ARMED, priorityOfArming));
+        }
+                
+        //directly winning is always a good option, unless the agent is easily proven unable to do so
+        if(!agentUnableToReachGoal(body)){
+            int priorityOfWinning = (int)environment.defs.rewardReachGoal;
+            goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, priorityOfWinning));
+        }
+        
         if (environment.getAllBodies().size() > 1) {
             int oponentId;
             if (body.getId() == 0) {
@@ -44,9 +91,10 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
             } else {
                 oponentId = 0;
             }
-            goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.KILL_OPONENT, oponentId, 100));
+            /* By killing an oponnent, I reduce his reward and at the same time grow my chance of winning (because I take his belongings)*/
+            int priorityOfKilling = (int) (-environment.defs.rewardDeath + (environment.defs.rewardReachGoal / 3));
+            goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.KILL_OPONENT, oponentId, priorityOfKilling));
         } 
-        goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, 50));
         return goals;
     }
     
@@ -66,6 +114,9 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
             case KILL_OPONENT: {
                 return environment.agentsKilledThisRound.contains(environment.getAllBodies().get(goal.getParameter()));
             }
+            case GET_ARMED: {
+                return info.numWeapons > 0;
+            }
             default: {
                 throw new AisteException("Unrecognized goal type: " + goal.getType());
             }
@@ -84,6 +135,10 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
             throw new IllegalArgumentException("Environment could only be set to a copy of the original env.");
         }
         this.environment = env;
+    }
+
+    protected CompoundReactivePlan<SpyVsSpyAction> getFollowAndAttackReactivePlan(AgentBody body, int targetOponent) {
+        return new CompoundReactivePlan<SpyVsSpyAction>(environment.new PursueOponentPlan(body.getId(), targetOponent), new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.ATTACK_AGENT, targetOponent)));
     }
 
 }

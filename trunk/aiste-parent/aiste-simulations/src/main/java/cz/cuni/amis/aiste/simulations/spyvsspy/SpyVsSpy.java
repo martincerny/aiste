@@ -99,8 +99,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
     public SpyVsSpy(SpyVsSpyEnvironmentDefinition definition) {
         super(SpyVsSpyAction.class);
+        
+        int rewardDeath = -50;
+        int rewardReachedGoal = 150;
+        int rewardNothing = -1;
 
-        defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, -50, 150, -1, 0.3, definition.destination, definition.startingLocations, definition.neighbours);
+        defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, rewardDeath, rewardReachedGoal, rewardNothing, 0.9, definition.destination, definition.startingLocations, definition.neighbours);
 
         this.nodes = definition.nodes;
 
@@ -234,14 +238,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             SpyVsSpyAction action = actionsToPerformCopy.get(agentBody);
             SpyVsSpyBodyInfo bodyInfo = bodyInfos.get(agentBody.getId());
             if (action.getType() == SpyVsSpyAction.ActionType.ATTACK_AGENT) {
-                if (action.getActionTarget() > getAllBodies().size()
+                if (bodyInfo.numWeapons <= 0 || action.getActionTarget() > getAllBodies().size()
                         || bodyInfo.locationIndex != bodyInfos.get(action.getActionTarget()).locationIndex) {
-                    //I am attacking an invalid agent or agent at different location
+                    //I am attacking an invalid agent or agent at different location or I do not have weapons
                     logger.info(agentBody.getId() + ": Invalid action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     agentFailedAction(agentBody);
                     continue;
                 }
-                if (bodyInfo.numWeapons > 0 || rand.nextDouble() < defs.attackSuccessProbability) {
+                if (rand.nextDouble() < defs.attackSuccessProbability) {
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug(agentBody.getId() + ": Succesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }

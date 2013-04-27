@@ -24,9 +24,13 @@ package cz.cuni.amis.aiste.environment;
  */
 public interface IPlanningGoal {
     /**
-     * Priority of the goal.
-     * It should hold that if a goal has two times higher priority, its expected 
-     * value is twice as much (in terms of reward).
+     * Priority of the goal. If the controller using this representation
+     * reasons about goals, it uses priority as its base. Good priority value is
+     * close to expected difference between reward received 
+     * in current environment run if the goal is achieved and the reward if
+     * nothing is done. The priority should take into account possilbe longer term
+     * advantage achieved by the goal, that might not directly propagate in short term
+     * reward.
      * @return 
      */
     public int getPriority();
