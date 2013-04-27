@@ -522,6 +522,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         }
     }
     
+    
+    
     /**
      * Class that allows the implementation of markers for {@link IPlanningRepresentation#environmentChangedConsiderablySinceLastMarker() }
      */

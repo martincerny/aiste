@@ -53,50 +53,50 @@ public class Test {
 
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
-        
-        ItSimplePlannerInformation info = PlannersPackUtils.getMetricFF();
-        
+
+        ItSimplePlannerInformation info = PlannersPackUtils.getSGPlan6();
+
         File plannersDirectory = new File("target");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
         plannerManager.extractAndPreparePlanner(plannersDirectory, info);
 
-        IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info,plannersDirectory));  
+        IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info, plannersDirectory));
 
-        ValValidator.extractAndPrepareValidator(plannersDirectory);        
- //       IValidator validator = new ValValidator(plannersDirectory);
+        ValValidator.extractAndPrepareValidator(plannersDirectory);
+        //       IValidator validator = new ValValidator(plannersDirectory);
         IValidator validator = null;
-        
-        
-        
+
+
+
         File envTempFile = new File("env.obj");
         SpyVsSpyEnvironmentDefinition envDef;
-        
-        if(!envTempFile.exists()){        
-            SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,100,3,5,8,0.5, 5, planner);
+
+        if (!envTempFile.exists()) {
+            SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 100, 3, 5, 8, 0.5, 5, planner);
             //SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, 1, planner);
-    //        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, 0, planner);        
-            generator.setRandomSeed(1745646655);        
+            //        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, 0, planner);        
+            generator.setRandomSeed(1745646655);
 
             envDef = generator.generateEnvironment();
-            
+
             ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(envTempFile));
             os.writeObject(envDef);
             os.close();
         } else {
             ObjectInputStream is = new ObjectInputStream(new FileInputStream(envTempFile));
-            envDef = (SpyVsSpyEnvironmentDefinition)is.readObject();
+            envDef = (SpyVsSpyEnvironmentDefinition) is.readObject();
         }
-        
-        SpyVsSpy environment = new SpyVsSpy(envDef);        
+
+        SpyVsSpy environment = new SpyVsSpy(envDef);
         environment.setRandomSeed(1234878864L);
 
-        
-        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
+
+//        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 //        IAgentController player1 = new DoNothingAgentController();
-        IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
+        //IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
 
         //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
-        
+
 //        List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[] {
 //            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment.getjShop2Representation()),
 //            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment.getpDDLRepresentation()),
@@ -104,42 +104,50 @@ public class Test {
 //
 //        AisteExperiment experiment = new AisteExperiment(environment, descriptors, 100000);
 //        ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));        
-        
+
         List<AisteExperiment> experiments = new ArrayList<AisteExperiment>();
-        Random rand = new Random(3865983646L);
-        for(int i = 0; i < 50; i++){
+        Random rand = new Random(3865983846L);
+        for (int i = 0; i < 50; i++) {
             try {
-                                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
-                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,30,3,3,2,0.3, 5, planner);
-                generator.setRandomSeed(rand.nextLong());        
+                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30, 3, 3, 2, 0.3, 5, planner);
+                generator.setRandomSeed(rand.nextLong());
 
                 envDef = generator.generateEnvironment();
-            } catch(AisteException ex){
+            } catch (AisteException ex) {
                 System.out.println("Generator failnul. i:" + i);
                 continue;
             }
 
-            
+            IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+            IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+
+            IAgentController player1a = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+            IAgentController player2a = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+
             SpyVsSpy environment2 = new SpyVsSpy(envDef);
             environment2.setRandomSeed(rand.nextLong());
-            
-            AgentExecutionDescriptor desc1 = new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment.getjShop2Representation());
-            AgentExecutionDescriptor desc2 = new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment.getpDDLRepresentation());
-            
-            
-            List<IAgentExecutionDescriptor> descriptors1 = Arrays.asList(new IAgentExecutionDescriptor[] {
-                desc1, desc2,
-            });
-            List<IAgentExecutionDescriptor> descriptors2 = Arrays.asList(new IAgentExecutionDescriptor[] {
-                desc2, desc1,
-            });
-            
-            experiments.add(new AisteExperiment(environment, descriptors1, 100000));
-            experiments.add(new AisteExperiment(environment, descriptors2, 100000));
+
+            SpyVsSpy environment3 = new SpyVsSpy(envDef);
+            environment3.setRandomSeed(rand.nextLong());
+
+
+
+            List<IAgentExecutionDescriptor> descriptors1 = Arrays.asList(new IAgentExecutionDescriptor[]{
+                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment2.getjShop2Representation()),
+                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment2.getpDDLRepresentation())
+                    });
+            List<IAgentExecutionDescriptor> descriptors2 = Arrays.asList(new IAgentExecutionDescriptor[]{
+                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1a, environment3.getjShop2Representation()),
+                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2a, environment3.getpDDLRepresentation())
+                    });
+
+            experiments.add(new AisteExperiment(environment2, descriptors1, 100000));
+            experiments.add(new AisteExperiment(environment3, descriptors2, 100000));
         }
-        
-        ExperimentUtils.runExperimentsSingleThreaded(experiments, new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));        
-        
+
+        ExperimentUtils.runExperimentsSingleThreaded(experiments, new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));
+
 
 //        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
@@ -149,20 +157,23 @@ public class Test {
 
 
         /*
-        SpyVsSpy b = new SpyVsSpy();
-        SpyVsSpyReactiveController player1 = new SpyVsSpyReactiveController();
-        SpyVsSpyReactiveController player2 = new SpyVsSpyReactiveController();
-
-        SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
-        executor.setEnvironment(b);
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1);
-        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2);
-
-        IEnvironmentExecutionResult result = executor.executeEnvironment();
-
-        System.out.println("Results: ");
-        System.out.println("Player1: " + result.getAgentResults().get(0).getTotalReward());
-        System.out.println("Player2: "+ result.getAgentResults().get(1).getTotalReward());
-        */ 
+         * SpyVsSpy b = new SpyVsSpy(); SpyVsSpyReactiveController player1 = new
+         * SpyVsSpyReactiveController(); SpyVsSpyReactiveController player2 =
+         * new SpyVsSpyReactiveController();
+         *
+         * SynchronuousEnvironmentExecutor executor = new
+         * SynchronuousEnvironmentExecutor(); executor.setEnvironment(b);
+         * executor.addAgentController(SpyVsSpyAgentType.getInstance(),
+         * player1);
+         * executor.addAgentController(SpyVsSpyAgentType.getInstance(),
+         * player2);
+         *
+         * IEnvironmentExecutionResult result = executor.executeEnvironment();
+         *
+         * System.out.println("Results: "); System.out.println("Player1: " +
+         * result.getAgentResults().get(0).getTotalReward());
+         * System.out.println("Player2: "+
+         * result.getAgentResults().get(1).getTotalReward());
+         */
     }
 }

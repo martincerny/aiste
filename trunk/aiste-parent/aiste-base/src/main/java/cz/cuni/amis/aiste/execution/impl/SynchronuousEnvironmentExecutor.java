@@ -33,6 +33,8 @@ public class SynchronuousEnvironmentExecutor extends AbstractEnvironmentExecutor
 
     private final Logger logger = Logger.getLogger(SynchronuousEnvironmentExecutor.class);
 
+    private boolean simulationStopped = false;
+    
     public SynchronuousEnvironmentExecutor() {
         super(1);
     }
@@ -40,8 +42,9 @@ public class SynchronuousEnvironmentExecutor extends AbstractEnvironmentExecutor
     @Override
     public IEnvironmentExecutionResult executeEnvironment(long maxSteps) {
         this.startSimulation();
+        simulationStopped = false;
         long step = 0;
-        while (!getEnvironment().isFinished() && (maxSteps == 0 || step < maxSteps)) {
+        while (!getEnvironment().isFinished() && (maxSteps == 0 || step < maxSteps) && !simulationStopped) {
             performSimulationStep();
             step++;
         }
@@ -60,4 +63,12 @@ public class SynchronuousEnvironmentExecutor extends AbstractEnvironmentExecutor
             controllerFailed(controller);
         }
     }
+
+    @Override
+    protected void stopSimulation() {
+        super.stopSimulation();
+        simulationStopped = true;
+    }
+    
+    
 }
