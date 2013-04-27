@@ -16,6 +16,7 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
+import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController;
 import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
@@ -42,9 +43,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -55,7 +54,7 @@ public class Test {
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
         
-        ItSimplePlannerInformation info = plannerManager.suggestPlanners(PDDLRequirement.ADL).get(0);
+        ItSimplePlannerInformation info = PlannersPackUtils.getMetricFF();
         
         File plannersDirectory = new File("target");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
@@ -98,11 +97,49 @@ public class Test {
 
         //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getjShop2Representation());        
         
-        List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[] {
-            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment.getjShop2Representation()),
-            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment.getpDDLRepresentation()),
-        });
-        AisteExperiment experiment = new AisteExperiment(environment, descriptors, 100000);
+//        List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[] {
+//            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment.getjShop2Representation()),
+//            new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment.getpDDLRepresentation()),
+//        });
+//
+//        AisteExperiment experiment = new AisteExperiment(environment, descriptors, 100000);
+//        ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));        
+        
+        List<AisteExperiment> experiments = new ArrayList<AisteExperiment>();
+        Random rand = new Random(3865983646L);
+        for(int i = 0; i < 50; i++){
+            try {
+                                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,30,3,3,2,0.3, 5, planner);
+                generator.setRandomSeed(rand.nextLong());        
+
+                envDef = generator.generateEnvironment();
+            } catch(AisteException ex){
+                System.out.println("Generator failnul. i:" + i);
+                continue;
+            }
+
+            
+            SpyVsSpy environment2 = new SpyVsSpy(envDef);
+            environment2.setRandomSeed(rand.nextLong());
+            
+            AgentExecutionDescriptor desc1 = new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment.getjShop2Representation());
+            AgentExecutionDescriptor desc2 = new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment.getpDDLRepresentation());
+            
+            
+            List<IAgentExecutionDescriptor> descriptors1 = Arrays.asList(new IAgentExecutionDescriptor[] {
+                desc1, desc2,
+            });
+            List<IAgentExecutionDescriptor> descriptors2 = Arrays.asList(new IAgentExecutionDescriptor[] {
+                desc2, desc1,
+            });
+            
+            experiments.add(new AisteExperiment(environment, descriptors1, 100000));
+            experiments.add(new AisteExperiment(environment, descriptors2, 100000));
+        }
+        
+        ExperimentUtils.runExperimentsSingleThreaded(experiments, new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));        
+        
 
 //        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
 //        executor.addAgentController(SpyVsSpyAgentType.getInstance(), player1, b.getpDDLRepresentation());        
@@ -110,7 +147,6 @@ public class Test {
         //IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);                
         //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
 
-        ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));        
 
         /*
         SpyVsSpy b = new SpyVsSpy();
