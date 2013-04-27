@@ -156,10 +156,11 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
                 logger.info("Exception during controller shutdown. Controller: " + controller, ex);
             }
         }
+        activeControllers.clear();
     }
 
     @Override
-    public void shutdown() {
+    public synchronized void shutdown() {
         stopSimulation();
     }
     

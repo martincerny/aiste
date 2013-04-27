@@ -91,6 +91,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
         super.stopSimulation();
         agentStepNotificationExecutorService.shutdownNow();
         environmentStepTimer.cancel();
+        environmentStoppedLatch.countDown();
     }
 
     public boolean isDebugMode() {

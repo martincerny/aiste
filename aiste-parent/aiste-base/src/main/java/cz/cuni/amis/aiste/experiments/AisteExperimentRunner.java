@@ -82,6 +82,11 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
     }
 
     @Override
+    protected void cancelRunningExperiment() {
+        environmentExecutor.shutdown();
+    }
+
+    @Override
     protected List<ILogDataProvider> getAllLogProviders(AisteExperiment experiment) {
         List<ILogDataProvider> providers = new ArrayList<ILogDataProvider>(experiment.getDescriptors().size() + 1);
         providers.add(experiment.getEnvironment());
