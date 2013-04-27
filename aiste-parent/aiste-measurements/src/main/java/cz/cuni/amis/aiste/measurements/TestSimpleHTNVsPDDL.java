@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.simulations.spyvsspy;
+package cz.cuni.amis.aiste.measurements;
 
 import JSHOP2.JSHOP2;
 import JSHOP2.Predicate;

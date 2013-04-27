@@ -42,7 +42,8 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     private IFutureWithListeners<PLANNING_RESULT> planFuture = null;
 
     private Queue<PLANNER_ACTION> currentPlan;
-    private IReactivePlan actionsToPerform;
+    private IReactivePlan activePlannerActionReactivePlan;
+    private IReactivePlan activeReactiveLayerPlan;
 
     protected IPlanningGoal executedGoal;
     protected IPlanningGoal goalForPlanning;
@@ -78,7 +79,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
         super(new LoggingHeaders("planningStatus", "actionIssued"), new LoggingHeaders("validationMethod"), validationMethod);
         this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<PLANNER_ACTION>();
-        actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
+        activePlannerActionReactivePlan = EmptyReactivePlan.EMPTY_PLAN;
         
         /**
          * Initialize metrics
@@ -146,7 +147,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     protected void clearPlan() {
         currentPlan.clear();
         executedGoal = null;
-        actionsToPerform = EmptyReactivePlan.EMPTY_PLAN;
+        activePlannerActionReactivePlan = EmptyReactivePlan.EMPTY_PLAN;
     }
 
     protected void processPlanningFailure() {
@@ -244,13 +245,13 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                         
                         if(planValid) {
                             boolean overwriteCurrentPlan = false;
-                            if(currentPlan.isEmpty() && actionsToPerform.getStatus().isFinished()){
+                            if(currentPlan.isEmpty() && activePlannerActionReactivePlan.getStatus().isFinished()){
                                 overwriteCurrentPlan = true;
                             } else if (goalForPlanning.getPriority() > executedGoal.getPriority()){
                                 overwriteCurrentPlan = true;
                             }else if(getPlanCost(currentPlan) > getPlanCost(newPlanDeque)){
                                 overwriteCurrentPlan = true;
-                            } else if(!validatePlan(currentPlan, actionsToPerform, executedGoal)){
+                            } else if(!validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal)){
                                 overwriteCurrentPlan = true;
                             } else {
                                 //I have just validated the current plan
@@ -287,9 +288,41 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                 planFuture = null;
             }
         }
+        
+        /**
+         * Evaluate the reactive layer
+         */
+        boolean reactiveLayerActive = false;
 
+        
+        if(activeReactiveLayerPlan != null){
+            switch(activeReactiveLayerPlan.getStatus()){
+                case COMPLETED : {
+                    activeReactiveLayerPlan = null;
+                    break;
+                }
+                case FAILED : {
+                    logger.info(body.getId() + ": Reactive layer plan failed.");
+                    activeReactiveLayerPlan = null;
+                    break;
+                }
+            }
+        }
+        
+        if(activeReactiveLayerPlan == null){
+            activeReactiveLayerPlan = representation.evaluateReactiveLayer(body);
+        }
+        
+        if(activeReactiveLayerPlan != null && !activeReactiveLayerPlan.getStatus().isFinished()){
+            reactiveLayerActive = true;
+        }
+                
+
+        /**
+         * Evaluate actions from plan
+         */
         findNextAction: do {
-            switch (actionsToPerform.getStatus()) {
+            switch (activePlannerActionReactivePlan.getStatus()) {
                 case COMPLETED: {
                     if (currentPlan.isEmpty()) {
                         if (planFuture == null || planFuture.isCancelled()) {
@@ -298,7 +331,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                     } else {
                         if(!planValidatedForThisRound){
                             timeSpentValidating.taskStarted();
-                            boolean planValid = validatePlan(currentPlan, actionsToPerform, executedGoal);
+                            boolean planValid = validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal);
                             timeSpentValidating.taskFinished();
                             planValidatedForThisRound = true;
                             if (!planValid) {
@@ -309,7 +342,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                         }
 
                         timeSpentTranslating.taskStarted();
-                        actionsToPerform = representation.translateAction(currentPlan.poll(), body);
+                        activePlannerActionReactivePlan = representation.translateAction(currentPlan.poll(), body);
                         timeSpentTranslating.taskFinished();
                     }
                     break;
@@ -326,14 +359,28 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
         } while (!currentPlan.isEmpty());        
         
         IAction nextAction = null;
-        if(!actionsToPerform.getStatus().isFinished()){
-            nextAction = actionsToPerform.nextAction();            
-            getEnvironment().act(getBody(), nextAction);            
+        if(reactiveLayerActive){
+            nextAction = activeReactiveLayerPlan.nextAction();
+            logger.info(body.getId() + ": Reactive layer in cotrol, action: " + nextAction.getLoggableRepresentation());            
+            if(!activePlannerActionReactivePlan.getStatus().isFinished() && nextAction.equals(activePlannerActionReactivePlan.peek())){
+                //if the action is the same as in the original plan, we should advance both reactive plans
+                activePlannerActionReactivePlan.nextAction();
+            }
+        }
+        else if(!activePlannerActionReactivePlan.getStatus().isFinished()){
+            nextAction = activePlannerActionReactivePlan.nextAction();            
         } else {
             numStepsIdle.increment();
         }
         
-        if(planFuture == null){
+        if(nextAction != null){
+            getEnvironment().act(getBody(), nextAction);                        
+        }
+        
+        if(reactiveLayerActive){
+            logRuntime("REACTIVE_LAYER", nextAction);
+        }
+        else if(planFuture == null){
             logRuntime("PERFORMING_PLAN", nextAction);
         } else {
             logRuntime(planFuture.getStatus(), nextAction);            

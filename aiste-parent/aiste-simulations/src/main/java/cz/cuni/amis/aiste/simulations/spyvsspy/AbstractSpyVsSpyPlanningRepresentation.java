@@ -17,7 +17,10 @@
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;
+import cz.cuni.amis.aiste.environment.impl.SequencePlan;
+import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
 import java.util.List;
 
 /**
@@ -61,6 +64,47 @@ public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PL
         
         return false;
     }
+
+    @Override
+    public IReactivePlan<? extends SpyVsSpyAction> evaluateReactiveLayer(AgentBody body) {
+        if(environment.getActiveBodies().size() <= 1){
+            //no reactive layer applies when there are no opponents
+            return null;
+        }
+        
+        //rule 1: I have weapon and enemy is at the same square. Attack him!
+        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
+        if(info.numWeapons > 0){
+            for(int oponentId = 0; oponentId < environment.bodyInfos.size(); oponentId++){
+                if(oponentId != body.getId() && environment.bodyInfos.get(oponentId).locationIndex == info.locationIndex){
+                    return new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.ATTACK_AGENT, oponentId));
+                }
+            }
+        }
+        
+        //rule 2: If there is armed oponent and I am not armed, run!
+        if(info.numWeapons <= 0){
+            for(SpyVsSpyBodyInfo oponentInfo : environment.bodyInfos){
+                if(oponentInfo.body.getId() == body.getId()){
+                    continue;
+                }
+                if(oponentInfo.numWeapons > 0 && oponentInfo.locationIndex == info.locationIndex){
+                    int randomNeighbouringLocation = RandomUtils.randomElementLinearAccess(environment.defs.neighbours.get(info.locationIndex), environment.rand);
+                    return new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, randomNeighbouringLocation));                    
+                }
+            }
+        }
+        
+        //rule 3: weapons are useful, if there is an unguarded weapon, lets pick it up
+        SpyVsSpyMapNode node = environment.nodes.get(info.locationIndex);
+        if(node.numWeapons > 0 && node.traps.isEmpty()){
+            return new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_WEAPON, -1));            
+        }
+        
+        return null;
+    }
+    
+    
     
     
 }

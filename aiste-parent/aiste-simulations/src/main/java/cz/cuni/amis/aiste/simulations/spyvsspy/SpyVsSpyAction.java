@@ -25,14 +25,21 @@ import cz.cuni.amis.aiste.environment.IAction;
 public class SpyVsSpyAction implements IAction{
 
     public enum ActionType {
-        MOVE,
-        PICKUP_ITEM,
-        PICKUP_TRAP_REMOVER,
-        PICKUP_WEAPON,
-        SET_TRAP,
-        REMOVE_TRAP,
-        ATTACK_AGENT,        
-        NO_OP
+        MOVE(true),
+        PICKUP_ITEM(true),
+        PICKUP_TRAP_REMOVER(true),
+        PICKUP_WEAPON(false),
+        SET_TRAP(true),
+        REMOVE_TRAP(true),
+        ATTACK_AGENT(true),        
+        NO_OP(false);
+        
+        boolean requiresTarget;
+
+        private ActionType(boolean requiresTarget) {
+            this.requiresTarget = requiresTarget;
+        }
+        
     }
     
     public static final SpyVsSpyAction NO_OP_ACTION = new SpyVsSpyAction(ActionType.NO_OP, -1);
@@ -68,6 +75,34 @@ public class SpyVsSpyAction implements IAction{
     @Override
     public String toString() {
         return getLoggableRepresentation();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final SpyVsSpyAction other = (SpyVsSpyAction) obj;
+        if (this.type != other.type) {
+            return false;
+        }
+        if (this.type.requiresTarget && this.actionTarget != other.actionTarget) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 17 * hash + (this.type != null ? this.type.hashCode() : 0);
+        if(this.type.requiresTarget){
+            hash = 17 * hash + this.actionTarget;
+        }
+        return hash;
     }
  
     

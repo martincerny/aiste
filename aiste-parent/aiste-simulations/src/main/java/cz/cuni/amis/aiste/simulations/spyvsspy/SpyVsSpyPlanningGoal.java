@@ -23,7 +23,7 @@ import cz.cuni.amis.aiste.environment.impl.AbstractPlanningGoal;
  * @author Martin Cerny
  */
 public class SpyVsSpyPlanningGoal extends AbstractPlanningGoal{
-    public enum Type {DIRECT_WIN, KILL_OPONENT}
+    public enum Type {DIRECT_WIN, KILL_OPONENT, GET_ARMED}
     
     private Type type;
     private int parameter;

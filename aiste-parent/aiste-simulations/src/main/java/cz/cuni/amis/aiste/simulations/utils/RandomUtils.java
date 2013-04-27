@@ -97,4 +97,20 @@ public class RandomUtils {
             return target;
         }    
         
+        /**
+         * Gets a random element of a collection that does not provide random access 
+         *(i.e. the elements need to be traversed).
+         * @param <T>
+         * @param collection
+         * @return 
+         */
+        public static <T> T randomElementLinearAccess(Collection<T> collection, Random random){
+            int index = random.nextInt(collection.size());
+            Iterator<T> it = collection.iterator();
+            for(int i = 0; i < index; i++){
+                it.next();
+            }
+            return it.next();
+        }
+        
 }

@@ -46,4 +46,13 @@ public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION
      * @return 
      */
     public boolean environmentChangedConsiderablySinceLastMarker(AgentBody body);
+    
+    /**
+     * Checks for current environment conditions and, if reasonable, returns
+     * a reactive response (e. g. getting to cover when attacked). This method
+     * represents the domain-dependent reactive layer.
+     * @return reactive plan or null, if reactive layer gave no advice
+     */
+    public IReactivePlan<? extends ACTION> evaluateReactiveLayer(AgentBody body);    
+    
 }

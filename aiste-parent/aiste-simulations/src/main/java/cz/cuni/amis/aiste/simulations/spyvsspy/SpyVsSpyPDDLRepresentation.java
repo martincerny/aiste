@@ -384,6 +384,12 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
                 }
                 break;
             }
+            case GET_ARMED: {
+                goalConditions.add(
+                "exists (?w - " + weaponType.getTypeName() + ") "
+                    + "(" + carryingObjectPredicate.stringAfterSubstitution("?w") + ")");                
+                break;
+            }
             case KILL_OPONENT: {
                 goalConditions.add(killedOponentPredicate.stringAfterSubstitution(OPONENT_PREFIX + SEPARATOR + goal.getParameter()));
                 break;
@@ -454,11 +460,8 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
             return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.SET_TRAP, targetTrap));
 
         } else if (actionFromPlanner.getName().equalsIgnoreCase(attackWithWeaponAction.getName())){
-            int targetOponent = extractActionParameter(actionFromPlanner, 0, OPONENT_PREFIX);
-            return new CompoundReactivePlan<SpyVsSpyAction>(                    
-                    environment.new PursueOponentPlan(body.getId(), targetOponent),
-                    new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.ATTACK_AGENT, targetOponent))
-                );
+            int targetOponent = extractActionParameter(actionFromPlanner, 0, OPONENT_PREFIX);            
+            return getFollowAndAttackReactivePlan(body, targetOponent);
         } else {
             throw new AisteException("Unrecognized action name: " + actionFromPlanner.getName());
         }

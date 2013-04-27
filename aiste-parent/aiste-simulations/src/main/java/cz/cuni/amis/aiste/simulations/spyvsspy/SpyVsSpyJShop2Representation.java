@@ -44,11 +44,21 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
     int[] itemIdToConstants;
     Map<Integer, Integer> constantsToItemId;
     
+    /**
+     * For simplicity this contains the player as well
+     */
+    int[] oponentIdToConstants;
+    Map<Integer, Integer> constantsToOponentId;
+    
     java.util.List<java.util.List<Integer>> trapRemoversToConstants; //first index is the remove type
     Map<Integer, Integer> constantsToTrapRemoverType;
     
     java.util.List<java.util.List<Integer>> trapToConstants; //first index is the trap type
     Map<Integer, Integer> constantsToTrapType;
+
+    java.util.List<Integer> weaponConstants;
+    Set<Integer> constantsThatAreWeapons;
+    
     
     String[] additionalConstantNames;
     
@@ -82,9 +92,9 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         int numNodes = environment.nodes.size();
         
         locationIdToConstants = new int[numNodes];
-        constantsToLocationId = new HashMap<Integer, Integer>();
+        constantsToLocationId = new HashMap<Integer, Integer>();        
         additionalConstantNames = new String[getNumAdditionalConstants()];
-        
+               
         int problemConstantOffset = SpyVsSpyJSHOP2.NUM_CONSTANTS;
         int nextConstantIndex = problemConstantOffset;
 
@@ -92,7 +102,10 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         trapRemoversToConstants = new ArrayList<java.util.List<Integer>>(environment.defs.numTrapTypes);
         trapToConstants = new ArrayList<java.util.List<Integer>>(environment.defs.numTrapTypes);
         constantsToTrapRemoverType = new HashMap<Integer, Integer>();
-        constantsToTrapType = new HashMap<Integer, Integer>();
+        constantsToTrapType = new HashMap<Integer, Integer>();        
+        weaponConstants = new ArrayList<Integer>();
+        constantsThatAreWeapons = new HashSet<Integer>();
+        
         
         for(int i = 0; i < environment.defs.numTrapTypes; i++){
             trapRemoversToConstants.add(new ArrayList<Integer>());
@@ -120,6 +133,13 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
                 additionalConstantNames[nextConstantIndex - problemConstantOffset] = "trap_"  + trapType + "_" + trapToConstants.get(trapType).size();
                 nextConstantIndex++;
             }
+            
+            for(int i  = 0; i < mapNode.numWeapons; i++){
+                additionalConstantNames[nextConstantIndex - problemConstantOffset] = "weapon_" + weaponConstants.size();
+                weaponConstants.add(nextConstantIndex);
+                constantsThatAreWeapons.add(nextConstantIndex);
+                nextConstantIndex++;
+            }
         }
         
         for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
@@ -141,13 +161,19 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             additionalConstantNames[nextConstantIndex - problemConstantOffset] = "item_" + itemType;
             nextConstantIndex++;
         }
-        
-        
-    }
 
-    @Override
-    public java.util.List<SpyVsSpyPlanningGoal> getRelevantGoals(AgentBody body) {
-        return Collections.singletonList(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, 100));
+        
+        oponentIdToConstants = new int[environment.defs.maxPlayers];
+        constantsToOponentId = new HashMap<Integer, Integer>();
+        for(int i = 0; i < environment.defs.maxPlayers; i++){
+            oponentIdToConstants[i] = nextConstantIndex;
+            constantsToOponentId.put(nextConstantIndex, i);
+            additionalConstantNames[nextConstantIndex - problemConstantOffset] = "oponent_" + i;
+            nextConstantIndex++;
+        }
+        
+        
+        
     }
 
     
@@ -155,9 +181,13 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
     @Override
     public JSHOP2 getDomain(AgentBody body) {
         JSHOP2 jshop = new JSHOP2();
+        
         Map<String, Calculate> userFunctions = new HashMap<String, Calculate>();
         userFunctions.put("find_path", new FindPathCalculate(this, body));
-        SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop, userFunctions);
+        Map<String, Comparator<Term>> userComparators = new HashMap<String, Comparator<Term>>();
+        userComparators.put("location_security", new LocationSecurityComparator(this, body));
+        
+        SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop, userFunctions, userComparators);
         jshop.initialize(domain, getMaxNumConstants());
         jshops.put(body, jshop);
         return jshop;
@@ -175,8 +205,8 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         for(int i = 0; i < environment.defs.numTrapTypes; i++){
             trapsPerPlayer += environment.defs.trapCounts[i];
         }
-        int numAdditionalConstants = environment.nodes.size() /* locations */ + environment.defs.numItemTypes /*items*/ 
-                + (environment.nodes.size() * (environment.defs.numTrapTypes * 2)) /* traps and removers instances in the map, worst case*/ 
+        int numAdditionalConstants = environment.nodes.size() /* locations */ + environment.defs.numItemTypes /*items*/ + environment.defs.maxPlayers
+                + (environment.nodes.size() * (environment.defs.numTrapTypes * 2 + 1)) /* traps and removers and weapn instances in the map, worst case*/ 
                 + (environment.defs.maxPlayers * trapsPerPlayer) /*traps in player possession, worst case*/;
         return numAdditionalConstants;
     }
@@ -225,6 +255,10 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_ITEM,  0, createTermList(jshop, itemIdToConstants[itemType])));
         }
         
+        for(int weaponConstantId : weaponConstants){
+            staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_WEAPON, 0 , createTermList(jshop, weaponConstantId)));
+        }
+        
         
         State initialState = new State(jshop.getDomain().getAxioms().length, jshop.getDomain().getAxioms());
         for(Predicate p : staticDomainInfo){
@@ -240,6 +274,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
          */
         int[] nextTrapIndices = new int[environment.defs.numTrapTypes];
         int[] nextRemoverIndices = new int[environment.defs.numTrapTypes];
+        int nextWeaponIndex = 0;
         for (SpyVsSpyMapNode mapNode : environment.nodes) {
             for (int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++) {
                 for (int remover = 0; remover < mapNode.numTrapRemovers[trapType]; remover++) { 
@@ -253,6 +288,10 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             }
             for (int itemType : mapNode.items){
                 initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, itemIdToConstants[itemType], locationIdToConstants[mapNode.index])));
+            }
+            for(int weaponId = 0; weaponId < mapNode.numWeapons; weaponId++){
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, weaponConstants.get(nextWeaponIndex), locationIdToConstants[mapNode.index])));                
+                nextWeaponIndex++;
             }
         }
         
@@ -272,16 +311,37 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
                 nextTrapIndices[trapType]++;
             }
         }
+        for(int i = 0 ; i < info.numWeapons; i++){ 
+            initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, weaponConstants.get(nextWeaponIndex))));
+            nextWeaponIndex++;
+        }
         
         initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_USE_DIRECT_MOVES, 0, TermList.NIL));        
                 
-        TaskList tasks = new TaskList(2, true);
-        TaskList itemTasks = new TaskList(environment.defs.numItemTypes, false); //unordered task to gather all items
-        for(int i = 0; i < environment.defs.numItemTypes; i++){
-            itemTasks.subtasks[i] = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_HAVE, 0, createTermList(jshop, itemIdToConstants[i])), false, false));
-        }        
-        tasks.subtasks[0] = itemTasks;
-        tasks.subtasks[1] = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_MOVE, 0, createTermList(jshop, locationIdToConstants[environment.defs.destination])), false, false));
+        TaskList tasks;
+        switch(goal.getType()){
+            case DIRECT_WIN: {
+                tasks = new TaskList(2, true);
+                TaskList itemTasks = new TaskList(environment.defs.numItemTypes, false); //unordered task to gather all items
+                for(int i = 0; i < environment.defs.numItemTypes; i++){
+                    itemTasks.subtasks[i] = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_HAVE, 0, createTermList(jshop, itemIdToConstants[i])), false, false));
+                }        
+                tasks.subtasks[0] = itemTasks;
+                tasks.subtasks[1] = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_MOVE, 0, createTermList(jshop, locationIdToConstants[environment.defs.destination])), false, false));
+                break;
+            } case GET_ARMED : {
+                tasks = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_GET_ARMED, 0, TermList.NIL), false, false));
+                break;
+            } case KILL_OPONENT: {
+                tasks = new TaskList(new TaskAtom(new Predicate(SpyVsSpyJSHOP2.METHOD_KILL, 0, createTermList(jshop, oponentIdToConstants[goal.getParameter()])), false, false));
+                break;
+            }
+            default: {
+                throw new IllegalStateException("Unrecognized goal type: " + goal.getType());
+            }
+                
+        }
+                
         return new JShop2Problem(additionalConstantNames, initialState, tasks);
     }
 
@@ -310,11 +370,15 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
                 return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, constantsToItemId.get(constantIndex)));
             } else if (constantsToTrapRemoverType.containsKey(constantIndex)){
                 return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, constantsToTrapRemoverType.get(constantIndex)));
+            } else if (constantsThatAreWeapons.contains(constantIndex)) {
+                return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_WEAPON, -1 /*Parameter is ignored*/));
             } else {
                 throw new AisteException("Unrecognized object to take");
             }
         } else if(info.actionId ==  SpyVsSpyJSHOP2.PRIMITIVE_REMOVE_TRAP){
             return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, constantsToTrapType.get(info.params.get(0))));
+        } else if(info.actionId == SpyVsSpyJSHOP2.PRIMITIVE_HUNT_WITH_WEAPON){
+            return getFollowAndAttackReactivePlan(body, constantsToOponentId.get(info.params.get(1)));
         }
         else if (ignoredActionsId.contains(info.actionId)){
             return EmptyReactivePlan.<SpyVsSpyAction>emptyPlan();
