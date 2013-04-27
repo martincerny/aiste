@@ -23,6 +23,7 @@ import cz.cuni.amis.utils.future.FutureStatus;
 import cz.cuni.amis.utils.future.FutureWithListeners;
 import cz.cuni.amis.utils.future.IFutureWithListeners;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -34,8 +35,18 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
 
     private JSHOP2 jshop;
     
+    /**
+     * Whether to use branch and bound for finding optimal plans
+     */
+    private boolean branchAndBound = true;
+    
     public JShop2Controller(ValidationMethod validationMethod) {
+        this(validationMethod, true);
+    }
+    
+    public JShop2Controller(ValidationMethod validationMethod, boolean branchAndBound) {
         super(validationMethod);
+        this.branchAndBound = branchAndBound;
     }
 
     @Override
@@ -161,7 +172,17 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
 
 		jshop.setState(s);
 
-                LinkedList p = jshop.findPlans(problem.getTaskList(), 1 /*Number of plans*/);
+                LinkedList p;
+                if(branchAndBound){
+                    Plan plan = jshop.branchAndBound(problem.getTaskList());
+                    if(plan == null){
+                        return Collections.EMPTY_LIST;
+                    } else {
+                        return Collections.singletonList(plan);
+                    }
+                } else {
+                    p = jshop.findPlans(problem.getTaskList(), 1 /*Number of plans*/);
+                }
                 
                 return p;
 	}
