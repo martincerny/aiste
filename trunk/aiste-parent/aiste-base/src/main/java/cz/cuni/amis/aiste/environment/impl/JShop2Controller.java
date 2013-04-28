@@ -19,9 +19,14 @@ package cz.cuni.amis.aiste.environment.impl;
 import JSHOP2.*;
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.*;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
+import cz.cuni.amis.utils.collections.ListConcatenation;
 import cz.cuni.amis.utils.future.FutureStatus;
 import cz.cuni.amis.utils.future.FutureWithListeners;
 import cz.cuni.amis.utils.future.IFutureWithListeners;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -31,22 +36,34 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2Problem, Predicate, List<Plan>, IJShop2Representation<IAction, IPlanningGoal>> {
+public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2Problem, Predicate, Plan, IJShop2Representation<IAction, IPlanningGoal>> {
 
     private JSHOP2 jshop;
     
     /**
-     * Whether to use branch and bound for finding optimal plans
+     * Maximum number of succesively improving plans to evaluate before returning from
+     * JSHOP algorithm. 0 for no limit.
      */
-    private boolean branchAndBound = true;
+    private int maxEvaluatedPlans = 0;
+    
+    private double lastBestPlanCost = Double.POSITIVE_INFINITY;
+    private double currentBestPlanCost = Double.POSITIVE_INFINITY;
+    
+    private int stepsSinceFirstPlanFound = -1;
+    
+    private PlannerInterruptTest plannerInterruptTest;
     
     public JShop2Controller(ValidationMethod validationMethod) {
-        this(validationMethod, true);
+        this(validationMethod, 0);    
+    }
+    public JShop2Controller(ValidationMethod validationMethod, int maxEvaluatedPlans){
+        this(validationMethod, maxEvaluatedPlans, null);
     }
     
-    public JShop2Controller(ValidationMethod validationMethod, boolean branchAndBound) {
+    public JShop2Controller(ValidationMethod validationMethod, int maxEvaluatedPlans, PlannerInterruptTest plannerInterruptTest) {
         super(validationMethod);
-        this.branchAndBound = branchAndBound;
+        this.maxEvaluatedPlans = maxEvaluatedPlans;
+        this.plannerInterruptTest = plannerInterruptTest;
     }
 
     @Override
@@ -54,25 +71,42 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
         super.init(environment, representation, body, stepDelay);
         jshop = representation.getDomain(body);
     }
+
+    @Override
+    public void onSimulationStep(double reward) {
+        if(getPlanFuture() != null && getPlanFuture().getStatus() == FutureStatus.FUTURE_IS_BEING_COMPUTED){
+            /**
+            * Check whether it is worth interrupting the planning prematurely
+            */
+            if(jshop.getNumPlansFound() > 0){
+                stepsSinceFirstPlanFound++;
+                if(plannerInterruptTest != null && plannerInterruptTest.shouldInterruptPrematurely(goalForPlanning, lastBestPlanCost, stepsSinceFirstPlanFound, jshop)){
+                    jshop.cancel();
+                }
+                if(jshop.getBestPlan().getCost() < currentBestPlanCost){
+                    lastBestPlanCost = currentBestPlanCost;
+                    currentBestPlanCost = jshop.getBestPlan().getCost();
+                }
+            }
+            
+        } 
+        super.onSimulationStep(reward);
+    }
     
     
 
     @Override
-    protected List<Predicate> getActionsFromPlanningResult(List<Plan> result) {
-        double minimalCost = Double.POSITIVE_INFINITY;
-        List<Predicate> bestPlan = null;
-        for (Plan p : result) {
-            if (p.getCost() < minimalCost) {
-                minimalCost = p.getCost();
-                bestPlan = p.getOps();
-            }
+    protected List<Predicate> getActionsFromPlanningResult(Plan result) {
+        if(result == null){
+            return null;
+        } else {
+            return result.getOps();
         }
-        return bestPlan;
     }
 
     @Override
-    protected boolean isPlanningResultSucces(List<Plan> result) {
-        return !result.isEmpty();
+    protected boolean isPlanningResultSucces(Plan result) {
+        return result != null;
     }
 
     @Override
@@ -90,15 +124,18 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     
     
     @Override
-    protected IFutureWithListeners<List<Plan>> startPlanningProcess() {
+    protected IFutureWithListeners<Plan> startPlanningProcess() {
         final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, representation.getProblem(body, goalForPlanning));
         final JShop2PlanningFuture future = new JShop2PlanningFuture(planningProcess);
+        currentBestPlanCost = Double.POSITIVE_INFINITY;
+        lastBestPlanCost = Double.POSITIVE_INFINITY;
+        stepsSinceFirstPlanFound = -1;
         new Thread(new Runnable() {
 
             @Override
             public void run() {
                 try {
-                    List<Plan> planningResult = planningProcess.execute();
+                    Plan planningResult = planningProcess.execute();
                     synchronized (future) {
                         if (!future.isCancelled()) {
                             if (planningResult != null) {
@@ -123,20 +160,32 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     }
 
     @Override
+    public ILoggingHeaders getPerExperimentLoggingHeaders() {
+        return new LoggingHeadersConcatenation(super.getPerExperimentLoggingHeaders(), new LoggingHeaders("maxEvaluatedPlans", "interruptTest"));        
+    }
+
+    @Override
+    public List<Object> getPerExperimentLoggingData() {
+        return new ListConcatenation<Object>(super.getPerExperimentLoggingData(), Arrays.asList(new Object[] {maxEvaluatedPlans, plannerInterruptTest}));
+    }
+
+
+    
+    
+
+    @Override
     public Class getRepresentationClass() {
         return IJShop2Representation.class;
     }
 
-    private class JShop2PlanningFuture extends FutureWithListeners<List<Plan>> {
+    private class JShop2PlanningFuture extends FutureWithListeners<Plan> {
 
         JShop2PlanningProcess process;
 
         public JShop2PlanningFuture(JShop2PlanningProcess process) {
             this.process = process;
         }
-        
-        
-        
+                
         @Override
         protected boolean cancelComputation(boolean mayInterruptIfRunning) {
             if(!mayInterruptIfRunning){
@@ -163,28 +212,15 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
 
 
 
-        public List<Plan> execute() {
+        public Plan execute() {
                 //initialization is now done in representation.getDomain()... Curse static objects!
 
 		jshop.getDomain().setProblemConstants(problem.getProblemConstants());
-
-		State s = problem.getInitialState();
-
+                State s = problem.getInitialState();
 		jshop.setState(s);
-
-                LinkedList p;
-                if(branchAndBound){
-                    Plan plan = jshop.branchAndBound(problem.getTaskList());
-                    if(plan == null){
-                        return Collections.EMPTY_LIST;
-                    } else {
-                        return Collections.singletonList(plan);
-                    }
-                } else {
-                    p = jshop.findPlans(problem.getTaskList(), 1 /*Number of plans*/);
-                }
                 
-                return p;
+                Plan plan = jshop.branchAndBound(problem.getTaskList(), maxEvaluatedPlans);                                
+                return plan;                
 	}
         
         public void cancel(){
@@ -193,5 +229,31 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
             } 
             cancelled = true;
         }
+    }
+    
+    public static interface PlannerInterruptTest {
+        public boolean shouldInterruptPrematurely(IPlanningGoal goal, double lastBestPlanCost, int numStepsSinceFirstPlan, JSHOP2 jshop);
+    }
+    
+    public static class StepsSinceFirstPlanInterruptTest implements PlannerInterruptTest {
+
+        private int numStepsToTerminate;
+
+        public StepsSinceFirstPlanInterruptTest(int numStepsToTerminate) {
+            this.numStepsToTerminate = numStepsToTerminate;
+        }                
+        
+        @Override
+        public boolean shouldInterruptPrematurely(IPlanningGoal goal, double lastBestPlanCost, int numStepsSinceFirstPlan, JSHOP2 jshop) {
+            return (numStepsSinceFirstPlan >= numStepsToTerminate);
+        }
+
+        @Override
+        public String toString() {
+            return "StepsSinceFirstPlanInterruptTest{" + "numStepsToTerminate=" + numStepsToTerminate + '}';
+        }
+        
+        
+        
     }
 }

@@ -22,6 +22,8 @@ import cz.cuni.amis.experiments.ILogDataProvider;
  * An abstract agent controller. To be compatible with default execution and matchmaking
  * all concrete implementing classes should provide a no-argument constructor. The controller
  * logs data and is responsible for logging any neccessary data from its associated environment representation.
+ * Controllers may be reused across several environments. A call to {@link #shutdown() } is always issued before another 
+ * call to {@link #init(cz.cuni.amis.aiste.environment.IEnvironment, cz.cuni.amis.aiste.environment.IEnvironmentRepresentation, cz.cuni.amis.aiste.environment.AgentBody, long) }.
  * @author Martin Cerny
  */
 public interface IAgentController<ACTION extends IAction, REPRESENTATION extends IEnvironmentRepresentation> extends ILogDataProvider {

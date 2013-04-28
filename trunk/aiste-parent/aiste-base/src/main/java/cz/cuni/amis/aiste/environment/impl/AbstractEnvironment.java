@@ -16,6 +16,7 @@
  */
 package cz.cuni.amis.aiste.environment.impl;
 
+import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.SimulationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IEnvironment;
@@ -64,11 +65,11 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
      */
     private Set<AgentBody> removedBodies;
 
-    private Map<IAgentType, Integer> instanceCount = new HashMap<IAgentType,Integer>();
+    private Map<IAgentType, Integer> instanceCount;
 
     /**
      * Constructor that creates a shallow copy of specified environment.
-     * Namely: everything related bodies are the same list (changes will propagate)
+     * Namely: everything related to bodies are the same list (changes will propagate)
      * totalRewards are copied, logging output is NOT copied.
      * @param original 
      */
@@ -174,6 +175,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
         bodies = new ArrayList<AgentBody>();
         activeBodies = new ArrayList<AgentBody>();
         removedBodies =  new HashSet<AgentBody>();
+        instanceCount = new HashMap<IAgentType, Integer>();
         timeStep = 0;
         totalRewards = new HashMap<AgentBody, Double>();
     }

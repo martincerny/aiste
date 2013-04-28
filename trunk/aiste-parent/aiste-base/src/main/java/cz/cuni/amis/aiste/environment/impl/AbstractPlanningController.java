@@ -486,6 +486,10 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
             planFuture.cancel(true);
         }        
     }
+
+    protected IFutureWithListeners<PLANNING_RESULT> getPlanFuture() {
+        return planFuture;
+    }
   
     
     

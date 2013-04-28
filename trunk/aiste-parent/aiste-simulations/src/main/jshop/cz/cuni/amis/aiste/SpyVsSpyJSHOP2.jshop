@@ -14,7 +14,9 @@
                   (player_at ?from)
                   (adjacent ?from ?to) )
              ((player_at ?from)) 
-             ((player_at ?to)))
+             ((player_at ?to))
+             1
+            )
 
              (:operator (!take ?item)
                 (   (object ?item) 
@@ -23,6 +25,7 @@
                     (not (trap_set ?trap ?loc)) )
                 ( (object_at ?item ?loc) )
                 ( (carrying ?item) ) 
+                1
             )
 
              (:operator (!remove_trap ?trap)
@@ -35,6 +38,7 @@
                 (   (carrying ?remover) 
                     (trap_set ?trap ?loc) )
                 ()
+                1
             )
 
             (:operator (!attack_with_weapon ?weapon ?oponent) 
@@ -48,6 +52,7 @@
                     (forall (?item) ((oponent_carrying ?item)) ((object_at ?item ?loc)) )  ;; The oponent's possession falls on the ground
                     (killed_oponent ?oponent)
                 )
+                1
             )
 
             ;;Hunting differs from attacking, becuase it gets translated to follow behaviour, until the enemy is caught and attacked
@@ -60,6 +65,7 @@
                 ( 
                     (killed_oponent ?oponent)
                 )
+                15 ;;Wild guess at the actual cost, should not matter really...
             )
             
 
@@ -68,23 +74,30 @@
 (:operator (!visit ?loc)
   () ;(location ?loc)
   ()
-  ((visited ?loc)))
+  ((visited ?loc))
+  0.0001 ;; The cost is slighty above zero, to guide branch and bound
+)
 
 (:operator (!unvisit ?loc)
   () ;(location ?loc)
   ((visited ?loc))
-  ())
+  ()
+  0.0001 ;; The cost is slighty above zero, to guide branch and bound
+)
 
 (:operator (!start_securing ?loc)
   () ;(location ?loc)
   ()
-  ((securing ?loc)))
+  ((securing ?loc))
+  0.0001 ;; The cost is slighty above zero, to guide branch and bound
+)
 
 
 (:operator (!finish_securing ?loc)
     ()
     ((securing ?loc))
     ()
+    0.0001 ;; The cost is slighty above zero, to guide branch and bound
 )
 
 (:method (move ?to)

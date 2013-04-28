@@ -18,6 +18,7 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController;
 import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
@@ -27,13 +28,14 @@ import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.experiments.AisteExperiment;
 import cz.cuni.amis.aiste.experiments.AisteExperimentRunner;
+import cz.cuni.amis.aiste.experiments.AisteExperimentUtils;
+import cz.cuni.amis.experiments.IExperimentSuite;
 import cz.cuni.amis.experiments.utils.ExperimentUtils;
 import cz.cuni.amis.planning4j.IAsyncPlanner;
+import cz.cuni.amis.planning4j.IPlanner;
 import cz.cuni.amis.planning4j.IValidator;
 import cz.cuni.amis.planning4j.external.ExternalPlanner;
-import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerExecutor;
-import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerInformation;
-import cz.cuni.amis.planning4j.external.impl.itsimple.PlannerListManager;
+import cz.cuni.amis.planning4j.external.impl.itsimple.*;
 import cz.cuni.amis.planning4j.external.plannerspack.PlannersPackUtils;
 import cz.cuni.amis.planning4j.pddl.PDDLRequirement;
 import cz.cuni.amis.planning4j.validation.external.ValValidator;
@@ -54,7 +56,12 @@ public class Test {
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
 
-        ItSimplePlannerInformation info = PlannersPackUtils.getMetricFF();
+        ItSimplePlannerInformation info;
+        if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
+            info = PlannersPackUtils.getSGPlan6();
+        } else {
+            info = PlannersPackUtils.getMetricFF();
+        }
 
         File plannersDirectory = new File("target");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
@@ -68,27 +75,27 @@ public class Test {
 
 
 
-        File envTempFile = new File("env.obj");
-        SpyVsSpyEnvironmentDefinition envDef;
-
-        if (!envTempFile.exists()) {
-            SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 100, 3, 5, 8, 0.5, 5, planner);
-            //SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, 1, planner);
-            //        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, 0, planner);        
-            generator.setRandomSeed(1745646655);
-
-            envDef = generator.generateEnvironment();
-
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(envTempFile));
-            os.writeObject(envDef);
-            os.close();
-        } else {
-            ObjectInputStream is = new ObjectInputStream(new FileInputStream(envTempFile));
-            envDef = (SpyVsSpyEnvironmentDefinition) is.readObject();
-        }
-
-        SpyVsSpy environment = new SpyVsSpy(envDef);
-        environment.setRandomSeed(1234878864L);
+//        File envTempFile = new File("env.obj");
+//        SpyVsSpyEnvironmentDefinition envDef;
+//
+//        if (!envTempFile.exists()) {
+//            SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 100, 3, 5, 8, 0.5, 5, planner);
+//            //SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2,8,3,2,2,0.5, 1, planner);
+//            //        SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 3, 1.4, 1, 1, 0, 0, planner);        
+//            generator.setRandomSeed(1745646655);
+//
+//            envDef = generator.generateEnvironment();
+//
+//            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(envTempFile));
+//            os.writeObject(envDef);
+//            os.close();
+//        } else {
+//            ObjectInputStream is = new ObjectInputStream(new FileInputStream(envTempFile));
+//            envDef = (SpyVsSpyEnvironmentDefinition) is.readObject();
+//        }
+//
+//        SpyVsSpy environment = new SpyVsSpy(envDef);
+//        environment.setRandomSeed(1234878864L);
 
 
 //        IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        
@@ -105,48 +112,87 @@ public class Test {
 //        AisteExperiment experiment = new AisteExperiment(environment, descriptors, 100000);
 //        ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));        
 
-        List<AisteExperiment> experiments = new ArrayList<AisteExperiment>();
+        
+        List<IAgentController> controllers = new ArrayList<IAgentController>();
+        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(1)));            
+        controllers.add(new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN));
+        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1));            
+        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 2));            
+        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(2)));            
+        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1, new JShop2Controller.StepsSinceFirstPlanInterruptTest(0)));            
+        
+        List<IEnvironment> environments = new ArrayList<IEnvironment>();
+        
         Random rand = new Random(3865983846L);
         for (int i = 0; i < 50; i++) {
+            SpyVsSpyEnvironmentDefinition envDef;
             try {
+                IPlanner plannerToTestDomain = null;
+                if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
+                    plannerToTestDomain = planner;
+                }
+                
                 //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
-                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30, 3, 3, 2, 0.3, 5, null);
-                generator.setRandomSeed(rand.nextLong());
+                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 15, 3, 3, 2, 0.3, 5, plannerToTestDomain);
+                long generatorSeed = rand.nextLong();
+                System.out.println("Seed:" + generatorSeed);
+                generator.setRandomSeed(generatorSeed);
 
                 envDef = generator.generateEnvironment();
+                environments.add(new SpyVsSpy(envDef));
             } catch (AisteException ex) {
                 System.out.println("Generator failnul. i:" + i);
                 continue;
             }
-
-            IAgentController player1 = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
-            IAgentController player2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
-
-            IAgentController player1a = new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
-            IAgentController player2a = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
-
-            SpyVsSpy environment2 = new SpyVsSpy(envDef);
-            environment2.setRandomSeed(rand.nextLong());
-
-            SpyVsSpy environment3 = new SpyVsSpy(envDef);
-            environment3.setRandomSeed(rand.nextLong());
-
-
-
-            List<IAgentExecutionDescriptor> descriptors1 = Arrays.asList(new IAgentExecutionDescriptor[]{
-                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1, environment2.getjShop2Representation()),
-                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2, environment2.getpDDLRepresentation())
-                    });
-            List<IAgentExecutionDescriptor> descriptors2 = Arrays.asList(new IAgentExecutionDescriptor[]{
-                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player1a, environment3.getjShop2Representation()),
-                        new AgentExecutionDescriptor(SpyVsSpyAgentType.getInstance(), player2a, environment3.getpDDLRepresentation())
-                    });
-
-            experiments.add(new AisteExperiment(environment2, descriptors1, 100000));
-            experiments.add(new AisteExperiment(environment3, descriptors2, 100000));
         }
+        for (int i = 0; i < 50; i++) {
+            SpyVsSpyEnvironmentDefinition envDef;
+            try {
+                IPlanner plannerToTestDomain = null;
+                if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
+                    plannerToTestDomain = planner;
+                }
+                
+                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30 , 4, 4, 2, 0.5, 7, plannerToTestDomain);
+                long generatorSeed = rand.nextLong();
+                System.out.println("Seed:" + generatorSeed);
+                generator.setRandomSeed(generatorSeed);
 
-        ExperimentUtils.runExperimentsSingleThreaded(experiments, new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(300)));
+                envDef = generator.generateEnvironment();
+                environments.add(new SpyVsSpy(envDef));
+            } catch (AisteException ex) {
+                System.out.println("Generator failnul. i:" + i);
+                continue;
+            }
+        }
+        
+        for (int i = 0; i < 50; i++) {
+            SpyVsSpyEnvironmentDefinition envDef;
+            try {
+                IPlanner plannerToTestDomain = null;
+                if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
+                    plannerToTestDomain = planner;
+                }
+                
+                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 70, 5, 5, 2, 0.3, 10, plannerToTestDomain);
+                long generatorSeed = rand.nextLong();
+                System.out.println("Seed:" + generatorSeed);
+                generator.setRandomSeed(generatorSeed);
+
+                envDef = generator.generateEnvironment();
+                environments.add(new SpyVsSpy(envDef));
+            } catch (AisteException ex) {
+                System.out.println("Generator failnul. i:" + i);
+                continue;
+            }
+        }
+        
+        
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("JSHOPTest", environments, controllers, 100000, rand);
+
+        ExperimentUtils.runSuiteSingleThreaded(suite, new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(400)));
 
 
 //        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        

@@ -49,6 +49,8 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     protected final ILoggingHeaders runtimeLoggingHeaders;
     protected final ILogIdentifier logIdentifier;
     
+    private boolean inUse = false;
+    
     /**
      * Controller parameters are added to both runtime and per-experiment logs.
      */
@@ -88,9 +90,10 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     @Override
     public void init(IEnvironment<ACTION> environment, REPRESENTATION representation, AgentBody body, long stepDelay) {
         
-        if(this.environment != null){
-            throw new AisteException("A controller may be initialized only once");
+        if(inUse){
+            throw new AisteException("The controller is already in use.");
         }
+        inUse = true;
         this.environment = environment;
         this.representation = representation;
         this.body = body;
@@ -112,6 +115,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
 
     @Override
     public void shutdown() {
+        inUse = false;
         metrics.stopMeasurement();
     }
 
