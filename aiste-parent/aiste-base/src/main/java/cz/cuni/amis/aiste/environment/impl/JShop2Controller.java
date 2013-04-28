@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -82,6 +83,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
                 stepsSinceFirstPlanFound++;
                 if(plannerInterruptTest != null && plannerInterruptTest.shouldInterruptPrematurely(goalForPlanning, lastBestPlanCost, stepsSinceFirstPlanFound, jshop)){
                     jshop.cancel();
+                    getPlanFuture().get(10, TimeUnit.MILLISECONDS);
                 }
                 if(jshop.getBestPlan().getCost() < currentBestPlanCost){
                     lastBestPlanCost = currentBestPlanCost;
