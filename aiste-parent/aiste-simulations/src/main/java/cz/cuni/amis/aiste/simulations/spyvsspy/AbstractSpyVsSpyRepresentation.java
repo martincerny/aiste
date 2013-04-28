@@ -72,7 +72,7 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
         List<SpyVsSpyPlanningGoal> goals = new ArrayList<SpyVsSpyPlanningGoal>(2);
         
         SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
-        if(info.numWeapons == 0){
+        if(info.numWeapons == 0 && environment.getAllBodies().size() > 1){
             //arming yourself is as important as winning the game: It may easily come to that
             int priorityOfArming = (int)environment.defs.rewardReachGoal;
             goals.add(new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.GET_ARMED, priorityOfArming));

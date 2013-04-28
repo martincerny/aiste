@@ -89,7 +89,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         /**
          * Create common parts of problem spec
          */
-        int numNodes = environment.nodes.size();
+        int numNodes = environment.defs.nodesInStartingPosition.size();
         
         locationIdToConstants = new int[numNodes];
         constantsToLocationId = new HashMap<Integer, Integer>();        
@@ -113,7 +113,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         }
                 
         
-        for(SpyVsSpyMapNode mapNode : environment.nodes){
+        for(SpyVsSpyMapNode mapNode : environment.defs.nodesInStartingPosition){
             locationIdToConstants[mapNode.index] = nextConstantIndex;
             constantsToLocationId.put(nextConstantIndex, mapNode.index);
             additionalConstantNames[nextConstantIndex - problemConstantOffset] = "location_" + mapNode.index;            
@@ -205,8 +205,8 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         for(int i = 0; i < environment.defs.numTrapTypes; i++){
             trapsPerPlayer += environment.defs.trapCounts[i];
         }
-        int numAdditionalConstants = environment.nodes.size() /* locations */ + environment.defs.numItemTypes /*items*/ + environment.defs.maxPlayers
-                + (environment.nodes.size() * (environment.defs.numTrapTypes * 2 + 1)) /* traps and removers and weapn instances in the map, worst case*/ 
+        int numAdditionalConstants = environment.defs.nodesInStartingPosition.size() /* locations */ + environment.defs.numItemTypes /*items*/ + environment.defs.maxPlayers
+                + (environment.defs.nodesInStartingPosition.size() * (environment.defs.numTrapTypes * 2 + 1)) /* traps and removers and weapn instances in the map, worst case*/ 
                 + (environment.defs.maxPlayers * trapsPerPlayer) /*traps in player possession, worst case*/;
         return numAdditionalConstants;
     }

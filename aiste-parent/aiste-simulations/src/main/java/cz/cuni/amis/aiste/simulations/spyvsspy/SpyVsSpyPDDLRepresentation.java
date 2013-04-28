@@ -106,8 +106,8 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         locationType = new PDDLType("location");
         oponentType = new PDDLType("oponent");
 
-        locationConstants = new PDDLObjectInstance[environment.nodes.size()];
-        for (int i = 0; i < environment.nodes.size(); i++) {
+        locationConstants = new PDDLObjectInstance[environment.defs.nodesInStartingPosition.size()];
+        for (int i = 0; i < environment.defs.nodesInStartingPosition.size(); i++) {
             locationConstants[i] = new PDDLObjectInstance(LOCATION_PREFIX + SEPARATOR + i, locationType);
         }
 

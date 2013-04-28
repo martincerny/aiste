@@ -56,6 +56,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
      * All nodes present in the environment
      */
     List<SpyVsSpyMapNode> nodes;
+
+    
     /**
      * Informations about individual agent, indexed by agentBody.id.
      */
@@ -99,21 +101,15 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
     public SpyVsSpy(SpyVsSpyEnvironmentDefinition definition) {
         super(SpyVsSpyAction.class);
-        
+
         int rewardDeath = -50;
         int rewardReachedGoal = 150;
         int rewardNothing = -1;
 
-        defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, rewardDeath, rewardReachedGoal, rewardNothing, 0.9, definition.destination, definition.startingLocations, definition.neighbours);
-
-        this.nodes = definition.nodes;
-
-
-        isSimulation = false;
-
-        bodyInfos = new ArrayList<SpyVsSpyBodyInfo>();
+        defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, rewardDeath, rewardReachedGoal, rewardNothing, 0.9, definition.destination, definition.startingLocations, definition.nodes, definition.neighbours);
 
         rand = new Random();
+        
         registerRepresentation(this);
         
         pDDLRepresentation = new SpyVsSpyPDDLRepresentation(this);
@@ -122,10 +118,29 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         jShop2Representation = new SpyVsSpyJShop2Representation(this);
         registerRepresentation(jShop2Representation);
 
+        
+    }
+
+    @Override
+    public void init() {
+        super.init();
+
+        this.nodes = new ArrayList<SpyVsSpyMapNode>(defs.nodesInStartingPosition.size());
+        for(SpyVsSpyMapNode node : defs.nodesInStartingPosition){
+            nodes.add(new SpyVsSpyMapNode(node));
+        }
+
+
+        isSimulation = false;
+
+        bodyInfos = new ArrayList<SpyVsSpyBodyInfo>();
+
         markerData = new HashMap<AgentBody, ChangesSinceMarker>();
         agentsKilledThisRound = new HashSet<AgentBody>();
         
-    }    
+    }
+    
+    
     
     @Override
     public Map<? extends IAgentType, ? extends IAgentInstantiationDescriptor> getInstantiationDescriptors() {
@@ -507,7 +522,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
     @Override
     public List<Object> getEnvironmentParametersValues() {
-        return ListConcatenation.concatenate(super.getEnvironmentParametersValues(), Arrays.asList(new Object[]{nodes.size(), defs.numTrapTypes, defs.numItemTypes, defs.attackSuccessProbability }));
+        return ListConcatenation.concatenate(super.getEnvironmentParametersValues(), Arrays.asList(new Object[]{defs.nodesInStartingPosition.size(), defs.numTrapTypes, defs.numItemTypes, defs.attackSuccessProbability }));
     }
 
     public synchronized void setMarker(AgentBody body){
@@ -592,7 +607,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         
         IPFMap<Integer> mapForPathFinding;
 
-        public StaticDefs(int maxPlayers, int numTrapTypes, int[] trapCounts, int numItemTypes, double rewardDeath, double rewardReachGoal, double rewardNothing, double attackSuccessProbability, int destination, List<Integer> startingLocations, Map<Integer, List<Integer>> neighbours) {
+        /**
+        * "Original" for all the map nodes - every time the environment is reused,
+        * nodes are recreated from this original.
+        */
+        List<SpyVsSpyMapNode> nodesInStartingPosition;
+
+        
+        public StaticDefs(int maxPlayers, int numTrapTypes, int[] trapCounts, int numItemTypes, double rewardDeath, double rewardReachGoal, double rewardNothing, double attackSuccessProbability, int destination, List<Integer> startingLocations, List<SpyVsSpyMapNode> nodesInStartingPosition, Map<Integer, List<Integer>> neighbours) {
             this.maxPlayers = maxPlayers;
             this.numTrapTypes = numTrapTypes;
             this.trapCounts = trapCounts;
@@ -603,6 +625,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             this.attackSuccessProbability = attackSuccessProbability;
             this.destination = destination;
             this.startingLocations = startingLocations;
+            this.nodesInStartingPosition = nodesInStartingPosition;
             this.neighbours = neighbours;
             
             this.mapForPathFinding = new IPFMap<Integer>() {
