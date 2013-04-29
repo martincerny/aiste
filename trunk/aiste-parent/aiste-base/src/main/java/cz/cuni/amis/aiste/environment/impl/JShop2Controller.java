@@ -71,6 +71,9 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     public void init(IEnvironment<IAction> environment, IJShop2Representation<IAction, IPlanningGoal> representation, AgentBody body, long stepDelay) {
         super.init(environment, representation, body, stepDelay);
         jshop = representation.getDomain(body);
+        this.lastBestPlanCost = Double.POSITIVE_INFINITY;
+        this.currentBestPlanCost = Double.POSITIVE_INFINITY;
+        this.stepsSinceFirstPlanFound = -1;
     }
 
     @Override

@@ -53,6 +53,12 @@ public interface IAgentController<ACTION extends IAction, REPRESENTATION extends
     void shutdown();
     
     /**
+     * Called whenever the component is "restarted", while staying in the same environment - e.g. agent was killed
+     * and respawned.
+     */
+    void restart();
+    
+    /**
      * Notifies the agent that a simulation step has happened and that it received a reward.
      * If execution of this method takes more time than a single simulation step,
      * it may be called again even if the invocation on previous simulation step has not yet returned.

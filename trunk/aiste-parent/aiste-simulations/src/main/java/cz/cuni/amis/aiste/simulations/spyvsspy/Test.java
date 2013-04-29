@@ -132,7 +132,7 @@ public class Test {
 
         
         Random rand = new Random(3865983846L);
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 5; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
                 
@@ -149,7 +149,7 @@ public class Test {
                 continue;
             }
         }
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 5; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
                 
@@ -167,7 +167,7 @@ public class Test {
             }
         }
         
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 5; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
                 
@@ -188,7 +188,8 @@ public class Test {
         
         IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("JSHOPTest", environments, controllers, 100000, rand);
 
-        ExperimentUtils.runSuiteSingleThreaded(suite, new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(400)));
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(400));
+        ExperimentUtils.runSuiteSingleThreaded(suite, experimentRunner);
 
 
 //        IAgentController player1 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);        

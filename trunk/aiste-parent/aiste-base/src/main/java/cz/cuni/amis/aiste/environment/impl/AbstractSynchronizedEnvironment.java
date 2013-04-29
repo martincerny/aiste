@@ -29,6 +29,8 @@ import org.apache.log4j.Logger;
  * then synchronously retrieved upon performing a simulation step. Only one action per agent body
  * is retained, if multiple actions are invoked for a single body between successive simulation steps,
  * the last one is taken.
+ * Any code that does not wish to be interrupted by environment updates should synchronize on the 
+ * environment instance.
  * @author Martin Cerny
  */
 public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> extends AbstractEnvironment<ACTION>{
@@ -70,8 +72,10 @@ public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> ex
             actionsCopy = new HashMap<AgentBody, ACTION>(actionsForNextStep);
             actionsForNextStep.clear();
         }
-        Map<AgentBody, Double> result = nextStepInternal(actionsCopy);
-        return result;
+        synchronized(this){
+            Map<AgentBody, Double> result = nextStepInternal(actionsCopy);
+            return result;
+        }
     }
 
     @Override
