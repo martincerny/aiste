@@ -20,9 +20,11 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.experiments.ILoggingHeaders;
 import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
 import cz.cuni.amis.experiments.impl.metrics.IncrementalMetric;
 import cz.cuni.amis.experiments.impl.metrics.IntegerAverageMetric;
 import cz.cuni.amis.experiments.impl.metrics.TimeMeasuringMetric;
+import cz.cuni.amis.utils.collections.ListConcatenation;
 import cz.cuni.amis.utils.future.IFutureWithListeners;
 import java.util.*;
 import org.apache.log4j.Logger;
@@ -74,9 +76,14 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     
     long lastPlanningStartTime = 0;
     
+    public AbstractPlanningController(ValidationMethod validationMethod, ILoggingHeaders controllerParametersHeaders, Object ... controllerParametersValues ) {
+        this(validationMethod, LoggingHeaders.EMPTY_LOGGING_HEADERS, controllerParametersHeaders, controllerParametersValues);
+    }
     
-    public AbstractPlanningController(ValidationMethod validationMethod) {
-        super(new LoggingHeaders("planningStatus", "actionIssued"), new LoggingHeaders("validationMethod"), validationMethod);
+    public AbstractPlanningController(ValidationMethod validationMethod, ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, Object ... controllerParametersValues ) {
+        super(LoggingHeadersConcatenation.concatenate(new LoggingHeaders("planningStatus", "actionIssued"), runtimeLoggingHeaders), 
+                LoggingHeadersConcatenation.concatenate(new LoggingHeaders("validationMethod"), controllerParametersHeaders), 
+                ListConcatenation.concatenate(Collections.<Object>singletonList(validationMethod), Arrays.asList(controllerParametersValues)));
         this.validationMethod = validationMethod;
         currentPlan = new ArrayDeque<PLANNER_ACTION>();
         activePlannerActionReactivePlan = EmptyReactivePlan.EMPTY_PLAN;

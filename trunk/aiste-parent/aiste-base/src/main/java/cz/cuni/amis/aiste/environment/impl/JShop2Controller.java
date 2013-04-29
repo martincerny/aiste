@@ -62,7 +62,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     }
     
     public JShop2Controller(ValidationMethod validationMethod, int maxEvaluatedPlans, PlannerInterruptTest plannerInterruptTest) {
-        super(validationMethod);
+        super(validationMethod, new LoggingHeaders("maxEvaluatedPlans", "interruptTest"), new Object[] {maxEvaluatedPlans, plannerInterruptTest == null ? "None" : plannerInterruptTest.getLoggableRepresentation()});
         this.maxEvaluatedPlans = maxEvaluatedPlans;
         this.plannerInterruptTest = plannerInterruptTest;
     }
@@ -235,6 +235,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     
     public static interface PlannerInterruptTest {
         public boolean shouldInterruptPrematurely(IPlanningGoal goal, double lastBestPlanCost, int numStepsSinceFirstPlan, JSHOP2 jshop);
+        public String getLoggableRepresentation();
     }
     
     public static class StepsSinceFirstPlanInterruptTest implements PlannerInterruptTest {
@@ -253,6 +254,11 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
         @Override
         public String toString() {
             return "StepsSinceFirstPlanInterruptTest{" + "numStepsToTerminate=" + numStepsToTerminate + '}';
+        }
+
+        @Override
+        public String getLoggableRepresentation() {
+            return "NumSteps_" + numStepsToTerminate;
         }
         
         

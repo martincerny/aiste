@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.*;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.planning4j.*;
 import cz.cuni.amis.planning4j.impl.PDDLObjectDomainProvider;
 import cz.cuni.amis.planning4j.impl.PDDLObjectProblemProvider;
@@ -74,7 +75,7 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
     }    
     
     public Planning4JController(IAsyncPlanner planner, ValidationMethod validationMethod, IValidator validator) {
-        super(validationMethod);
+        super(validationMethod, new LoggingHeaders("planner"), planner.getName());
         this.planner = Planning4JUtils.getTranslatingAsyncPlanner(planner, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
         if(validator != null){
             this.validator = Planning4JUtils.getTranslatingValidator(validator, IPDDLObjectDomainProvider.class, IPDDLObjectProblemProvider.class);
