@@ -69,9 +69,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
      */
     Set<Integer> ignoredActionsId;
     
-    
-    java.util.List<Predicate> staticDomainInfo;
-
+   
     public SpyVsSpyJShop2Representation(SpyVsSpy environment) {
         this.environment = environment;
                 
@@ -222,6 +220,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             throw new IllegalStateException("Getting problem before getting domain");
         }
         
+        java.util.List<Predicate> staticDomainInfo;
         staticDomainInfo = new ArrayList<Predicate>();
         for(SpyVsSpyMapNode node : environment.nodes){            
             staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_LOCATION, 0, createTermList(jshop, locationIdToConstants[node.index])));
