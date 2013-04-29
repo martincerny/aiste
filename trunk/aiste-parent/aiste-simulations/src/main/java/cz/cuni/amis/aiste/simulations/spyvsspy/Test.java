@@ -122,15 +122,19 @@ public class Test {
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1, new JShop2Controller.StepsSinceFirstPlanInterruptTest(0)));            
         
         List<IEnvironment> environments = new ArrayList<IEnvironment>();
+
+        IPlanner plannerToTestDomain = null;
+        if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
+                ItSimplePlannerInformation plannerToTestInfo = PlannersPackUtils.getProbe();
+                File plannerBinariesDirectory = new File("/home/martin_cerny/seq-sat-probe");					
+                plannerToTestDomain = new ExternalPlanner( new ItSimplePlannerExecutor(plannerToTestInfo, plannerBinariesDirectory));;
+        }
+
         
         Random rand = new Random(3865983846L);
         for (int i = 0; i < 50; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
-                IPlanner plannerToTestDomain = null;
-                if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
-                    plannerToTestDomain = planner;
-                }
                 
                 //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
                 SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 15, 3, 3, 2, 0.3, 5, plannerToTestDomain);
@@ -148,10 +152,6 @@ public class Test {
         for (int i = 0; i < 50; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
-                IPlanner plannerToTestDomain = null;
-                if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
-                    plannerToTestDomain = planner;
-                }
                 
                 //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
                 SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30 , 4, 4, 2, 0.5, 7, plannerToTestDomain);
@@ -170,10 +170,6 @@ public class Test {
         for (int i = 0; i < 50; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
-                IPlanner plannerToTestDomain = null;
-                if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
-                    plannerToTestDomain = planner;
-                }
                 
                 //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
                 SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 70, 5, 5, 2, 0.3, 10, plannerToTestDomain);

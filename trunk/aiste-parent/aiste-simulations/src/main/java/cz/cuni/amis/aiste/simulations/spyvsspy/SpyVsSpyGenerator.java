@@ -23,6 +23,7 @@ import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.IPlanner;
 import cz.cuni.amis.planning4j.IPlanningResult;
+import cz.cuni.amis.planning4j.PlanningException;
 import cz.cuni.amis.planning4j.pddl.PDDLDomain;
 import cz.cuni.amis.planning4j.pddl.PDDLProblem;
 import cz.cuni.amis.planning4j.utils.Planning4JUtils;
@@ -268,19 +269,24 @@ public class SpyVsSpyGenerator implements IRandomizable{
                 for(AgentBody body : spyVsSpyToTest.getActiveBodies()){
                     PDDLDomain domain = representation.getDomain(body);
                     PDDLProblem problem = representation.getProblem(body, new SpyVsSpyPlanningGoal(SpyVsSpyPlanningGoal.Type.DIRECT_WIN, 0));
-                    IPlanningResult testResult = Planning4JUtils.plan(plannerToTestDomain, domain, problem);
-                    if(!testResult.isSuccess()){
-                        logger.info("Domain could not be solved for player " + body.getId() + ", generating new one.");
-                        continue generateCycle;
-                    } else {
-                        logger.info("Domain solvable for player " + body.getId() + " in " + testResult.getPlan().size() + " actions.");
-                        if(logger.isDebugEnabled()){
-                            StringBuilder solvingPlan = new StringBuilder();
-                            for(ActionDescription ad: testResult.getPlan()){
-                                solvingPlan.append(ad.toString()).append(" ");
+                    try {
+                        IPlanningResult testResult = Planning4JUtils.plan(plannerToTestDomain, domain, problem);
+                        if(!testResult.isSuccess()){
+                            logger.info("Domain could not be solved for player " + body.getId() + ", generating new one.");
+                            continue generateCycle;
+                        } else {
+                            logger.info("Domain solvable for player " + body.getId() + " in " + testResult.getPlan().size() + " actions.");
+                            if(logger.isDebugEnabled()){
+                                StringBuilder solvingPlan = new StringBuilder();
+                                for(ActionDescription ad: testResult.getPlan()){
+                                    solvingPlan.append(ad.toString()).append(" ");
+                                }
+                                logger.debug("Plan to solve: " + solvingPlan.toString());
                             }
-                            logger.debug("Plan to solve: " + solvingPlan.toString());
                         }
+                    } catch (PlanningException ex){
+                        logger.error("Error checking domain for player " + body.getId() + ", generating new one.", ex);
+                        continue generateCycle;
                     }
                 }
                 logger.info("Domain succesfully tested");
