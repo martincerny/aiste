@@ -691,10 +691,14 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         @Override
         public ReactivePlanStatus getStatus() {
             refreshPathIfNeccessary();
-            if(bodyInfos.get(agentId).locationIndex == lastPathFindingTarget){
+            int currentLocationIndex = bodyInfos.get(agentId).locationIndex;
+            if(currentLocationIndex == lastPathFindingTarget){
                 return ReactivePlanStatus.COMPLETED;
             }
-            else if(!lastPathFindingSuccess){
+            else if(!lastPathFindingSuccess){                
+                return ReactivePlanStatus.FAILED;
+            } else if(foundPath.get(foundPathIndex - 1) != currentLocationIndex){                
+                logger.info("Path following failed - location not properly updated. Expected: " + foundPath.get(foundPathIndex - 1) + " got: " + currentLocationIndex);
                 return ReactivePlanStatus.FAILED;
             }
             else {

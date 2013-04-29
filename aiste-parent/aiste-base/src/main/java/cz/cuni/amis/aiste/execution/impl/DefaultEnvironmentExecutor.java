@@ -42,7 +42,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     private RunningStepNotificationsMonitor stepNotificationsMonitor = new RunningStepNotificationsMonitor();
 
-    private ExecutorService agentStepNotificationExecutorService;
+    private final ExecutorService agentStepNotificationExecutorService;
 
     private final int maxNotificationInstancesPerController;
 
@@ -83,13 +83,17 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     @Override
     protected void notifyControllerOfSimulationStep(IAgentController controller, double reward) {
-        agentStepNotificationExecutorService.submit(new NotifyControllerOfSimulationStepTask(controller, reward));
+        synchronized(agentStepNotificationExecutorService) {
+            agentStepNotificationExecutorService.submit(new NotifyControllerOfSimulationStepTask(controller, reward));
+        }
     }
 
     @Override
     protected void stopSimulation() {
         super.stopSimulation();
-        agentStepNotificationExecutorService.shutdownNow();
+        synchronized(agentStepNotificationExecutorService) {
+            agentStepNotificationExecutorService.shutdownNow();
+        }
         environmentStepTimer.cancel();
         environmentStoppedLatch.countDown();
     }
@@ -170,7 +174,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
                 try {
                     controller.onSimulationStep(reward);
                 } catch (Exception ex) {
-                    logger.info("Controller " + controller + " has raised exception during onSimulationStep(). It has been stopped.", ex);
+                    logger.warn("Controller " + controller + " has raised exception during onSimulationStep(). It has been stopped.", ex);
                     controllerFailed(controller);
                 }
             } finally {

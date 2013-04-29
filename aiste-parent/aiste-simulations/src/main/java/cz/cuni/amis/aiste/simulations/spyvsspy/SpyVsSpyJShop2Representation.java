@@ -69,7 +69,9 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
      */
     Set<Integer> ignoredActionsId;
     
-   
+    Map<AgentBody, java.util.List<Predicate> > staticDomainInfos = new HashMap<AgentBody, java.util.List<Predicate>>();
+    
+    
     public SpyVsSpyJShop2Representation(SpyVsSpy environment) {
         this.environment = environment;
                 
@@ -171,7 +173,6 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         }
         
         
-        
     }
 
     
@@ -188,40 +189,9 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         SpyVsSpyJSHOP2 domain = new SpyVsSpyJSHOP2(jshop, userFunctions, userComparators);
         jshop.initialize(domain, getMaxNumConstants());
         jshops.put(body, jshop);
-        return jshop;
-    }
-
-    protected int getMaxNumConstants() {
-        int numAdditionalConstants = getNumAdditionalConstants() ;
-            
-        return (20 /*Za domenu, nutno staticky*/ + numAdditionalConstants);            
-
-    }   
-
-    protected int getNumAdditionalConstants() {
-        int trapsPerPlayer = 0;
-        for(int i = 0; i < environment.defs.numTrapTypes; i++){
-            trapsPerPlayer += environment.defs.trapCounts[i];
-        }
-        int numAdditionalConstants = environment.defs.nodesInStartingPosition.size() /* locations */ + environment.defs.numItemTypes /*items*/ + environment.defs.maxPlayers
-                + (environment.defs.nodesInStartingPosition.size() * (environment.defs.numTrapTypes * 2 + 1)) /* traps and removers and weapn instances in the map, worst case*/ 
-                + (environment.defs.maxPlayers * trapsPerPlayer) /*traps in player possession, worst case*/;
-        return numAdditionalConstants;
-    }
-
-    @Override
-    public IJShop2Problem getProblem(AgentBody body, SpyVsSpyPlanningGoal goal) {
         
-        /**
-         * Create static predicates
-         */
-        JSHOP2 jshop = jshops.get(body);
-        if(jshop == null){
-            throw new IllegalStateException("Getting problem before getting domain");
-        }
-        
-        java.util.List<Predicate> staticDomainInfo;
-        staticDomainInfo = new ArrayList<Predicate>();
+        //Create static domain information
+        java.util.List<Predicate> staticDomainInfo = new ArrayList<Predicate>();
         for(SpyVsSpyMapNode node : environment.nodes){            
             staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_LOCATION, 0, createTermList(jshop, locationIdToConstants[node.index])));
         }
@@ -258,6 +228,42 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             staticDomainInfo.add(new Predicate(SpyVsSpyJSHOP2.CONST_WEAPON, 0 , createTermList(jshop, weaponConstantId)));
         }
         
+        staticDomainInfos.put(body, staticDomainInfo);
+        
+        return jshop;
+    }
+
+    protected int getMaxNumConstants() {
+        int numAdditionalConstants = getNumAdditionalConstants() ;
+            
+        return (20 /*Za domenu, nutno staticky*/ + numAdditionalConstants);            
+
+    }   
+
+    protected int getNumAdditionalConstants() {
+        int trapsPerPlayer = 0;
+        for(int i = 0; i < environment.defs.numTrapTypes; i++){
+            trapsPerPlayer += environment.defs.trapCounts[i];
+        }
+        int numAdditionalConstants = environment.defs.nodesInStartingPosition.size() /* locations */ + environment.defs.numItemTypes /*items*/ + environment.defs.maxPlayers
+                + (environment.defs.nodesInStartingPosition.size() * (environment.defs.numTrapTypes * 2 + 1)) /* traps and removers and weapn instances in the map, worst case*/ 
+                + (environment.defs.maxPlayers * trapsPerPlayer) /*traps in player possession, worst case*/;
+        return numAdditionalConstants;
+    }
+
+    @Override
+    public IJShop2Problem getProblem(AgentBody body, SpyVsSpyPlanningGoal goal) {
+        
+        /**
+         * Create static predicates
+         */
+        JSHOP2 jshop = jshops.get(body);
+        if(jshop == null){
+            throw new IllegalStateException("Getting problem before getting domain");
+        }
+        
+        java.util.List<Predicate> staticDomainInfo = staticDomainInfos.get(body);
+            
         
         State initialState = new State(jshop.getDomain().getAxioms().length, jshop.getDomain().getAxioms());
         for(Predicate p : staticDomainInfo){

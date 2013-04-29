@@ -64,4 +64,20 @@ public class AisteExperiment extends AbstractExperiment {
         return new ListConcatenation<Object>(Arrays.asList(new Object[] {environment.getClass().getSimpleName(), descriptors.size()}), environment.getEnvironmentParametersValues());
     }
 
+    @Override
+    public String getDescription() {
+        StringBuilder sb = new StringBuilder("AisteExperiment: ");
+        ILoggingHeaders experimentParametersHeaders = getExperimentParametersHeaders();
+        List<Object> experimentParameters = getExperimentParameters();
+        for(int i = 0; i < experimentParametersHeaders.getColumnCount(); i++){
+            sb.append(experimentParametersHeaders.getColumnNames().get(i)).append(" = ").append(experimentParameters.get(i)).append(", ");
+        }
+        for(int i = 0; i < descriptors.size(); i++){
+            sb.append("\nAgent " + i + ": ");
+            sb.append(descriptors.get(i).getLoggableReperesentation());
+        }
+        return sb.toString();
+    }
+
+    
 }
