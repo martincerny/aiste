@@ -171,6 +171,11 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
         return new ListConcatenation<Object>(super.getPerExperimentLoggingData(), Arrays.asList(new Object[] {maxEvaluatedPlans, plannerInterruptTest}));
     }
 
+    @Override
+    public String toString() {
+        return "JShop2Controller{" + "jshop=" + jshop + ", maxEvaluatedPlans=" + maxEvaluatedPlans + ", plannerInterruptTest=" + plannerInterruptTest + '}';
+    }
+
 
     
     

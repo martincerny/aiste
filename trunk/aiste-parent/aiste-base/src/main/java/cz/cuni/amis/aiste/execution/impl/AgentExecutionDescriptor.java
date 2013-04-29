@@ -55,6 +55,17 @@ public class AgentExecutionDescriptor implements IAgentExecutionDescriptor{
         return representation;
     }
 
+    @Override
+    public String getLoggableReperesentation() {
+        return "controller=" + controller + ", agentType=" + agentType + ", representation=" + representation;
+    }
+
+    @Override
+    public String toString() {
+        return "AgentExecutionDescriptor{" + "agentType=" + agentType + ", controller=" + controller + ", representation=" + representation + '}';
+    }
+
+    
     
     
 }

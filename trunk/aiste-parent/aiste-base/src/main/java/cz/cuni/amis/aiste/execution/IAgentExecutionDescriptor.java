@@ -38,5 +38,10 @@ public interface IAgentExecutionDescriptor {
     IAgentController getController();
     
     IEnvironmentRepresentation getRepresentation();
-
+    
+    /**
+     * String for logging purposes
+     * @return 
+     */
+    public String getLoggableReperesentation();
 }
