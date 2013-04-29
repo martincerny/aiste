@@ -51,6 +51,14 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     protected IPlanningGoal goalForPlanning;
 
     protected int numFailuresSinceLastImportantEnvChange = 0;
+
+    protected void cancelPlanFutureIfRunning() {
+        synchronized(planFuture){//synchronized so that setResult cannot be called from within planning process
+            if (planFuture != null && !planFuture.isDone()) {
+                planFuture.cancel(true);
+            }        
+        }
+    }
     
 
 
@@ -129,6 +137,14 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
             }
             
         }
+        //plan from planner should be kept empty for convenience
+        this.activePlannerActionReactivePlan = EmptyReactivePlan.EMPTY_PLAN;
+        //while reactive layer plan is tested for null
+        this.activeReactiveLayerPlan = null;
+        this.currentPlan.clear(); 
+        this.numFailuresSinceLastImportantEnvChange = 0;
+        this.planFuture = null;
+        
     }
 
     
@@ -156,6 +172,14 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
         executedGoal = null;
         activePlannerActionReactivePlan = EmptyReactivePlan.EMPTY_PLAN;
     }
+
+    @Override
+    public void restart() {
+        super.restart();
+        clearPlan();
+    }
+    
+    
 
     protected void processPlanningFailure() {
         if(!representation.environmentChangedConsiderablySinceLastMarker(body)){
@@ -481,9 +505,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     protected abstract IFutureWithListeners<PLANNING_RESULT> startPlanningProcess();
 
     protected synchronized final void startPlanning() {
-        if (planFuture != null && !planFuture.isDone()) {
-            planFuture.cancel(true);
-        }        
+        cancelPlanFutureIfRunning();
         representation.setMarker(body);
         lastPlanningStartTime = System.currentTimeMillis();
         timeSpentPlanning.taskStarted();
@@ -499,9 +521,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     @Override
     public void shutdown() {
         super.shutdown();
-        if (planFuture != null && !planFuture.isDone()) {
-            planFuture.cancel(true);
-        }        
+        cancelPlanFutureIfRunning();
     }
 
     protected IFutureWithListeners<PLANNING_RESULT> getPlanFuture() {

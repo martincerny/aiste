@@ -270,55 +270,59 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
             initialState.add(p);
         }
         
-        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
+        synchronized(environment){ //synchronized not to get concurrent modification from env. updates. environment is deliberately not final
         
-        initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_PLAYER_AT, 0, createTermList(jshop, locationIdToConstants[info.locationIndex])));
+            SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
 
-        /**
-         * Objects in the environment
-         */
-        int[] nextTrapIndices = new int[environment.defs.numTrapTypes];
-        int[] nextRemoverIndices = new int[environment.defs.numTrapTypes];
-        int nextWeaponIndex = 0;
-        for (SpyVsSpyMapNode mapNode : environment.nodes) {
-            for (int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++) {
-                for (int remover = 0; remover < mapNode.numTrapRemovers[trapType]; remover++) { 
-                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]), locationIdToConstants[mapNode.index])));
-                    nextRemoverIndices[trapType]++;
+            initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_PLAYER_AT, 0, createTermList(jshop, locationIdToConstants[info.locationIndex])));
+
+            /**
+             * Objects in the environment
+             */
+            int[] nextTrapIndices = new int[environment.defs.numTrapTypes];
+            int[] nextRemoverIndices = new int[environment.defs.numTrapTypes];
+            int nextWeaponIndex = 0;
+            for (SpyVsSpyMapNode mapNode : environment.nodes) {
+                for (int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++) {
+                    for (int remover = 0; remover < mapNode.numTrapRemovers[trapType]; remover++) { 
+                        initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]), locationIdToConstants[mapNode.index])));
+                        nextRemoverIndices[trapType]++;
+                    }
+                }
+                for (int trapType : mapNode.traps) { 
+                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_TRAP_SET, 0, createTermList(jshop, trapToConstants.get(trapType).get(nextTrapIndices[trapType]), locationIdToConstants[mapNode.index])));
+                    nextTrapIndices[trapType]++;
+                }
+                for (int itemType : mapNode.items){
+                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, itemIdToConstants[itemType], locationIdToConstants[mapNode.index])));
+                }
+                for(int weaponId = 0; weaponId < mapNode.numWeapons; weaponId++){
+                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, weaponConstants.get(nextWeaponIndex), locationIdToConstants[mapNode.index])));                
+                    nextWeaponIndex++;
                 }
             }
-            for (int trapType : mapNode.traps) { 
-                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_TRAP_SET, 0, createTermList(jshop, trapToConstants.get(trapType).get(nextTrapIndices[trapType]), locationIdToConstants[mapNode.index])));
-                nextTrapIndices[trapType]++;
+
+            /**
+             * Objects carried by the player
+             */
+            for(int itemType : info.itemsCarried){ 
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, itemIdToConstants[itemType])));
             }
-            for (int itemType : mapNode.items){
-                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, itemIdToConstants[itemType], locationIdToConstants[mapNode.index])));
+            for(int trapType = 0 ; trapType < environment.defs.numTrapTypes; trapType++){
+                for(int remover = 0; remover < info.numTrapRemoversCarried[trapType]; remover++){                
+                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]))));
+                    nextRemoverIndices[trapType]++;
+                }
+                for(int trap = 0; trap < info.numTrapsCarried[trapType]; trap++){                
+                    initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, trapToConstants.get(trapType).get(nextTrapIndices[trapType]))));
+                    nextTrapIndices[trapType]++;
+                }
             }
-            for(int weaponId = 0; weaponId < mapNode.numWeapons; weaponId++){
-                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_OBJECT_AT, 0, createTermList(jshop, weaponConstants.get(nextWeaponIndex), locationIdToConstants[mapNode.index])));                
+            for(int i = 0 ; i < info.numWeapons; i++){ 
+                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, weaponConstants.get(nextWeaponIndex))));
                 nextWeaponIndex++;
             }
-        }
-        
-        /**
-         * Objects carried by the player
-         */
-        for(int itemType : info.itemsCarried){ 
-            initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, itemIdToConstants[itemType])));
-        }
-        for(int trapType = 0 ; trapType < environment.defs.numTrapTypes; trapType++){
-            for(int remover = 0; remover < info.numTrapRemoversCarried[trapType]; remover++){                
-                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, trapRemoversToConstants.get(trapType).get(nextRemoverIndices[trapType]))));
-                nextRemoverIndices[trapType]++;
-            }
-            for(int trap = 0; trap < info.numTrapsCarried[trapType]; trap++){                
-                initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, trapToConstants.get(trapType).get(nextTrapIndices[trapType]))));
-                nextTrapIndices[trapType]++;
-            }
-        }
-        for(int i = 0 ; i < info.numWeapons; i++){ 
-            initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_CARRYING, 0, createTermList(jshop, weaponConstants.get(nextWeaponIndex))));
-            nextWeaponIndex++;
+
         }
         
         initialState.add(new Predicate(SpyVsSpyJSHOP2.CONST_USE_DIRECT_MOVES, 0, TermList.NIL));        
