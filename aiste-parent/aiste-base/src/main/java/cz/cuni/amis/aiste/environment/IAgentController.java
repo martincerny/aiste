@@ -72,4 +72,10 @@ public interface IAgentController<ACTION extends IAction, REPRESENTATION extends
      * @return 
      */
     Class getRepresentationClass();
+    
+    /**
+     * Get representation uniquely representing the controller and all its parameters.
+     * @return 
+     */
+    String getLoggableRepresentation();
 }

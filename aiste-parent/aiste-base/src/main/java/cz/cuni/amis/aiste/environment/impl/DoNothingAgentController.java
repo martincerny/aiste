@@ -32,5 +32,11 @@ public class DoNothingAgentController extends AbstractAgentController {
         //No op agent works with any representation
         return Object.class;
     }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "DoNothing";
+    }
+    
     
 }

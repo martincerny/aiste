@@ -17,25 +17,26 @@
 
 package cz.cuni.amis.aiste.experiments;
 
-import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
-import cz.cuni.amis.experiments.EExperimentRunResult;
-import cz.cuni.amis.experiments.ExperimentException;
-import cz.cuni.amis.experiments.ILogDataProvider;
-import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.*;
 import cz.cuni.amis.experiments.impl.AbstractExperimentRunner;
+import cz.cuni.amis.experiments.impl.AbstractLogDataProvider;
 import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
+import cz.cuni.amis.experiments.impl.StringLogIdentifier;
 import cz.cuni.amis.utils.collections.ListConcatenation;
 import cz.cuni.amis.utils.objectmanager.IObjectFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -47,6 +48,7 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
 
     private IEnvironmentExecutor environmentExecutor;
     private IEnvironmentExecutionResult lastExecutionResult;
+    private Map<Class, RankLoggingProvider> rankLoggingProviders;
 
     public AisteExperimentRunner(IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory) {
         this(environmentExecutorFactory, 0);
@@ -55,6 +57,7 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
     public AisteExperimentRunner(IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory, long maxSteps) {
         this.environmentExecutorFactory = environmentExecutorFactory;
         this.maxSteps = maxSteps;
+        rankLoggingProviders = new HashMap<Class, RankLoggingProvider>();
     }
 
     @Override
@@ -64,6 +67,9 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         environmentExecutor.setEnvironment(experiment.getEnvironment());
         for(IAgentExecutionDescriptor descriptor : experiment.getDescriptors()){
             environmentExecutor.addAgentController(descriptor);
+        }
+        if(!rankLoggingProviders.containsKey(experiment.getEnvironment().getClass())){
+            rankLoggingProviders.put(experiment.getEnvironment().getClass(), new RankLoggingProvider(experiment.getEnvironment()));
         }
     }
 
@@ -75,9 +81,10 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
     protected EExperimentRunResult runExperimentInternal(AisteExperiment experiment) {
         try {
             lastExecutionResult = environmentExecutor.executeEnvironment(maxSteps);
+            rankLoggingProviders.get(experiment.environment.getClass()).logExperimentResults(lastExecutionResult);  
             return EExperimentRunResult.SUCCESS;
         } finally {
-            environmentExecutor.shutdown();
+            environmentExecutor.shutdown();            
         }
     }
 
@@ -93,6 +100,8 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         for(IAgentExecutionDescriptor desc : experiment.getDescriptors()){
             providers.add(desc.getController());
         }
+        
+        providers.add(rankLoggingProviders.get(experiment.environment.getClass()));
         return providers;
     }
 
@@ -129,5 +138,53 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         }
     }
     
-    
+    private class RankLoggingProvider extends AbstractLogDataProvider {
+
+        IEnvironment environment;
+        
+        public RankLoggingProvider(IEnvironment environment) {
+            super(new StringLogIdentifier("Rankings" + environment.getClass().getSimpleName()));
+            this.environment = environment;
+        }
+
+        @Override
+        public ILoggingHeaders getRuntimeLoggingHeaders() {            
+            return new LoggingHeadersConcatenation(environment.getPerExperimentLoggingHeaders(), new LoggingHeaders("controller", "oponentController", "reward", "rank"));            
+        }
+
+        public void logExperimentResults(IEnvironmentExecutionResult executionResult){
+            if(executionResult.getAgentResults().size() != 2){
+                throw new UnsupportedOperationException("Only two agents supported");
+            }
+            IAgentExecutionResult result0 = executionResult.getAgentResults().get(0);
+            IAgentExecutionResult result1 = executionResult.getAgentResults().get(1);
+            int rank0, rank1;
+            if(result0.getTotalReward() == result1.getTotalReward()){
+                rank0 = 0;
+                rank1 = 0;
+            } else if (result0.getTotalReward() < result1.getTotalReward()){
+                rank0 = 1;
+                rank1 = 0;
+            } else {
+                rank0 = 0;
+                rank1 = 1;
+                
+            }
+            runtimeLoggingOutput.logData(ListConcatenation.concatenate(environment.getPerExperimentLoggingData(), 
+                    Arrays.asList(new Object[] { 
+                        result0.getController().getLoggableRepresentation(),
+                        result1.getController().getLoggableRepresentation(),
+                        result0.getTotalReward(),
+                        rank0
+            })));
+            runtimeLoggingOutput.logData(ListConcatenation.concatenate(environment.getPerExperimentLoggingData(), 
+                    Arrays.asList(new Object[] { 
+                        result1.getController().getLoggableRepresentation(),
+                        result0.getController().getLoggableRepresentation(),
+                        result1.getTotalReward(),
+                        rank1
+            })));
+        }
+        
+    }
 }
