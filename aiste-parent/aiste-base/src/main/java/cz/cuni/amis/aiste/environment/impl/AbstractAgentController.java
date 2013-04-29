@@ -75,12 +75,13 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
         
     public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, List<Object> controllerParameterValues) {
         if(runtimeLoggingHeaders.getColumnCount() > 0){
-            this.runtimeLoggingHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("step"), runtimeLoggingHeaders);
+            this.runtimeLoggingHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass", "step"), runtimeLoggingHeaders);
         } else {
+            //if runtime logging headers from subclass are empty, keep it empty
             this.runtimeLoggingHeaders = runtimeLoggingHeaders;
         }
-        this.controllerParametersHeaders = controllerParametersHeaders;
-        this.controllerParametersValues = controllerParameterValues;
+        this.controllerParametersHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass"), controllerParametersHeaders);
+        this.controllerParametersValues = ListConcatenation.concatenate(Collections.<Object>singletonList(getClass().getSimpleName()), controllerParameterValues);
         
         this.logIdentifier = new ClassLogIdentifier(getClass());
         metrics = new MetricCollection();
@@ -170,7 +171,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
      * @param values 
      */
     protected void logRuntime(Object ... values){
-        runtimeLoggingOutput.logData(Collections.<Object>singletonList(environment.getTimeStep()), Arrays.asList(values));        
+        runtimeLoggingOutput.logData(Arrays.asList(new Object[] {getClass().getSimpleName(), environment.getTimeStep()}), Arrays.asList(values));        
     }
     
 }

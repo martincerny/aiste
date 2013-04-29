@@ -18,6 +18,8 @@ package cz.cuni.amis.aiste.environment;
 
 /**
  * A marker interface for all class that represent an environment.
+ * Environment representations should be thread safe as they may be used
+ * by two or more controllers at once
  * @author Martin Cerny
  */
 public interface IEnvironmentRepresentation {
