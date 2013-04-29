@@ -59,6 +59,12 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         return SimpleFPS.class;
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "SimpleFPSReactive";
+                
+    }
+
 
     
 

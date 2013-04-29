@@ -60,6 +60,11 @@ public class KeyLockNaiveController extends AbstractAgentController<KeyLockActio
         return KeyLockMaze.class;
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "KeyLockNaive";
+    }
+
 
     
 

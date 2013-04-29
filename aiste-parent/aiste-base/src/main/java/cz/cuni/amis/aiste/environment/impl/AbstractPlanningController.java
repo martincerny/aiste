@@ -173,14 +173,6 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
         activePlannerActionReactivePlan = EmptyReactivePlan.EMPTY_PLAN;
     }
 
-    @Override
-    public void restart() {
-        super.restart();
-        clearPlan();
-    }
-    
-    
-
     protected void processPlanningFailure() {
         if(!representation.environmentChangedConsiderablySinceLastMarker(body)){
             numFailuresSinceLastImportantEnvChange++;
