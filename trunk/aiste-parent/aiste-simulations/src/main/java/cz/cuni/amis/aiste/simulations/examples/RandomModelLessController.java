@@ -56,5 +56,10 @@ public class RandomModelLessController extends AbstractReactiveModelLessControll
         rnd = new Random(seed);
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "Random";
+    }
+
     
 }

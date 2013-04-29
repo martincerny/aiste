@@ -75,6 +75,11 @@ public class SpyVsSpyReactiveController extends AbstractAgentController<SpyVsSpy
         return SpyVsSpy.class;
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "SpyVsSpyReactive";
+    }
+
 
     
 

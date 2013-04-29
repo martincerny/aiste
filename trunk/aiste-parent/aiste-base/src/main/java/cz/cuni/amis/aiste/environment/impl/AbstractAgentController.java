@@ -115,13 +115,6 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
     }
 
     @Override
-    public void restart() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-    
-    
-
-    @Override
     public void shutdown() {
         inUse = false;
         metrics.stopMeasurement();
