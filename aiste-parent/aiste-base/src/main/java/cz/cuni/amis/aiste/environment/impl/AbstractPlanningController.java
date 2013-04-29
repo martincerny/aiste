@@ -53,10 +53,12 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
     protected int numFailuresSinceLastImportantEnvChange = 0;
 
     protected void cancelPlanFutureIfRunning() {
-        synchronized(planFuture){//synchronized so that setResult cannot be called from within planning process
-            if (planFuture != null && !planFuture.isDone()) {
-                planFuture.cancel(true);
-            }        
+        if (planFuture != null){
+            synchronized(planFuture){//synchronized so that setResult cannot be called from within planning process
+                 if(!planFuture.isDone()) {
+                    planFuture.cancel(true);
+                }        
+            }
         }
     }
     
