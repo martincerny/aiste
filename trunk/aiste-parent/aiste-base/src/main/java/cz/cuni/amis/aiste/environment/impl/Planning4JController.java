@@ -129,8 +129,14 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
             logger.error("Exception in validating plan." + ex);
             return true;
         }
-    }  
+    }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return planner.getName();
+    }
       
+    
 
     @Override
     public Class getRepresentationClass() {

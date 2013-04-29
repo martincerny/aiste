@@ -176,6 +176,11 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
         return "JShop2Controller{" + "jshop=" + jshop + ", maxEvaluatedPlans=" + maxEvaluatedPlans + ", plannerInterruptTest=" + plannerInterruptTest + '}';
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "JShop2_maxEval_" + maxEvaluatedPlans + "_" + (plannerInterruptTest == null ? "NoTest" : plannerInterruptTest.getLoggableRepresentation());
+    }
+
 
     
     

@@ -194,12 +194,16 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
             logger.trace(planSB.toString());
         }
         
+        boolean startedPlanningThisStep = false;
         
         //The current goal was invalidated by a new one. Lets go for it.
         IPlanningGoal newGoal = selectGoal();
         if(!newGoal.equals(goalForPlanning)){
             goalForPlanning = newGoal;
-            startPlanning();
+            if(!startedPlanningThisStep){
+                startPlanning();
+            }
+            startedPlanningThisStep = true;
         }
         
         /**
@@ -215,7 +219,10 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                 case FUTURE_IS_BEING_COMPUTED: //do nothing and wait                    
                     if(representation.environmentChangedConsiderablySinceLastMarker(body)){
                         //the plan currently computed is probably useless. Restart the planning process.
-                        startPlanning();
+                        if(!startedPlanningThisStep){
+                            startPlanning();
+                        }
+                        startedPlanningThisStep = true;
                     }
                     break;
                 case CANCELED: {
@@ -333,7 +340,10 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                 case COMPLETED: {
                     if (currentPlan.isEmpty()) {
                         if (planFuture == null || planFuture.isCancelled()) {
-                            startPlanning();
+                            if(!startedPlanningThisStep){
+                                startPlanning();
+                            }
+                            startedPlanningThisStep = true;
                         }
                     } else {
                         if(!planValidatedForThisRound){
@@ -470,7 +480,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
 
     protected abstract IFutureWithListeners<PLANNING_RESULT> startPlanningProcess();
 
-    protected final void startPlanning() {
+    protected synchronized final void startPlanning() {
         if (planFuture != null && !planFuture.isDone()) {
             planFuture.cancel(true);
         }        
