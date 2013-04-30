@@ -46,7 +46,6 @@ import org.apache.log4j.Logger;
  */
 public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         implements ISimulableEnvironment<SpyVsSpyAction>, 
-        IRandomizable,
         IEnvironmentRepresentation //it is a represenation of itself for reactive controller
         {
 
@@ -62,7 +61,6 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
      * Informations about individual agent, indexed by agentBody.id.
      */
     List<SpyVsSpyBodyInfo> bodyInfos;
-    Random rand;
 
     SpyVsSpyPDDLRepresentation pDDLRepresentation;
     SpyVsSpyJShop2Representation jShop2Representation;
@@ -145,11 +143,6 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
     @Override
     public Map<? extends IAgentType, ? extends IAgentInstantiationDescriptor> getInstantiationDescriptors() {
         return Collections.singletonMap(SpyVsSpyAgentType.getInstance(), new AgentInstantiationDescriptor(1, defs.maxPlayers));
-    }
-
-    @Override
-    public void setRandomSeed(long seed) {
-        rand = new Random(seed);
     }
 
     /**
@@ -536,6 +529,15 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             return new ChangesSinceMarker();
         }
     }
+
+    /**
+     * Some representations exploit this class's random generator.
+     * @return 
+     */
+    Random getRand() {
+        return rand;
+    }
+    
     
     
     

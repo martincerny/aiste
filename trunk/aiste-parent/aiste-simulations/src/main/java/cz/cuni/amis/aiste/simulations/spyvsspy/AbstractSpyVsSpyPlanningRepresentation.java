@@ -89,7 +89,7 @@ public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PL
                     continue;
                 }
                 if(oponentInfo.numWeapons > 0 && oponentInfo.locationIndex == info.locationIndex){
-                    int randomNeighbouringLocation = RandomUtils.randomElementLinearAccess(environment.defs.neighbours.get(info.locationIndex), environment.rand);
+                    int randomNeighbouringLocation = RandomUtils.randomElementLinearAccess(environment.defs.neighbours.get(info.locationIndex), environment.getRand());
                     return new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, randomNeighbouringLocation));                    
                 }
             }

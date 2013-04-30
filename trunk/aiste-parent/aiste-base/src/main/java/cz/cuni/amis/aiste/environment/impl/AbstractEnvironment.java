@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.AisteException;
+import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.SimulationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IEnvironment;
@@ -39,7 +40,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractEnvironment<ACTION extends IAction> implements IEnvironment<ACTION> {
+public abstract class AbstractEnvironment<ACTION extends IAction> implements IEnvironment<ACTION>, IRandomizable {
 
     private final Logger logger = Logger.getLogger(AbstractEnvironment.class);
     
@@ -66,6 +67,8 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     private Set<AgentBody> removedBodies;
 
     private Map<IAgentType, Integer> instanceCount;
+    
+    protected Random rand = new Random();
 
     /**
      * Constructor that creates a shallow copy of specified environment.
@@ -285,6 +288,11 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     @Override
     public void setRuntimeLoggingOutput(IBareLoggingOutput loggingOutput) {
         runtimeLoggingOutput = loggingOutput;
+    }
+
+    @Override
+    public void setRandomSeed(long seed) {
+        rand = new Random(seed);
     }
     
  

@@ -41,7 +41,7 @@ public class FPS1ReactiveController extends AbstractAgentController<FPS1Action, 
         //zde proved logiku agenta, muzes pouzivat libovolne vereje metody FPS1 - tvuj agent nemusi byt vubec obecny
         //reward je odmena za posledni provedeny tah
         //akce se provadi takto:
-        act(new FPS1Action(/*Tady si asi budes chtit predat nejake info*/));
+        //act(new FPS1Action(/*Tady si asi budes chtit predat nejake info*/));
         
         //pro hledani cesty muzes pouzit treba (s doplnenim parametru)
         AStar astar = new AStar(null);
