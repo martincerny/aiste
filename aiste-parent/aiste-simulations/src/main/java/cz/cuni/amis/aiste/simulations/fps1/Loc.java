@@ -30,6 +30,10 @@ public class Loc {
         this.y = y;
     }
 
+    public double distanceTo(Loc other){
+        return FPS1Utils.distance(x, y, other.x, other.y);
+    }
+    
     @Override
     public boolean equals(Object obj) {
         if (obj == null) {

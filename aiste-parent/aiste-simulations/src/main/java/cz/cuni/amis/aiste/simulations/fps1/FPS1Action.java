@@ -24,7 +24,7 @@ import cz.cuni.amis.aiste.environment.IAction;
  */
 public class FPS1Action implements IAction{
 
-    public enum Action {MOVE, ATTACK_RANGED, ATTACK_MELEE    };
+    public enum Action {MOVE, ATTACK_RANGED, ATTACK_MELEE, NO_OP    };
     
     Action act;
     
@@ -32,6 +32,13 @@ public class FPS1Action implements IAction{
      * The target of the action - a {@link Loc} object for MOVE or oponnent id for attack actions 
      */
     Object target;
+
+    public FPS1Action(Action act, Object target) {
+        this.act = act;
+        this.target = target;
+    }
+    
+    
     
     @Override
     public String getLoggableRepresentation() {
