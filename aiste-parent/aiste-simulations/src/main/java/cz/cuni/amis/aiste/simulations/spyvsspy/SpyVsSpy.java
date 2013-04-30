@@ -650,7 +650,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         }
     }
     
-    public abstract class AbstractPathFindingPlan extends AbstractReactivePlan<SpyVsSpyAction> {
+    public abstract static class AbstractPathFindingPlan extends AbstractReactivePlan<SpyVsSpyAction> {
         protected int agentId;
         
         private int lastPathFindingTarget;
@@ -660,15 +660,18 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         
         private AStar<Integer> astar;
 
-        public AbstractPathFindingPlan(int agentId) {
+        final SpyVsSpy env;
+        
+        public AbstractPathFindingPlan(SpyVsSpy env, int agentId) {
             this.agentId = agentId;
             lastPathFindingTarget = -1;
+            this.env = env;
         }
 
         protected abstract int getTargetLocationId();
         
         protected AStar<Integer> createAStar(){
-            return new AStar<Integer>(defs.mapForPathFinding);            
+            return new AStar<Integer>(env.defs.mapForPathFinding);            
         }
         
         @Override
@@ -680,10 +683,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         public SpyVsSpyAction peek() {
             refreshPathIfNeccessary();
             if(!lastPathFindingSuccess){
-                throw new IllegalStateException("Path finding was not succesful, no actions available");
+                throw new IllegalStateException(agentId + ": Path finding was not succesful, no actions available");
             }
             if(foundPathIndex >= foundPath.size()){
-                throw new IllegalStateException("There are no more path elements available");
+                throw new IllegalStateException(agentId + ": There are no more path elements available");
             }
             return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, foundPath.get(foundPathIndex));
         }
@@ -691,16 +694,19 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         @Override
         public ReactivePlanStatus getStatus() {
             refreshPathIfNeccessary();
-            int currentLocationIndex = bodyInfos.get(agentId).locationIndex;
+            int currentLocationIndex = env.bodyInfos.get(agentId).locationIndex;
             if(currentLocationIndex == lastPathFindingTarget){
                 return ReactivePlanStatus.COMPLETED;
             }
             else if(!lastPathFindingSuccess){                
                 return ReactivePlanStatus.FAILED;
-            } else if(foundPath.get(foundPathIndex - 1) != currentLocationIndex){                
-                logger.info("Path following failed - location not properly updated. Expected: " + foundPath.get(foundPathIndex - 1) + " got: " + currentLocationIndex);
-                return ReactivePlanStatus.FAILED;
-            }
+            } 
+            /*  The check does not work very well...
+            else if(foundPath.get(foundPathIndex - 1) != currentLocationIndex && foundPathIndex >= 2 && foundPath.get(foundPathIndex - 2) != currentLocationIndex){                
+                //I do not know, whether last action I sent was acutally performed or not, so I rather check both variants and report failure only if both of them are wrong
+                env.logger.info(agentId + ": Path following failed - location not properly updated. Expected: " + foundPath.get(foundPathIndex - 1) + " or " +  foundPath.get(foundPathIndex - 2) + " got: " + currentLocationIndex);
+                 return ReactivePlanStatus.FAILED;
+            }*/
             else {
                 return ReactivePlanStatus.EXECUTING;
             }
@@ -712,7 +718,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                 if(astar == null){
                     astar =  createAStar();
                 }
-                AStarResult<Integer> result = astar.findPath(new SpyVsSpyAStarGoal(bodyInfos.get(agentId).locationIndex, newPathFindingTarget, SpyVsSpy.this));
+                AStarResult<Integer> result = astar.findPath(new SpyVsSpyAStarGoal(env.bodyInfos.get(agentId).locationIndex, newPathFindingTarget, env));
                 if(result.isSuccess()){
                     lastPathFindingSuccess = true;
                     foundPath = result.getPath();
@@ -727,22 +733,22 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         }
     }
     
-    public class PursueOponentPlan extends AbstractPathFindingPlan {
+    public static class PursueOponentPlan extends AbstractPathFindingPlan {
         private int oponentId;
 
-        public PursueOponentPlan(int agentId, int oponentId) {
-            super(agentId);
+        public PursueOponentPlan(SpyVsSpy env, int agentId, int oponentId) {
+            super(env, agentId);
             this.oponentId = oponentId;
         }
 
         @Override
         protected int getTargetLocationId() {
-            return bodyInfos.get(oponentId).locationIndex;
+            return env.bodyInfos.get(oponentId).locationIndex;
         }
 
         @Override
         public IReactivePlan<SpyVsSpyAction> cloneForSimulation(ISimulableEnvironment<SpyVsSpyAction> environmentCopy) {
-            return ((SpyVsSpy)environmentCopy).new PursueOponentPlan(agentId, oponentId);
+            return new PursueOponentPlan((SpyVsSpy)environmentCopy, agentId, oponentId);
         }
         
         

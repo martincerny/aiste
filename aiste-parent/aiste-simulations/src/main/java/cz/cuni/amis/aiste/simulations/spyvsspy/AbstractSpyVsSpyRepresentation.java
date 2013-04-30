@@ -138,7 +138,7 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
     }
 
     protected CompoundReactivePlan<SpyVsSpyAction> getFollowAndAttackReactivePlan(AgentBody body, int targetOponent) {
-        return new CompoundReactivePlan<SpyVsSpyAction>(environment.new PursueOponentPlan(body.getId(), targetOponent), new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.ATTACK_AGENT, targetOponent)));
+        return new CompoundReactivePlan<SpyVsSpyAction>(new PursueOponentPlan(environment, body.getId(), targetOponent), new SequencePlan<SpyVsSpyAction>(new SpyVsSpyAction(SpyVsSpyAction.ActionType.ATTACK_AGENT, targetOponent)));
     }
 
 }
