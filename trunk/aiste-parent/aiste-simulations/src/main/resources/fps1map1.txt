@@ -1,0 +1,44 @@
+2
+10
+10
+1111##2222
+1111##2222
+1111##2222
+1111  2222
+## #### ##
+## #### ##
+3333  4444
+3333##4444
+3333##4444
+3333##4444
+-------------------
+s...##...r
+...a##....
+....##....
+.m..  ...a
+## #### ##
+## #### ##
+a...  ..m.
+....##....
+....##a...
+h...##...s
+
+Format:
+numPlayers
+width
+heigth
+room specs - a line for each row and a char for each square in level
+	chars have following meaning:
+	# wall - not a passable square
+	<space> a corridor - not a part of any room
+	any other char - a room, every char represents a single room. Rooms have to be continuous. 
+---- A line ignored	
+item specs - a line for each row and a char for each square in level
+	chars have following meaning:
+	m - a melee weapon
+	r - a ranged weapon
+	h - health (A medikikt)
+	a - an ammo
+	s - spawning point
+	anything else - empty
+Everything below is ignored
