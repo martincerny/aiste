@@ -30,9 +30,9 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER_ACTION>  implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, CGAction, CoverGame, CGPlanningGoal>{
+public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER_ACTION>  implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, CGPairAction, CoverGame, CGPlanningGoal>{
 
-    private CoverGame env;
+    protected CoverGame env;
 
     public AbstractCGPlanningRepresentation(CoverGame env) {
         this.env = env;
@@ -44,8 +44,8 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
         int[] ids = new int[2];
         int idIndex = 0;
         for(CoverGame.CGBodyInfo bodyInfo : env.bodyInfos){
-            if(bodyInfo.teamNo != teamNo){
-                ids[idIndex] = bodyInfo.body.getId();
+            if(bodyInfo.getTeamId() != teamNo){
+                ids[idIndex] = bodyInfo.id;
                 idIndex++;
             }
         }
@@ -86,7 +86,7 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
     }
 
     @Override
-    public IReactivePlan<? extends CGAction> evaluateReactiveLayer(AgentBody body) {
+    public IReactivePlan<? extends CGPairAction> evaluateReactiveLayer(AgentBody body) {
         return null;
     }
 

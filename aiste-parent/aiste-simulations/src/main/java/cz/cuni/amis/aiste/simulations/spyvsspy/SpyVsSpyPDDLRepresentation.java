@@ -21,14 +21,13 @@ import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePDDLRepresentation;
-import cz.cuni.amis.aiste.environment.impl.CompoundReactivePlan;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.pddl.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Queue;
 
 /**
  *
@@ -431,7 +430,8 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
     }
 
     @Override
-    public IReactivePlan<SpyVsSpyAction> translateAction(ActionDescription actionFromPlanner, AgentBody body) {
+    public IReactivePlan<SpyVsSpyAction> translateAction(Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
+        ActionDescription actionFromPlanner = actionsFromPlanner.poll();
         if (actionFromPlanner.getName().equalsIgnoreCase(moveAction.getName())) {
             int targetLocation = extractActionParameter(actionFromPlanner, 1, LOCATION_PREFIX);
             return new SequencePlan(new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, targetLocation));

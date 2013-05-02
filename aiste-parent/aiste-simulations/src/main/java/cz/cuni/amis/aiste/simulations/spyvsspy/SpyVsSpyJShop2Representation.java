@@ -356,7 +356,8 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
 
 
     @Override
-    public IReactivePlan<? extends SpyVsSpyAction> translateAction(Predicate actionFromPlanner, AgentBody body) {
+    public IReactivePlan<? extends SpyVsSpyAction> translateAction(Queue<Predicate> actionsFromPlanner, AgentBody body) {
+        Predicate actionFromPlanner = actionsFromPlanner.poll();
         if (!actionFromPlanner.isGround()) {
             throw new AisteException("Cannot translate non-ground action");
         }

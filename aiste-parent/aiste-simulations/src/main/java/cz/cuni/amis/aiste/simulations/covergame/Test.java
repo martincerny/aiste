@@ -17,35 +17,68 @@
 package cz.cuni.amis.aiste.simulations.covergame;
 
 import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
-import cz.cuni.amis.aiste.simulations.fps1.*;
+import cz.cuni.amis.aiste.environment.impl.Planning4JController;
+import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
+import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
+import cz.cuni.amis.aiste.experiments.AisteExperiment;
+import cz.cuni.amis.aiste.experiments.AisteExperimentRunner;
+import cz.cuni.amis.experiments.utils.ExperimentUtils;
+import cz.cuni.amis.planning4j.IAsyncPlanner;
+import cz.cuni.amis.planning4j.external.ExternalPlanner;
+import cz.cuni.amis.planning4j.external.impl.itsimple.EPlannerPlatform;
+import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerExecutor;
+import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimplePlannerInformation;
+import cz.cuni.amis.planning4j.external.impl.itsimple.ItSimpleUtils;
+import cz.cuni.amis.planning4j.external.impl.itsimple.PlannerListManager;
+import cz.cuni.amis.planning4j.external.plannerspack.PlannersPackUtils;
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
  * @author Martin Cerny
  */
 public class Test {
-    public static void main(String args[]) throws IOException{
+
+    public static void main(String args[]) throws IOException {
+
+        PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
+
+        ItSimplePlannerInformation info;
+        if (ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX) {
+            info = PlannersPackUtils.getSGPlan6();
+        } else {
+            info = PlannersPackUtils.getMetricFF();
+        }
+
+        File plannersDirectory = new File("");
+        //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
+        plannerManager.extractAndPreparePlanner(plannersDirectory, info);
+
+        IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info, plannersDirectory));
+
+
+        Planning4JController pddlController = new Planning4JController(planner, Planning4JController.ValidationMethod.NONE);
+
         CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
+
+        CoverGame cgEnv = new CoverGame(defs);
+
+        List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(1)),
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv)
+                });
+        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors, 100000);
+
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(400));
         
-        CoverGame fpsEnvironment = new CoverGame(defs);
+        ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);
         
-        SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
-        executor.setEnvironment(fpsEnvironment);
-        executor.addAgentController(new AgentExecutionDescriptor(CGAgentType.getTeam0Instance(), new DoNothingAgentController(), fpsEnvironment));
-        executor.addAgentController(new AgentExecutionDescriptor(CGAgentType.getTeam0Instance(), new DoNothingAgentController(), fpsEnvironment));
-        executor.addAgentController(new AgentExecutionDescriptor(CGAgentType.getTeam1Instance(), new DoNothingAgentController(), fpsEnvironment));
-        executor.addAgentController(new AgentExecutionDescriptor(CGAgentType.getTeam1Instance(), new DoNothingAgentController(), fpsEnvironment));
-        
-        IEnvironmentExecutionResult result = executor.executeEnvironment(5 /*Max steps*/);
-        
-        System.out.println("Results: ");
-        System.out.println("Player1: "+ result.getAgentResults().get(0).getTotalReward());
-        System.out.println("Player2: "+ result.getAgentResults().get(1).getTotalReward());
-        System.out.println("Player3: "+ result.getAgentResults().get(2).getTotalReward());
-        System.out.println("Player4: "+ result.getAgentResults().get(3).getTotalReward());
     }
 }

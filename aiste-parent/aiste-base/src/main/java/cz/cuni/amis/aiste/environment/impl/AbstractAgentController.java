@@ -171,7 +171,9 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
      * @param values 
      */
     protected void logRuntime(Object ... values){
-        runtimeLoggingOutput.logData(Arrays.asList(new Object[] {getClass().getSimpleName(), environment.getTimeStep()}), Arrays.asList(values));        
+        if(runtimeLoggingOutput != null){
+            runtimeLoggingOutput.logData(Arrays.asList(new Object[] {getClass().getSimpleName(), environment.getTimeStep()}), Arrays.asList(values));        
+        }
     }
     
 }

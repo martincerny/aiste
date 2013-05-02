@@ -29,9 +29,9 @@ import org.apache.log4j.Logger;
  * 
  * @author 
  */
-public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> implements 
+public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> implements 
         IEnvironmentRepresentation, //it is a represenation of itself for reactive controller
-        ISimulableEnvironment<CGAction> 
+        ISimulableEnvironment<CGPairAction> 
 {
 
 
@@ -40,29 +40,38 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
     private final Logger logger = Logger.getLogger(CoverGame.class);
     
     final StaticDefs defs;
-    
+           
     /**
      * Informace o jednotlivych agentech. Indexem je id {@link AgentBody#id}
      */
     List<CGBodyInfo> bodyInfos;
     
-    Map<Integer, List<CGBodyInfo>> agentsByTeamNo;
-            
+    List<CGBodyPair> bodyPairs;
+    
     public CoverGame(StaticDefs defs) {
-        super(CGAction.class);
+        super(CGPairAction.class);
         /* Create defs - debug*/
         this.defs = defs;
         
         /* Create empty agent data*/
         bodyInfos = new ArrayList<CGBodyInfo>();
-        agentsByTeamNo = new HashMap<Integer, List<CGBodyInfo>>();
+        bodyPairs = new ArrayList<CGBodyPair>();
         
         
         registerRepresentation(this);
+        registerRepresentation(new CGPDDLRepresentation(this));        
     }      
     
     @Override
-    protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, CGAction> actionsToPerform) {
+    protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, CGPairAction> actionsToPerform) {
+        
+        Map<CGBodyInfo, CGAction> individualActionsToPerform = new HashMap<CGBodyInfo, CGAction>();
+        
+        for(AgentBody body: actionsToPerform.keySet()){
+            CGBodyPair bodyPair = bodyPairs.get(body.getId());
+            individualActionsToPerform.put(bodyPair.bodyInfo0, actionsToPerform.get(body).getAction1());
+            individualActionsToPerform.put(bodyPair.bodyInfo1, actionsToPerform.get(body).getAction2());
+        }
     
         if(logger.isDebugEnabled()){
             //Draw the playground
@@ -74,9 +83,9 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
                     }
                     else if(defs.squares[x][y].horizontalCover){
                         if(defs.squares[x][y].verticalCover){
-                            display[x][y] = '-';
-                        } else {
                             display[x][y] = '*';
+                        } else {
+                            display[x][y] = '-';
                         }
                     } else if(defs.squares[x][y].verticalCover){
                         display[x][y] = '|';
@@ -86,7 +95,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
                 }
             }
             for(CGBodyInfo bodyInfo : bodyInfos){
-                display[bodyInfo.loc.x][bodyInfo.loc.y] = Integer.toString(bodyInfo.body.getId()).charAt(0);                
+                display[bodyInfo.loc.x][bodyInfo.loc.y] = Integer.toString(bodyInfo.id).charAt(0);                
             }
             
             StringBuilder infoBuilder = new StringBuilder("==== Step " + getTimeStep() + " ======\n");
@@ -97,7 +106,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
                 infoBuilder.append("\n");
             }
             for(CGBodyInfo bodyInfo : bodyInfos){
-                infoBuilder.append(bodyInfo.body.getId()).append(": ").append(bodyInfo.toString()).append("\n");
+                infoBuilder.append(bodyInfo.id).append(": ").append(bodyInfo.toString()).append("\n");
             }
             logger.debug(infoBuilder.toString());            
         }
@@ -119,16 +128,15 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
             }
         }
         
-        for(AgentBody body : actionsToPerform.keySet()){
-            CGAction action = actionsToPerform.get(body);
-            CGBodyInfo bodyInfo = bodyInfos.get(body.getId());
+        for(CGBodyInfo bodyInfo : individualActionsToPerform.keySet()){
+            CGAction action = individualActionsToPerform.get(bodyInfo);
             if(action.act == CGAction.Action.SUPRESS){                
                 CGBodyInfo targetInfo = bodyInfos.get((Integer)action.target);                
                 if(bodyInfo.supressCooldown > 0){
-                    logger.info(body.getId() + ": Invalid supress. Cooldown not zero: " + bodyInfo.supressCooldown) ;                                        
+                    logger.info(bodyInfo.id + ": Invalid supress. Cooldown not zero: " + bodyInfo.supressCooldown) ;                                        
                 }
                 else if(!isVisible(bodyInfo.loc, targetInfo.loc)){
-                    logger.info(body.getId() + ": Invalid supress. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());                    
+                    logger.info(bodyInfo.id + ": Invalid supress. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());                    
                 } else {
                     targetInfo.supressed = true;
                 }
@@ -139,14 +147,13 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
         List<CGBodyInfo> agentsToUncover = new ArrayList<CGBodyInfo>();
         
         //evaluate attack actions, movement is updated after that
-        for(AgentBody body : actionsToPerform.keySet()){
-            CGAction action = actionsToPerform.get(body);
-            CGBodyInfo bodyInfo = bodyInfos.get(body.getId());
+        for(CGBodyInfo bodyInfo : individualActionsToPerform.keySet()){
+            CGAction action = individualActionsToPerform.get(bodyInfo);
             if(action.act == CGAction.Action.SHOOT){
                 CGBodyInfo targetInfo = bodyInfos.get((Integer) action.target);
                 agentsToUncover.add(bodyInfo);
                 if (!isVisible(bodyInfo.getLoc(), targetInfo.getLoc())) {
-                    logger.info(body.getId() + ": Invalid ranged attack. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());
+                    logger.info(bodyInfo.id + ": Invalid ranged attack. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());
                 } else {
                     double distance = bodyInfo.getLoc().distanceTo(targetInfo.getLoc());
                     double hitProbability = defs.basicAim * (1 / Math.sqrt(distance));
@@ -186,15 +193,15 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
         
         //evaluate deaths, assess rewards and respawn agents               
         for(CGBodyInfo bodyInfo : bodyInfos){
-            int id = bodyInfo.body.getId();
+            int id = bodyInfo.id;
             if(bodyInfo.health <= 0){
                 //assess -1 reward for getting killed
-                rewards[bodyInfo.teamNo] -= 1; 
+                rewards[bodyInfo.team.body.getId()] -= 1; 
                 //the +1 reward to the other team
-                rewards[1 - bodyInfo.teamNo] += 1;
+                rewards[1 - bodyInfo.team.body.getId()] += 1;
                 
                 //clear agent action for this round
-                actionsToPerform.put(bodyInfo.body, new CGAction(CGAction.Action.NO_OP, null));
+                individualActionsToPerform.put(bodyInfo, new CGAction(CGAction.Action.NO_OP, null));
                                 
                 //respawn agent
                 respawnAgent(bodyInfo);                
@@ -202,26 +209,25 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
         }
 
         //evaluate movement and cover        
-        for(AgentBody body : actionsToPerform.keySet()){
-            CGAction action = actionsToPerform.get(body);
-            CGBodyInfo bodyInfo = bodyInfos.get(body.getId());
+        for(CGBodyInfo bodyInfo : individualActionsToPerform.keySet()){
+            CGAction action = individualActionsToPerform.get(bodyInfo);
             if(action.act == CGAction.Action.MOVE){
                 Loc targetLocation = (Loc)action.target;
                 bodyInfo.takingFullCover = false;
                 if(bodyInfo.getLoc().distanceTo(targetLocation) > defs.maxDistancePerTurn){
-                    logger.info(body.getId() + ": Invalid movement - to far. From: " + bodyInfo.getLoc() + " To:" + targetLocation);
+                    logger.info(bodyInfo.id + ": Invalid movement - to far. From: " + bodyInfo.getLoc() + " To:" + targetLocation);
                 } else if(!isVisible(bodyInfo.getLoc(), targetLocation)) {
-                    logger.info(body.getId() + ": Invalid movement - impassable terrain. To:" + targetLocation);
+                    logger.info(bodyInfo.id + ": Invalid movement - impassable terrain. To:" + targetLocation);
                 }
                 else {
                     bodyInfo.loc = targetLocation;
                     if(logger.isDebugEnabled()){
-                        logger.debug(body.getId() + ": Succesful move to:" + targetLocation);                            
+                        logger.debug(bodyInfo.id + ": Succesful move to:" + targetLocation);                            
                     }
                 }
             } else if(action.act == CGAction.Action.TAKE_FULL_COVER){
                 if(!isThereNeighbouringCover(bodyInfo.loc)){
-                    logger.info(body.getId() + ": Invalid full cover - no cover near " + bodyInfo.loc);                    
+                    logger.info(bodyInfo.id + ": Invalid full cover - no cover near " + bodyInfo.loc);                    
                 } else {
                     bodyInfo.takingFullCover = true;
                 }
@@ -231,8 +237,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
         
         
         Map<AgentBody, Double> rewardsMap = new HashMap<AgentBody, Double>(getActiveBodies().size());
-        for(CGBodyInfo bodyInfo : bodyInfos){
-            rewardsMap.put(bodyInfo.body, rewards[bodyInfo.teamNo]);
+        for(CGBodyPair bodypair : bodyPairs){
+            rewardsMap.put(bodypair.body, rewards[bodypair.body.getId()]);
         }
         return rewardsMap;
     }
@@ -287,16 +293,16 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
             //at close combat distance, there is no cover
             return false;
         }
-        if(from.x < to.x && defs.squares[to.x - 1][to.y].verticalCover){
+        if(from.x < to.x && defs.squares[to.x - 1][to.y] != null && defs.squares[to.x - 1][to.y].verticalCover){
             return true;
         }
-        if(from.x > to.x && defs.squares[to.x + 1][to.y].verticalCover){
+        if(from.x > to.x && defs.squares[to.x + 1][to.y] != null && defs.squares[to.x + 1][to.y].verticalCover){
             return true;
         }
-        if(from.y < to.y && defs.squares[to.y - 1][to.x].horizontalCover){
+        if(from.y < to.y && defs.squares[to.x][to.y - 1] != null && defs.squares[to.x][to.y - 1].horizontalCover){
             return true;
         }
-        if(from.y > to.y && defs.squares[to.y + 1][to.x].horizontalCover){
+        if(from.y > to.y && defs.squares[to.x][to.y + 1] != null && defs.squares[to.x][to.y + 1].horizontalCover){
             return true;
         }
         return false;
@@ -329,17 +335,23 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
         if(!(type instanceof CGAgentType)){
             throw new AgentInstantiationException("Illegal agent type");
         }
-        int teamNo = ((CGAgentType)type).getTeamNo();
+        int newID = bodyPairs.size();
 
-        AgentBody newBody = new AgentBody(bodyInfos.size() /*nove id v rade*/, type);
-        CGBodyInfo newBodyInfo = new CGBodyInfo(newBody, teamNo);
-        bodyInfos.add(newBodyInfo);
-        if(!agentsByTeamNo.containsKey(teamNo)){
-            agentsByTeamNo.put(teamNo, new ArrayList<CGBodyInfo>());
-        }
-        agentsByTeamNo.get(teamNo).add(newBodyInfo);
+        AgentBody newBody = new AgentBody(newID, type);
+        CGBodyPair newPair = new CGBodyPair(newBody);
+        bodyPairs.add(newPair);
+        
+        int newBodyId = bodyInfos.size();
+        CGBodyInfo newBodyInfo0 = new CGBodyInfo(newBodyId, newPair);
+        bodyInfos.add(newBodyInfo0);
+        newPair.bodyInfo0 = newBodyInfo0;
+        respawnAgent(newBodyInfo0);        
 
-        respawnAgent(newBodyInfo);        
+        CGBodyInfo newBodyInfo1 = new CGBodyInfo(newBodyId + 1, newPair);
+        bodyInfos.add(newBodyInfo1);
+        newPair.bodyInfo1 = newBodyInfo1;
+        respawnAgent(newBodyInfo1);        
+        
         
         return newBody;
     }
@@ -347,30 +359,26 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
     @Override
     public Map<? extends IAgentType, ? extends IAgentInstantiationDescriptor> getInstantiationDescriptors() {
         Map<CGAgentType, IAgentInstantiationDescriptor> descriptors = new HashMap<CGAgentType, IAgentInstantiationDescriptor>(2);
-        descriptors.put(CGAgentType.getTeam0Instance(), new AgentInstantiationDescriptor(2, 2));
-        descriptors.put(CGAgentType.getTeam1Instance(), new AgentInstantiationDescriptor(2, 2));
+        descriptors.put(CGAgentType.getInstance(), new AgentInstantiationDescriptor(2, 2));
         return descriptors;
     }
 
     @Override
-    public ISimulableEnvironment<CGAction> cloneForSimulation() {
+    public ISimulableEnvironment<CGPairAction> cloneForSimulation() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public Map<AgentBody, Double> simulateOneStep(Map<AgentBody, CGAction> actions) {
+    public Map<AgentBody, Double> simulateOneStep(Map<AgentBody, CGPairAction> actions) {
         return nextStepInternal(actions);
     }
     
     
     
     static class CGBodyInfo {
-        /**
-         * The corresponding body.
-         */
-        AgentBody body;
-
-        int teamNo;
+        final int id;
+        
+        final CGBodyPair team;
         
         Loc loc;
         
@@ -384,9 +392,9 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
         int supressCooldown;
         
         
-        public CGBodyInfo(AgentBody body, int teamNo) {
-            this.body = body;
-            this.teamNo = teamNo;
+        public CGBodyInfo(int id, CGBodyPair team) {
+            this.id = id;
+            this.team = team;
         }
 
         public Loc getLoc() {
@@ -397,13 +405,44 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGAction> impleme
             this.loc = loc;
         }
 
-        @Override
-        public String toString() {
-            return "CGBodyInfo{id=" + body.getId() + ", teamNo=" + teamNo + ", loc=" + loc + ", health=" + health + ", takingFullCover=" + takingFullCover + ", supressed=" + supressed +", supressCooldown=" + supressCooldown + '}';
+        public int getTeamId(){
+            return team.getId();
         }
         
+        @Override
+        public String toString() {
+            return "CGBodyInfo{id=" + id + ", teamNo=" + team.getId() + ", loc=" + loc + ", health=" + health + ", takingFullCover=" + takingFullCover + ", supressed=" + supressed +", supressCooldown=" + supressCooldown + '}';
+        }
+    }
+    
+    static class CGBodyPair {
+        /**
+         * The corresponding body.
+         */
+        final AgentBody body;
         
+        CGBodyInfo bodyInfo0;
+        CGBodyInfo bodyInfo1;
+
+        public CGBodyPair(AgentBody body) {
+            this.body = body;
+        }                
+
+        public int getId() {
+            return body.getId();
+        }
         
+        public int[] getBodyIds(){
+            return new int[] {bodyInfo0.id, bodyInfo1.id};
+        }
+        
+        public CGBodyInfo getBodyInfo(int order){
+            switch(order){
+                case 0 : return bodyInfo0;
+                case 1 : return bodyInfo1;
+                default : throw new IllegalArgumentException("Body order outside range");
+            }
+        }
     }
     
     static class StaticDefs {
