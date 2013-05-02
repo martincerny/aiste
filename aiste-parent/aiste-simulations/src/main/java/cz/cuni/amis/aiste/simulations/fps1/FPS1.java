@@ -16,10 +16,12 @@
  */
 package cz.cuni.amis.aiste.simulations.fps1;
 
-import cz.cuni.amis.aiste.IRandomizable;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
+import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -29,7 +31,7 @@ import org.apache.log4j.Logger;
  */
 public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements 
         IEnvironmentRepresentation, //it is a represenation of itself for reactive controller
-        ISimulableEnvironment<FPS1Action>
+        ISimulableEnvironment<FPS1Action> 
 {
 
 
@@ -58,14 +60,69 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
         
         /* Create empty agent data*/
         bodyInfos = new ArrayList<FPS1BodyInfo>();
+        
+        copySquareStates(defs.initialSquareStates);        
+        
+        registerRepresentation(this);
     }
 
     
-    
+    private void copySquareStates(FPS1SquareState[][] originalStates){
+        squareStates = new FPS1SquareState[defs.levelWidth][defs.levelHeight];
+        for(int x = 0; x < defs.levelWidth; x++){
+            for(int y = 0; y < defs.levelHeight; y++){
+                if(originalStates[x][y] != null)
+                squareStates[x][y] = new FPS1SquareState(originalStates[x][y]);
+            }
+        }
+        
+    }
     
     
     @Override
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, FPS1Action> actionsToPerform) {
+    
+        if(logger.isDebugEnabled()){
+            //Draw the playground
+            char[][] display = new char[defs.levelWidth][defs.levelHeight];
+            for(int x = 0; x < defs.levelWidth; x++){
+                for(int y = 0; y < defs.levelHeight;y++){
+                    if(defs.squares[x][y] == null){
+                        display[x][y] = '#';
+                    }
+                    else if(squareStates[x][y].items.contains(ItemType.MEDIKIT)){
+                        display[x][y] = 'h';
+                    } 
+                    else if(squareStates[x][y].items.contains(ItemType.RANGED_AMMO)){
+                        display[x][y] = 'a';
+                    } 
+                    else if(squareStates[x][y].items.contains(ItemType.RANGED_WEAPON)){
+                        display[x][y] = 'r';
+                    } 
+                    else if(squareStates[x][y].items.contains(ItemType.MEELEE_WEAPON)){
+                        display[x][y] = 'm';
+                    } else {
+                        display[x][y] = '.';
+                    }
+                }
+            }
+            for(FPS1BodyInfo bodyInfo : bodyInfos){
+                display[bodyInfo.x][bodyInfo.y] = Integer.toString(bodyInfo.body.getId()).charAt(0);                
+            }
+            
+            StringBuilder infoBuilder = new StringBuilder("==== Step " + getTimeStep() + " ======\n");
+            for (int y = 0; y < defs.levelHeight; y++) {
+                for (int x = 0; x < defs.levelWidth; x++) {
+                    infoBuilder.append(display[x][y]);
+                }
+                infoBuilder.append("\n");
+            }
+            for(FPS1BodyInfo bodyInfo : bodyInfos){
+                infoBuilder.append(bodyInfo.body.getId()).append(": ").append(bodyInfo.toString()).append("\n");
+            }
+            logger.debug(infoBuilder.toString());            
+        }
+        
         
         double [] rewards = new double[getAllBodies().size()]; //indexed by agent id
         
@@ -85,12 +142,62 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
             FPS1BodyInfo bodyInfo = bodyInfos.get(body.getId());
             switch(action.act){
                 case ATTACK_MELEE : {
-                    //if(body.)
+                    FPS1BodyInfo targetInfo = bodyInfos.get((Integer)action.target);
+                    if(targetInfo.getLoc().distanceTo(bodyInfo.getLoc()) > 1){
+                        logger.info(body.getId() + ": Invalid melee attack. Target to far. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());
+                    } else {
+                        int damage = rand.nextInt(defs.meleeDamageVariability * 2) + defs.meleeDamage - defs.meleeDamageVariability;
+                        targetInfo.health -= damage;
+                        succesfulAttackers.get(targetInfo.body.getId()).add(body.getId());
+                    }
+                    break;
+                }
+                case ATTACK_RANGED : {
+                    FPS1BodyInfo targetInfo = bodyInfos.get((Integer)action.target);                    
+                    if(!isVisible(bodyInfo.getLoc(), targetInfo.getLoc())){
+                        logger.info(body.getId() + ": Invalid ranged attack. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());
+                    } else {
+                        double distance = bodyInfo.getLoc().distanceTo(targetInfo.getLoc());
+                        double hitProbability = defs.rangeBasicAim * (1 / Math.sqrt(distance));
+                        if(logger.isTraceEnabled()){
+                            logger.trace("Distance: " + distance + ", hit probability: " + hitProbability);
+                        }
+                        if(rand.nextDouble() <= hitProbability){
+                            int damage = rand.nextInt(defs.rangeDamageVariability * 2) + defs.rangeDamage - defs.rangeDamageVariability;
+                            targetInfo.health -= damage;
+                            succesfulAttackers.get(targetInfo.body.getId()).add(body.getId());
+                        }
+                    }
+                    break;
                 }
             }
         }
         
-        //assess rewards for all deaths and respawn agents               
+        //evaluate deaths, assess rewards and respawn agents               
+        for(FPS1BodyInfo bodyInfo : bodyInfos){
+            int id = bodyInfo.body.getId();
+            if(bodyInfo.health <= 0){
+                //assess -1 reward for getting killed
+                rewards[id] -= 1; 
+                //the +1 reward is divided among all succesfull attackers
+                for(int attacker : succesfulAttackers.get(id)){
+                    rewards[attacker] += 1 / succesfulAttackers.size();
+                }
+                
+                //clear agent action for this round
+                actionsToPerform.put(bodyInfo.body, new FPS1Action(FPS1Action.Action.NO_OP, null));
+                
+                //if agent had weapon, drop it
+                if(bodyInfo.hasRangedWeapon){
+                    squareStates[bodyInfo.x][bodyInfo.y].items.add(ItemType.RANGED_WEAPON);
+                } else if(bodyInfo.hasMeleeWeapon){
+                    squareStates[bodyInfo.x][bodyInfo.y].items.add(ItemType.MEELEE_WEAPON);                    
+                }
+                
+                //respawn agent
+                respawnAgent(bodyInfo);                
+            }
+        }
 
         //evaluate movement        
         //first check all moves validity and clear invalid. Only after alter all locations of succesfully moving agents
@@ -195,6 +302,89 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
         }
     }
     
+    /**
+     * Visibility is checked by Bresenham's algorithm, taken from http://tech-algorithm.com/articles/drawing-line-using-bresenham-algorithm/
+     * @param from
+     * @param to
+     * @return 
+     */
+    public boolean isVisible(Loc from, Loc to){
+        int x = from.x;
+        int x2 = to.x;
+        int y = from.y;
+        int y2 = to.y;
+        
+        int w = x2 - x;
+        int h = y2 - y;
+        int dx1 = 0, dy1 = 0, dx2 = 0, dy2 = 0;
+        if (w < 0) {
+            dx1 = -1;
+        } else if (w > 0) {
+            dx1 = 1;
+        }
+        if (h < 0) {
+            dy1 = -1;
+        } else if (h > 0) {
+            dy1 = 1;
+        }
+        if (w < 0) {
+            dx2 = -1;
+        } else if (w > 0) {
+            dx2 = 1;
+        }
+        int longest = Math.abs(w);
+        int shortest = Math.abs(h);
+        if (!(longest > shortest)) {
+            longest = Math.abs(h);
+            shortest = Math.abs(w);
+            if (h < 0) {
+                dy2 = -1;
+            } else if (h > 0) {
+                dy2 = 1;
+            }
+            dx2 = 0;
+        }
+        int numerator = longest >> 1;
+        for (int i = 0; i <= longest; i++) {
+            if(defs.squares[x][y] == null){
+                //traversing an impassable square
+                return false;
+            }
+            numerator += shortest;
+            if (!(numerator < longest)) {
+                numerator -= longest;
+                x += dx1;
+                y += dy1;
+            } else {
+                x += dx2;
+                y += dy2;
+            }
+        }
+        
+        return true;
+    }
+    
+    private void respawnAgent(FPS1BodyInfo bodyInfo) {
+        Collection<Loc> freeSpawningPoints = Collections2.filter(defs.playerSpawningLocations, new Predicate<Loc>(){
+
+            @Override
+            public boolean apply(Loc t) {
+                for(FPS1BodyInfo bodyInfo: bodyInfos){
+                    if(bodyInfo.getLoc().equals(t)){
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+        });
+        Loc spawningPoint = RandomUtils.randomElementLinearAccess(freeSpawningPoints, rand);
+        bodyInfo.setLoc(spawningPoint);                
+        bodyInfo.ammo = 0;
+        bodyInfo.hasMeleeWeapon = false;
+        bodyInfo.hasRangedWeapon = false;
+        bodyInfo.health = defs.maxHealth;
+    }
     
     @Override
     protected AgentBody createAgentBodyInternal(IAgentType type) {
@@ -202,12 +392,10 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
             throw new AgentInstantiationException("Illegal agent type");
         }
         AgentBody newBody = new AgentBody(bodyInfos.size() /*nove id v rade*/, type);
-        bodyInfos.add(new FPS1BodyInfo(newBody));
-        
-        //cokoliv dalsiho potrebujes, dopis sem (a smaz tento bordel :-)
-        if(true){            
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
+        FPS1BodyInfo newBodyInfo = new FPS1BodyInfo(newBody);
+        bodyInfos.add(newBodyInfo);
+
+        respawnAgent(newBodyInfo);        
         
         return newBody;
     }
@@ -235,13 +423,13 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
          */
         AgentBody body;
         
-        int x;
-        int y;
+        int x = - 1;
+        int y = - 1;
         
         int health;
-        int ammo;
         boolean hasRangedWeapon;
         boolean hasMeleeWeapon;
+        int ammo;
         
         public FPS1BodyInfo(AgentBody body) {
             this.body = body;
@@ -255,6 +443,13 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
             this.x = loc.x;
             this.y = loc.y;
         }
+
+        @Override
+        public String toString() {
+            return "FPS1BodyInfo " + "id=" + body.getId() + ", x=" + x + ", y=" + y + ", health=" + health + ", hasRangedWeapon=" + hasRangedWeapon + ", hasMeleeWeapon=" + hasMeleeWeapon + ", ammo=" + ammo + '}';
+        }
+        
+        
     }
     
     static class StaticDefs {

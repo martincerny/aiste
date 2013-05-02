@@ -37,4 +37,9 @@ public class FPS1SquareState {
     public FPS1SquareState(FPS1.ItemType item1, FPS1.ItemType ... items){
         this.items = EnumSet.of(item1, items);
     }
+    
+    public FPS1SquareState(FPS1SquareState original){
+        this.items = EnumSet.copyOf(original.items);
+        this.square = original.square;
+    }
 }
