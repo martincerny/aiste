@@ -1,0 +1,26 @@
+10
+10
+s..o.o..#s
+-.......|.
+...-..|...
+oo....s.oo
+##...*..##
+##..*...##
+oo.s....oo
+...|..-...
+.|.......-
+s#..o.o..s
+
+Format:
+width
+heigth
+map specs - a line for each row and a char for each square in level
+	chars have following meaning:
+	# - wall - not a passable square
+        * - cover for all 4 neighbouring squares
+        | - vertical cover - cover for squares to left and right
+        - - horizontal cover - cover for squares to top and bottom
+        s - a spawning point - at least 5 needed
+        o - a nav point
+        anything else means empty square
+Everything below is ignored
