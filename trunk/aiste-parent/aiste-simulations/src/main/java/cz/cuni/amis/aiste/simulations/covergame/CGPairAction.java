@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
+ * Copyright (C) 2013 AMIS research group, Faculty of Mathematics and Physics, Charles University in Prague, Czech Republic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,22 +16,33 @@
  */
 package cz.cuni.amis.aiste.simulations.covergame;
 
-import cz.cuni.amis.aiste.environment.impl.SimpleAgentType;
+import cz.cuni.amis.aiste.environment.IAction;
 
 /**
- * Simple FPS has only one agent type, this one.
- * @author 
+ *
+ * @author Martin Cerny
  */
-public class CGAgentType extends SimpleAgentType {
+public class CGPairAction implements IAction {
+    private CGAction action1;
+    private CGAction action2;
 
-    private static CGAgentType instance = new CGAgentType();
+    public CGPairAction(CGAction action1, CGAction action2) {
+        this.action1 = action1;
+        this.action2 = action2;
+    }
+
+    public CGAction getAction1() {
+        return action1;
+    }
+
+    public CGAction getAction2() {
+        return action2;
+    }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "[" + action1.getLoggableRepresentation() + ", " + action2.getLoggableRepresentation() + "]";
+    }
     
-    private CGAgentType() {
-        super("CGAgentPair");
-    }
-
-    public static CGAgentType getInstance() {
-        return instance;
-    }
     
 }

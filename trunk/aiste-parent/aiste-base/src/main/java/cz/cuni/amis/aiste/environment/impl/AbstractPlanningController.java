@@ -377,7 +377,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                         }
 
                         timeSpentTranslating.taskStarted();
-                        activePlannerActionReactivePlan = representation.translateAction(currentPlan.poll(), body);
+                        activePlannerActionReactivePlan = representation.translateAction(currentPlan, body);
                         timeSpentTranslating.taskFinished();
                     }
                     break;
@@ -475,7 +475,7 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
                         }
                         
                         if(!currentPlanCopy.isEmpty()){
-                            currentReactivePlan = simulableRepresentaion.translateAction(currentPlanCopy.poll(), body);
+                            currentReactivePlan = simulableRepresentaion.translateAction(currentPlanCopy, body);
                         }
                     } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
                     return simulableRepresentaion.isGoalState(body, goal);

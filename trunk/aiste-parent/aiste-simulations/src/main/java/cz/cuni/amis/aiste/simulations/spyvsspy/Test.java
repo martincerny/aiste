@@ -63,7 +63,7 @@ public class Test {
             info = PlannersPackUtils.getMetricFF();
         }
 
-        File plannersDirectory = new File("target");
+        File plannersDirectory = new File("");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
         plannerManager.extractAndPreparePlanner(plannersDirectory, info);
 
@@ -199,24 +199,6 @@ public class Test {
         //executor.addAgentController(SpyVsSpyAgentType.getInstance(), player2, b.getpDDLRepresentation());
 
 
-        /*
-         * SpyVsSpy b = new SpyVsSpy(); SpyVsSpyReactiveController player1 = new
-         * SpyVsSpyReactiveController(); SpyVsSpyReactiveController player2 =
-         * new SpyVsSpyReactiveController();
-         *
-         * SynchronuousEnvironmentExecutor executor = new
-         * SynchronuousEnvironmentExecutor(); executor.setEnvironment(b);
-         * executor.addAgentController(SpyVsSpyAgentType.getInstance(),
-         * player1);
-         * executor.addAgentController(SpyVsSpyAgentType.getInstance(),
-         * player2);
-         *
-         * IEnvironmentExecutionResult result = executor.executeEnvironment();
-         *
-         * System.out.println("Results: "); System.out.println("Player1: " +
-         * result.getAgentResults().get(0).getTotalReward());
-         * System.out.println("Player2: "+
-         * result.getAgentResults().get(1).getTotalReward());
-         */
+
     }
 }

@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.environment;
 
 import java.util.List;
+import java.util.Queue;
 
 /**
  *
@@ -25,7 +26,14 @@ import java.util.List;
 public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, GOAL extends IPlanningGoal> extends IEnvironmentRepresentation {
     public DOMAIN getDomain(AgentBody body);
     public PROBLEM getProblem(AgentBody body, GOAL goal);
-    public IReactivePlan<? extends ACTION> translateAction(PLANNER_ACTION actionFromPlanner, AgentBody body);    
+    
+    /**
+     * Translates an initial segment of a plan into actions. The processed actions are removed from the respective queue
+     * @param actionFromPlanner
+     * @param body
+     * @return 
+     */
+    public IReactivePlan<? extends ACTION> translateAction(Queue<PLANNER_ACTION> actionsFromPlanner, AgentBody body);    
     
     /**
      * Gets a list of goals that are relevant to given body.
