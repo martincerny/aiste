@@ -15,10 +15,10 @@
 s...##...r
 ...a##....
 ....##....
-.m..  ...a
+.m..  s..a
 ## #### ##
 ## #### ##
-a...  ..m.
+a..s  ..m.
 ....##....
 ....##a...
 h...##...s
@@ -39,6 +39,6 @@ item specs - a line for each row and a char for each square in level
 	r - a ranged weapon
 	h - health (A medikikt)
 	a - an ammo
-	s - spawning point
+	s - spawning point. For system to work, there must be at least maxAgents + 1 spawning points
 	anything else - empty
 Everything below is ignored
