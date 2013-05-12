@@ -1,0 +1,76 @@
+(Defdomain CoverGameJSHOP2
+   (
+        ;;operators
+        ;;format : 
+        ;; operator
+        ;;   preconditions
+        ;;   negative effects
+        ;;   possitive effects
+        ;;   [cost] - optional
+
+            ;Move from navpoint to navpoint
+            (:operator (!move ?body ?from ?to)
+             (    (at ?body ?from)
+                  (adjacent ?from ?to) )
+             ((at ?body ?from) ) 
+             ((at ?body ?to))
+             1
+            )
+
+            ;Important for translation into parallel plans
+            (:operator (!sync)
+                ()
+                ()
+                ()
+                0
+                )
+
+
+(:method (move ?body ?to ?constraint)
+Case1    ((at ?body ?to))
+         ()
+Direct   ( (at ?body ?from))
+         ( (move_directly ?body ?from ?to ?constraint) )
+)
+
+
+(:method (move_directly ?body ?from ?to ?constraint) 
+         ( (assign ?path (call find_path ?body ?from ?to ?constraint) ) 
+               (call != ?path nil)
+         )
+         ( (expand_move ?from ?path) )
+)
+
+(:method (expand_move ?from ?path)
+Empty       ( (call = ?path nil) )
+            ( () )
+Recursion   ( (assign ?head (call stdlib.head ?path) ) (assign ?tail (call stdlib.tail ?path) ) )
+            ( (!move ?from ?head) (expand_move ?head ?tail) )
+)
+
+(:method (take_cover ?body)
+    (:sort-by ?dist < ( (at ?body ?current_loc) (partial_cover_loc ?cover_loc) (distance ?current_loc ?cover_loc ?d)) ) 
+    ((move_directly ?body ?from ?to only_uncovered))
+)
+
+(:method (take_cover_all) 
+    ()
+    ( (take_cover body_0) (!sync))
+)
+
+;Domain axioms
+;"Type inheritance"
+(:- (partial_cover ?body) 
+    ( (at ?body ?loc) (forall (?o) (oponent ?o) (not (uncovered_by_oponent ?o ?loc) ) ) )
+)
+;(:- (body body_0) () ) 
+;(:- (body body_1) ()) 
+;(:- (oponent oponent_0) () ) 
+;(:- (oponent oponent_1) ()) 
+
+)
+;----------------------------------------------
+
+
+)
+)

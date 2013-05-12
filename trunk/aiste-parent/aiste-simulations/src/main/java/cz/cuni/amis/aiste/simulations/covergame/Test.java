@@ -16,7 +16,9 @@
  */
 package cz.cuni.amis.aiste.simulations.covergame;
 
+import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController.ValidationMethod;
 import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
+import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
@@ -65,13 +67,14 @@ public class Test {
 
 
         Planning4JController pddlController = new Planning4JController(planner, Planning4JController.ValidationMethod.NONE);
+        JShop2Controller jshopController = new JShop2Controller(ValidationMethod.NONE);
 
         CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
 
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(1)),
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv)
                 });
         AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors, 100000);

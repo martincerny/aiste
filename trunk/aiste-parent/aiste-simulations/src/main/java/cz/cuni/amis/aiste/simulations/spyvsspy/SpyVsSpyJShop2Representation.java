@@ -236,7 +236,7 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
     protected int getMaxNumConstants() {
         int numAdditionalConstants = getNumAdditionalConstants() ;
             
-        return (20 /*Za domenu, nutno staticky*/ + numAdditionalConstants);            
+        return (SpyVsSpyJSHOP2.NUM_CONSTANTS + numAdditionalConstants);            
 
     }   
 

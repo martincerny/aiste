@@ -17,8 +17,6 @@
 
 package cz.cuni.amis.aiste.simulations.covergame;
 
-import com.sun.xml.internal.messaging.saaj.soap.ver1_1.Body1_1Impl;
-import cz.cuni.amis.aiste.simulations.fps1.*;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;

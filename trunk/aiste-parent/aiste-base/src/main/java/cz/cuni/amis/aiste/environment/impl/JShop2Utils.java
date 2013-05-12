@@ -32,7 +32,18 @@ import java.util.List;
  */
 public class JShop2Utils {
     public static TermList createTermList(JSHOP2 jshop, int ... constantIndices){
-        TermList ret = TermList.NIL;
+        return createTermList(jshop, null, constantIndices);
+    }
+    
+    public static TermList createTermList(JSHOP2 jshop, Term tail, int ... constantIndices){
+        TermList ret;
+        if(tail == null){
+            ret = TermList.NIL;
+        } else if(tail instanceof TermList){
+            ret = (TermList) tail;
+        } else {
+            ret = new TermList(tail, TermList.NIL);
+        }
         for(int i = constantIndices.length - 1; i >= 0; i--){
             ret = new TermList(jshop.getConstant(constantIndices[i]), ret);
         }

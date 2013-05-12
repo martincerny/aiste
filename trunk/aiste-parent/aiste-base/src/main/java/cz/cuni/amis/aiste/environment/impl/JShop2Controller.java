@@ -143,12 +143,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
                     Plan planningResult = planningProcess.execute();
                     synchronized (future) {
                         if (!future.isCancelled()) {
-                            if (planningResult != null) {
-                                future.setResult(planningResult);
-                            } else {
-                                //null result signals cancellation
-                                future.cancel(true);
-                            }
+                            future.setResult(planningResult);
                         }
                     }
                 } catch (Exception ex) {
