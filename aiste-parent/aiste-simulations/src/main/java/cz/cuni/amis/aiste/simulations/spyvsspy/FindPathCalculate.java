@@ -90,7 +90,7 @@ public class FindPathCalculate extends BodySpecificCalculate{
             
             //Construct the list term
             for(int i = path.size() - 1; i >= 1; i--){ //the first path element is ignored, as it is the agent's current location
-                pathTerm = new TermList(new TermConstant(representation.locationIdToConstants[path.get(i)]), pathTerm);
+                pathTerm = new TermList(representation.jshops.get(body).getConstant(representation.locationIdToConstants[path.get(i)]), pathTerm);
             }
 
         }

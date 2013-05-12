@@ -150,7 +150,7 @@
             <dependency>
                 <groupId>cz.cuni.amis</groupId>
                 <artifactId>amis-utils</artifactId>
-                <version>3.5.1-SNAPSHOT</version>
+                <version>3.5.1</version>
             </dependency>   
             <dependency>
                 <groupId>cz.cuni.amis</groupId>
@@ -160,7 +160,7 @@
             <dependency>
                 <groupId>cz.cuni.amis</groupId>
                 <artifactId>amis-path-finding</artifactId>
-                <version>3.5.0</version>
+                <version>3.5.2-SNAPSHOT</version>
             </dependency>                     
             <dependency>
                 <groupId>junit</groupId>

@@ -22,6 +22,7 @@ import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
+import cz.cuni.amis.pathfinding.map.IPFKnownMap;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -50,7 +51,6 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     
     public CoverGame(StaticDefs defs) {
         super(CGPairAction.class);
-        /* Create defs - debug*/
         this.defs = defs;
         
         /* Create empty agent data*/
@@ -60,6 +60,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         registerRepresentation(this);
         registerRepresentation(new CGPDDLRepresentation(this));        
+        registerRepresentation(new CGJSHOPRepresentation(this));        
     }      
     
     @Override
@@ -445,7 +446,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         }
     }
     
-    static class StaticDefs {
+    public static class StaticDefs {
         int levelWidth;
         int levelHeight;
         
@@ -497,6 +498,29 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
          * The aim is multiplied by this constant, if the shooting agent is suppressed
          */
         double supressedAimPenalty = 0.2;
+        
+        IPFKnownMap<Loc> navGraphMap = new IPFKnownMap<Loc>() {
+
+            @Override
+            public Collection<Loc> getNodes() {
+                return navGraph.keySet();
+            }
+
+            @Override
+            public Collection<Loc> getNeighbors(Loc node) {
+                return navGraph.get(node);
+            }
+
+            @Override
+            public int getNodeCost(Loc node) {
+                return 0;
+            }
+
+            @Override
+            public int getArcCost(Loc node, Loc node1) {
+                return (int)Math.ceil(CGUtils.distance(node1, node));
+            }
+        };
     }
     
         

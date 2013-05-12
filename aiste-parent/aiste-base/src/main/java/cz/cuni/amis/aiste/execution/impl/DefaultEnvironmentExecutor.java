@@ -68,8 +68,8 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     @Override
     public IEnvironmentExecutionResult executeEnvironment(long maxSteps) {
-        startSimulation();
         environmentStoppedLatch = new CountDownLatch(1);
+        startSimulation();
         environmentStepTimer.scheduleAtFixedRate(new EnvironmentStepTask(maxSteps), 0, getStepDelay());
         try {
             environmentStoppedLatch.await();
@@ -95,7 +95,10 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
             agentStepNotificationExecutorService.shutdownNow();
         }
         environmentStepTimer.cancel();
-        environmentStoppedLatch.countDown();
+        if(environmentStoppedLatch != null){
+            //the latch might not have been initialized
+            environmentStoppedLatch.countDown();
+        }
     }
 
     public boolean isDebugMode() {
