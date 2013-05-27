@@ -26,14 +26,29 @@ import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
  */
 public class Test {
     public static void main(String args[]){
-        KeyLockMaze b = new KeyLockMaze();
+		KeyLockOptions options = new KeyLockOptions();
+		
+		// Change the options here... (options.roomWidth = 10; ...)
+		
+        KeyLockMaze maze = new KeyLockMaze(options);
+		
+		KeyLockFourWayPoint[][] map = null;
+		
+		// Get your predefined map here...
+		// map = loadFromFile("file.txt");
+		// or
+		// map = generateBySomeOtherGenerator();
+		// etc.
+		
+		maze.generateMaze(map);
+		
         KeyLockNaiveController player = new KeyLockNaiveController();
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
-        executor.setEnvironment(b);
-        executor.addAgentController(new AgentExecutionDescriptor(KeyLockAgentType.getInstance(), player, b));
+        executor.setEnvironment(maze);
+        executor.addAgentController(new AgentExecutionDescriptor(KeyLockAgentType.getInstance(), player, maze));
         
-        IEnvironmentExecutionResult result = executor.executeEnvironment(300 /*Max steps*/);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(1000 /*Max steps*/);
         
         System.out.println("Result: "+ result.getAgentResults().get(0).getTotalReward());
     }
