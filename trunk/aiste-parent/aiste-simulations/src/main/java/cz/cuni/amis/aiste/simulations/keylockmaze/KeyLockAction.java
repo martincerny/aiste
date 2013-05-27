@@ -19,16 +19,35 @@ package cz.cuni.amis.aiste.simulations.keylockmaze;
 import cz.cuni.amis.aiste.environment.IAction;
 
 /**
- *
- * @author 
+ * <p>Action performed by a spy in {@link KeyLockMaze}.</p>
+ * @author Jaroslav Kubat <jk.kubat@seznam.cz>
  */
 public class KeyLockAction implements IAction{
 
-    //TODO add data neccessary for action here
+	/**
+	 * <p>Direction of spy's move</p>
+	 */
+	private KeyLockDirection direction;
+	
+	/**
+	 * <p>Constructor</p>
+	 * @param directionToGoTo Direction of spy's move
+	 */
+	public KeyLockAction(KeyLockDirection directionToGoTo) {
+		direction = directionToGoTo;
+	}
+
+	/**
+	 * <p>Returns direction of spy's move</p>
+	 * @return Spy's move direction
+	 */
+	public KeyLockDirection getDirection() {
+		return direction;
+	}
     
     @Override
     public String getLoggableRepresentation() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return "ACTION -> direction '" + direction + "' ";
     }
     
 }
