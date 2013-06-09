@@ -45,8 +45,7 @@ import org.apache.log4j.Logger;
  * @author Martin Cerny
  */
 public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
-        implements ISimulableEnvironment<SpyVsSpyAction>, 
-        IEnvironmentRepresentation //it is a represenation of itself for reactive controller
+        implements ISimulableEnvironment<SpyVsSpyAction>
         {
 
     private final Logger logger = Logger.getLogger(SpyVsSpy.class);
@@ -108,7 +107,6 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
 
         rand = new Random();
         
-        registerRepresentation(this);
         
         pDDLRepresentation = new SpyVsSpyPDDLRepresentation(this);
         registerRepresentation(pDDLRepresentation);
