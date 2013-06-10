@@ -100,8 +100,9 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         int rewardDeath = -50;
         int rewardReachedGoal = 150;
         int rewardNothing = -1;
+        double attackSuccessProbability = 0.7;
 
-        defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, rewardDeath, rewardReachedGoal, rewardNothing, 0.9, definition.destination, definition.startingLocations, definition.nodes, definition.neighbours);
+        defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, rewardDeath, rewardReachedGoal, rewardNothing, attackSuccessProbability, definition.destination, definition.startingLocations, definition.nodes, definition.neighbours);
 
         rand = new Random();
         
@@ -251,11 +252,11 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     agentFailedAction(agentBody);
                     continue;
                 }
+                bodyInfo.numWeapons--; //weapon is for one use only
                 if (rand.nextDouble() < defs.attackSuccessProbability) {
                     if (logger.isDebugEnabled() && !isSimulation) {
                         logger.debug(agentBody.getId() + ": Succesful attack: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                     }
-                    bodyInfo.numWeapons--; //weapon is for one use only
                     
                     AgentBody targetBody = getAllBodies().get(action.getActionTarget());                    
                     agentsKilledThisRound.add(targetBody);

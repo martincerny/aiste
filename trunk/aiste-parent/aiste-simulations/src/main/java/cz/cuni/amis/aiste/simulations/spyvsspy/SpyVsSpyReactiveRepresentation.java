@@ -38,11 +38,9 @@ import org.apache.log4j.Logger;
  *
  * @author 
  */
-public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepresentation<SpyVsSpyAction>, IRandomizable{
+public class SpyVsSpyReactiveRepresentation extends AbstractSpyVsSpyRepresentation implements IEnvironmentSpecificRepresentation<SpyVsSpyAction>, IRandomizable{
 
     private final Logger logger = Logger.getLogger(SpyVsSpyReactiveRepresentation.class);
-
-    private SpyVsSpy env;
     
     FloydWarshall<Integer> floydWarshall;
     
@@ -55,7 +53,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
     Random rand = new Random();
 
     public SpyVsSpyReactiveRepresentation(SpyVsSpy env) {
-        this.env = env;
+        this.environment = env;
         floydWarshall = new FloydWarshall<Integer>(env.defs.mapForPathFinding);
     }
 
@@ -74,14 +72,14 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
          * Gather senses
          */
         boolean hasAllItems = true;
-        for(int i = 0; i < env.defs.numItemTypes; i++){
+        for(int i = 0; i < environment.defs.numItemTypes; i++){
             if(!bodyInfo.itemsCarried.contains(i)){
                 hasAllItems = false;
                 break;
             }
         }
         
-        SpyVsSpyMapNode currentNode = env.nodes.get(bodyInfo.locationIndex);
+        SpyVsSpyMapNode currentNode = environment.nodes.get(bodyInfo.locationIndex);
         boolean nodeSecure = currentNode.traps.isEmpty();
         
         int usefulItemIndex = getUsefulItemIndex(currentNode, bodyInfo);
@@ -89,23 +87,22 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
         int usefulTrapRemoverIndex = getUsefulTrapRemover(bodyInfo, currentNode);        
         boolean canRemoveAllTraps = canRemoveAllTraps(currentNode, bodyInfo);
         
-        boolean canWin = false;
         
         /**
          * Main evaluation
          */
-        SpyVsSpyAction standardReactiveLayerAction = SpyVsSpyControllerHelper.evaluateReactiveLayer(env, body);
+        SpyVsSpyAction standardReactiveLayerAction = SpyVsSpyControllerHelper.evaluateReactiveLayer(environment, body);
         if(standardReactiveLayerAction != null){
             logger.debug(body.getId() + ": Action from reactive layer");
             return standardReactiveLayerAction;
         } else if (hasAllItems){
             logger.debug(body.getId() + ": Has all items.");
-            int destination = env.defs.destination;
+            int destination = environment.defs.destination;
             if(!lastPathApplicable(body,destination)){
                 findPath(body, destination);
             }
             return followLastPathFound(body);            
-        } else if(bodyInfo.numWeapons > 0 && !canWin && findPathToOponent(body)) {
+        } else if(bodyInfo.numWeapons > 0 && agentUnableToReachGoal(body) && findPathToOponent(body)) {
             logger.debug(body.getId() + ": Cannot win but can hunt enemy");
             return followLastPathFound(body);
         } else if(nodeSecure && usefulItemIndex != -1){
@@ -137,7 +134,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
             int nearestAvailableTrapRemoverLocation = -1;
             int nearestAvailableTrapRemoverLocationDistance = Integer.MAX_VALUE;
 
-            for(SpyVsSpyMapNode inspectedNode : env.nodes){
+            for(SpyVsSpyMapNode inspectedNode : environment.nodes){
 
                 if(!canRemoveAllTraps(inspectedNode, bodyInfo)){
                     continue;
@@ -147,7 +144,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
                 
                 //Available trap removers and useful trap removers (exploiting the fact, that they are always a subset)
                 if(nodeDistance < nearestAvailableTrapRemoverLocationDistance){                
-                    for(int trapType = 0; trapType < env.defs.numTrapTypes; trapType++){
+                    for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
                         if(inspectedNode.numTrapRemovers[trapType] > 0){
                             nearestAvailableTrapRemoverLocationDistance = nodeDistance;
                             nearestAvailableTrapRemoverLocation = inspectedNode.index;
@@ -203,7 +200,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
             } else {
                 //random movement
                 logger.debug(body.getId() + ": Random movement");
-                int randomNode = RandomUtils.randomElementLinearAccess(env.defs.neighbours.get(currentNode.index), rand);
+                int randomNode = RandomUtils.randomElementLinearAccess(environment.defs.neighbours.get(currentNode.index), rand);
                 return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, randomNode);
             }
         }
@@ -236,7 +233,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
             lastPathFoundIndex.put(body, pathIndex);
             Integer nextLocation = thePath.get(pathIndex);
             int currentLocation = getBodyInfo(body).locationIndex;
-            if(!env.defs.neighbours.get(currentLocation).contains(nextLocation)){
+            if(!environment.defs.neighbours.get(currentLocation).contains(nextLocation)){
                 logger.debug(body.getId() + ": Invalid location. From: " + currentLocation + " to: " + nextLocation);
             }
             return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, nextLocation);
@@ -249,7 +246,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
 
 
     protected SpyVsSpyBodyInfo getBodyInfo(AgentBody body) {
-        return env.bodyInfos.get(body.getId());
+        return environment.bodyInfos.get(body.getId());
     }
 
     protected boolean canRemoveAllTraps(SpyVsSpyMapNode node, SpyVsSpyBodyInfo bodyInfo) {
@@ -263,7 +260,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
     }
 
     protected int getUsefulItemIndex(SpyVsSpyMapNode node, SpyVsSpyBodyInfo bodyInfo) {
-        for(int itemType = 0; itemType < env.defs.numItemTypes; itemType++){
+        for(int itemType = 0; itemType < environment.defs.numItemTypes; itemType++){
             if(node.items.contains(itemType) && !bodyInfo.itemsCarried.contains(itemType)){
                 return itemType;
             }
@@ -272,7 +269,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
     }
 
     protected int getTrapRemover(SpyVsSpyMapNode node) {
-        for(int trapType = 0; trapType < env.defs.numTrapTypes; trapType++){
+        for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
             if(node.numTrapRemovers[trapType] > 0){
                 return trapType;
             }
@@ -281,7 +278,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
     }
 
     protected int getUsefulTrapRemover(SpyVsSpyBodyInfo bodyInfo, SpyVsSpyMapNode node) {
-        for(int trapType = 0; trapType < env.defs.numTrapTypes; trapType++){
+        for(int trapType = 0; trapType < environment.defs.numTrapTypes; trapType++){
             if(node.numTrapRemovers[trapType] > 0 && bodyInfo.numTrapRemoversCarried[trapType] == 0){
                 return trapType;
             }
@@ -296,7 +293,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
    
 
     private boolean findPathToOponent(final AgentBody body) {
-        return findPath(body, env.bodyInfos.get(getOtherId(body)).locationIndex);
+        return findPath(body, environment.bodyInfos.get(getOtherId(body)).locationIndex);
     }
 
     protected boolean usePathFromFloydWarshall(AgentBody body, int targetNode) {

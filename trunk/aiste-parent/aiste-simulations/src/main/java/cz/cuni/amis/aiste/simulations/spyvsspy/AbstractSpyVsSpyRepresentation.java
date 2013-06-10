@@ -38,7 +38,7 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
     public AbstractSpyVsSpyRepresentation() {
     }
 
-    private boolean agentUnableToReachGoal(AgentBody body) {
+    protected boolean agentUnableToReachGoal(AgentBody body) {
         SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
         for(int itemType = 0; itemType < environment.defs.numItemTypes; itemType++){
             //If there is an item that I do not have and it is not "laying" somewhere, I am unable to reach the goal
