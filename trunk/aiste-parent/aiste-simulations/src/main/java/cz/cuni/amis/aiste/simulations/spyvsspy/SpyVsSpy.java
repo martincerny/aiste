@@ -16,12 +16,10 @@
  */
 package cz.cuni.amis.aiste.simulations.spyvsspy;
 
-import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
-import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.environment.IPlanningRepresentation;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
@@ -34,9 +32,9 @@ import cz.cuni.amis.experiments.impl.LoggingHeaders;
 import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
 import cz.cuni.amis.pathfinding.alg.astar.AStar;
 import cz.cuni.amis.pathfinding.alg.astar.AStarResult;
+import cz.cuni.amis.pathfinding.map.IPFKnownMap;
 import cz.cuni.amis.pathfinding.map.IPFMap;
 import cz.cuni.amis.utils.collections.ListConcatenation;
-import java.io.Serializable;
 import java.util.*;
 import org.apache.log4j.Logger;
 
@@ -113,6 +111,8 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         
         jShop2Representation = new SpyVsSpyJShop2Representation(this);
         registerRepresentation(jShop2Representation);
+        
+        registerRepresentation(new SpyVsSpyReactiveRepresentation(this));        
 
         
     }
@@ -159,7 +159,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             currentNode.items.add(itemIndex);
         }
         killedAgentInfo.itemsCarried.clear();
-        for (int trapRemoverIndex : killedAgentInfo.numTrapRemoversCarried) {
+        for (int trapRemoverIndex = 0; trapRemoverIndex < defs.numTrapTypes ; trapRemoverIndex++) {
             currentNode.numTrapRemovers[trapRemoverIndex] += killedAgentInfo.numTrapRemoversCarried[trapRemoverIndex];
             killedAgentInfo.numTrapRemoversCarried[trapRemoverIndex] = 0;
         }
@@ -605,7 +605,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
          */
         Map<Integer, List<Integer>> neighbours;
         
-        IPFMap<Integer> mapForPathFinding;
+        IPFKnownMap<Integer> mapForPathFinding;
 
         /**
         * "Original" for all the map nodes - every time the environment is reused,
@@ -628,7 +628,7 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
             this.nodesInStartingPosition = nodesInStartingPosition;
             this.neighbours = neighbours;
             
-            this.mapForPathFinding = new IPFMap<Integer>() {
+            this.mapForPathFinding = new IPFKnownMap<Integer>() {
                 @Override
                 public Collection<Integer> getNeighbors(Integer node) {
                     return defs.neighbours.get(node);
@@ -645,6 +645,13 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     //default cost is 1
                     return 1;
                 }
+
+                @Override
+                public Collection<Integer> getNodes() {
+                    return StaticDefs.this.neighbours.keySet();
+                }
+                
+                
             };
             
         }

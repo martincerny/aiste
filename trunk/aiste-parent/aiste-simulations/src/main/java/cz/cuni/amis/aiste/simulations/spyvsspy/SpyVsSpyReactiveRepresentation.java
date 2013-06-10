@@ -20,12 +20,18 @@ import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IEnvironmentSpecificRepresentation;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
-import cz.cuni.amis.pathfinding.alg.astar.AStar;
-import cz.cuni.amis.pathfinding.alg.astar.AStarResult;
+import cz.cuni.amis.pathfinding.alg.floydwarshall.FloydWarshall;
+import cz.cuni.amis.pathfinding.map.IPFGoal;
+import cz.cuni.amis.utils.heap.IHeap;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import org.apache.log4j.Logger;
 
 /**
@@ -38,7 +44,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
 
     private SpyVsSpy env;
     
-    AStar<Integer> astar;
+    FloydWarshall<Integer> floydWarshall;
     
     /**
      * Last path returned from AStar, including the start and final location
@@ -50,7 +56,7 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
 
     public SpyVsSpyReactiveRepresentation(SpyVsSpy env) {
         this.env = env;
-        astar =  new AStar<Integer>(env.defs.mapForPathFinding);        
+        floydWarshall = new FloydWarshall<Integer>(env.defs.mapForPathFinding);
     }
 
     @Override
@@ -75,12 +81,13 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
             }
         }
         
-        SpyVsSpyMapNode node = env.nodes.get(bodyInfo.locationIndex);
-        boolean nodeSecure = node.traps.isEmpty();
+        SpyVsSpyMapNode currentNode = env.nodes.get(bodyInfo.locationIndex);
+        boolean nodeSecure = currentNode.traps.isEmpty();
         
-        int usefulItemIndex = getUsefulItemIndex(node, bodyInfo);
-        int trapRemoverIndex = getTrapRemover(node);        
-        boolean canRemoveAllTraps = canRemoveAllTraps(node, bodyInfo);
+        int usefulItemIndex = getUsefulItemIndex(currentNode, bodyInfo);
+        int trapRemoverIndex = getTrapRemover(currentNode);        
+        int usefulTrapRemoverIndex = getUsefulTrapRemover(bodyInfo, currentNode);        
+        boolean canRemoveAllTraps = canRemoveAllTraps(currentNode, bodyInfo);
         
         boolean canWin = false;
         
@@ -89,35 +96,116 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
          */
         SpyVsSpyAction standardReactiveLayerAction = SpyVsSpyControllerHelper.evaluateReactiveLayer(env, body);
         if(standardReactiveLayerAction != null){
+            logger.debug(body.getId() + ": Action from reactive layer");
             return standardReactiveLayerAction;
         } else if (hasAllItems){
+            logger.debug(body.getId() + ": Has all items.");
             int destination = env.defs.destination;
             if(!lastPathApplicable(body,destination)){
                 findPath(body, destination);
             }
             return followLastPathFound(body);            
         } else if(bodyInfo.numWeapons > 0 && !canWin && findPathToOponent(body)) {
+            logger.debug(body.getId() + ": Cannot win but can hunt enemy");
             return followLastPathFound(body);
         } else if(nodeSecure && usefulItemIndex != -1){
+            logger.debug(body.getId() + ": Useful unguarded item");
             return new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_ITEM, usefulItemIndex);
         } else if(nodeSecure && trapRemoverIndex != -1){
+            logger.debug(body.getId() + ": Unguarded trap remover");
             return new SpyVsSpyAction(SpyVsSpyAction.ActionType.PICKUP_TRAP_REMOVER, trapRemoverIndex);     
-        } else if(bodyInfo.numWeapons == 0 && findPathToAvailableWeapon(body)){
-            return followLastPathFound(body);
-        } else if(usefulItemIndex != -1 && canRemoveAllTraps){
-            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, node.traps.iterator().next() /* The first trap*/);
-        } else if(findPathToAvailableUsefulItem(body)){
-            return followLastPathFound(body);
-        } else if(canRemoveAllTraps && trapRemoverIndex != -1){
-            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, node.traps.iterator().next() /* The first trap*/);
-        } else if(findPathToAvailableUsefulTrapRemover(body)){
-            return followLastPathFound(body);
-        } else if(findPathToAvailableTrapRemover(body)){
-            return followLastPathFound(body);
-        } else {
-            //random movement
-            int randomNode = RandomUtils.randomElementLinearAccess(env.defs.neighbours.get(node.index), rand);
-            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, randomNode);
+        } else if (bodyInfo.numWeapons == 0 && currentNode.numWeapons > 0 && canRemoveAllTraps) {
+            logger.debug(body.getId() + ": Removing traps for weapon");
+            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, currentNode.traps.iterator().next() /* The first trap*/);
+        } else  {
+            
+            /**
+             * For the rest of deliberation I need to find nearest locations of various kinds.
+             * To save computing time, they are all searched for simultaneously and the decisions
+             * are made afterwards.
+             */
+           
+            int nearestAvailableWeaponLocation = -1;
+            int nearestAvailableWeaponLocationDistance = Integer.MAX_VALUE;
+
+            int nearestAvailableUsefulItemLocation = -1;
+            int nearestAvailableUsefulItemLocationDistance = Integer.MAX_VALUE;
+            
+            int nearestAvailableUsefulTrapRemoverLocation = -1;
+            int nearestAvailableUsefulTrapRemoverDistance = Integer.MAX_VALUE;
+
+            int nearestAvailableTrapRemoverLocation = -1;
+            int nearestAvailableTrapRemoverLocationDistance = Integer.MAX_VALUE;
+
+            for(SpyVsSpyMapNode inspectedNode : env.nodes){
+
+                if(!canRemoveAllTraps(inspectedNode, bodyInfo)){
+                    continue;
+                }
+                
+                int nodeDistance = floydWarshall.getPathCost(bodyInfo.locationIndex, inspectedNode.index);
+                
+                //Available trap removers and useful trap removers (exploiting the fact, that they are always a subset)
+                if(nodeDistance < nearestAvailableTrapRemoverLocationDistance){                
+                    for(int trapType = 0; trapType < env.defs.numTrapTypes; trapType++){
+                        if(inspectedNode.numTrapRemovers[trapType] > 0){
+                            nearestAvailableTrapRemoverLocationDistance = nodeDistance;
+                            nearestAvailableTrapRemoverLocation = inspectedNode.index;
+                            if(bodyInfo.numTrapRemoversCarried[trapType] == 0 && nodeDistance < nearestAvailableUsefulTrapRemoverDistance){
+                                nearestAvailableUsefulTrapRemoverDistance = nodeDistance;
+                                nearestAvailableUsefulTrapRemoverLocation = inspectedNode.index;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if(nodeDistance < nearestAvailableWeaponLocationDistance && inspectedNode.numWeapons > 0){
+                    nearestAvailableWeaponLocationDistance = nodeDistance;
+                    nearestAvailableWeaponLocation = inspectedNode.index;
+                }
+                
+                if(nodeDistance < nearestAvailableUsefulItemLocationDistance && getUsefulItemIndex(inspectedNode, bodyInfo) != -1){
+                    nearestAvailableUsefulItemLocationDistance = nodeDistance;
+                    nearestAvailableUsefulItemLocation = inspectedNode.index;
+                }
+                
+            }
+            
+            if (bodyInfo.numWeapons == 0 && nearestAvailableWeaponLocation != -1) {
+                logger.debug(body.getId() + ": Moving to available weapon at loc " + nearestAvailableWeaponLocation);
+                usePathFromFloydWarshall(body, nearestAvailableWeaponLocation);
+                return followLastPathFound(body);
+            } else if (usefulItemIndex != -1 && canRemoveAllTraps) {
+                logger.debug(body.getId() + ": Removing traps for useful item");
+                return new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, currentNode.traps.iterator().next() /* The first trap*/);
+            } else if (nearestAvailableUsefulItemLocation != -1) {
+                logger.debug(body.getId() + ": Moving to available useful item at loc " + nearestAvailableUsefulItemLocation);
+                usePathFromFloydWarshall(body, nearestAvailableUsefulItemLocation);                
+                return followLastPathFound(body);
+            } else if (canRemoveAllTraps && usefulTrapRemoverIndex != -1) {
+                logger.debug(body.getId() + ": Removing traps for a useful trap remover");
+                return new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, currentNode.traps.iterator().next() /* The first trap*/);
+            } else if (nearestAvailableUsefulTrapRemoverLocation != -1) {
+                logger.debug(body.getId() + ": Moving to available useful trap remover at loc " + nearestAvailableUsefulTrapRemoverLocation);                
+                usePathFromFloydWarshall(body, nearestAvailableUsefulTrapRemoverLocation);
+                return followLastPathFound(body);
+            } else if(bodyInfo.numWeapons > 0 && findPathToOponent(body)) {
+                logger.debug(body.getId() + ": Nothing better to do, hunting enemy");
+                return followLastPathFound(body);
+            } else if (canRemoveAllTraps && trapRemoverIndex != -1) {
+                logger.debug(body.getId() + ": Removing traps for a trap remover");
+                return new SpyVsSpyAction(SpyVsSpyAction.ActionType.REMOVE_TRAP, currentNode.traps.iterator().next() /* The first trap*/);
+            } else if (nearestAvailableTrapRemoverLocation != -1) {
+                logger.debug(body.getId() + ": Moving to available trap remover at loc " + nearestAvailableTrapRemoverLocation);
+                usePathFromFloydWarshall(body, nearestAvailableTrapRemoverLocation);                
+                return followLastPathFound(body);
+            } else {
+                //random movement
+                logger.debug(body.getId() + ": Random movement");
+                int randomNode = RandomUtils.randomElementLinearAccess(env.defs.neighbours.get(currentNode.index), rand);
+                return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, randomNode);
+            }
         }
         
         
@@ -141,25 +229,22 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
         List<Integer> thePath = lastPathFound.get(body);
         Integer pathIndex = lastPathFoundIndex.get(body);
         if(thePath == null || pathIndex >= thePath.size() - 1){
-            logger.debug("Trying to follow finished or invalid path");
+            logger.debug(body.getId() + ": Trying to follow finished or invalid path");
             return null;
         } else {
             pathIndex++;
             lastPathFoundIndex.put(body, pathIndex);
-            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, thePath.get(pathIndex));
+            Integer nextLocation = thePath.get(pathIndex);
+            int currentLocation = getBodyInfo(body).locationIndex;
+            if(!env.defs.neighbours.get(currentLocation).contains(nextLocation)){
+                logger.debug(body.getId() + ": Invalid location. From: " + currentLocation + " to: " + nextLocation);
+            }
+            return new SpyVsSpyAction(SpyVsSpyAction.ActionType.MOVE, nextLocation);
         }
     }
     
-    private void findPath(AgentBody body,int targetNode){
-        AStarResult<Integer> result = astar.findPath(new SpyVsSpyAStarGoal(body.getId(), targetNode, env));
-        if(result.isSuccess()){
-            lastPathFound.put(body,  result.getPath());
-            lastPathFoundIndex.put(body, 0);
-        } else {
-            lastPathFound.remove(body);
-            lastPathFoundIndex.remove(body);
-        }
-
+    private boolean findPath(AgentBody body,int targetNode){
+        return usePathFromFloydWarshall(body, targetNode);
     }
 
 
@@ -195,31 +280,81 @@ public class SpyVsSpyReactiveRepresentation implements IEnvironmentSpecificRepre
         return -1;
     }
 
+    protected int getUsefulTrapRemover(SpyVsSpyBodyInfo bodyInfo, SpyVsSpyMapNode node) {
+        for(int trapType = 0; trapType < env.defs.numTrapTypes; trapType++){
+            if(node.numTrapRemovers[trapType] > 0 && bodyInfo.numTrapRemoversCarried[trapType] == 0){
+                return trapType;
+            }
+        }
+        return -1;
+    }
+
     protected int getOtherId(AgentBody body) {
         return 1 - body.getId();
     }
+    
+   
 
-    private boolean findPathToAvailableTrapRemover(AgentBody body) {
-        return false;
+    private boolean findPathToOponent(final AgentBody body) {
+        return findPath(body, env.bodyInfos.get(getOtherId(body)).locationIndex);
     }
 
-    private boolean findPathToAvailableUsefulTrapRemover(AgentBody body) {
-        return false;
+    protected boolean usePathFromFloydWarshall(AgentBody body, int targetNode) {
+//        if(lastPathApplicable(body, targetNode)){
+//            return true;
+//        }
+        
+        int startNode = getBodyInfo(body).locationIndex;
+        int pathCost = floydWarshall.getPathCost(startNode, targetNode);
+        if(pathCost < Integer.MAX_VALUE){
+            List<Integer> path = new ArrayList<Integer>(pathCost + 2);
+            path.add(startNode);
+            path.addAll(floydWarshall.getPath(startNode, targetNode));
+            if(targetNode != startNode){
+                path.add(targetNode);
+            }
+            lastPathFound.put(body,  path);
+            lastPathFoundIndex.put(body, 0);
+            //logger.debug("Path from " + startNode + " to " + targetNode + ": " + path);
+            return true;
+        } else {
+            lastPathFound.remove(body);
+            lastPathFoundIndex.remove(body);
+            return false;
+        }
     }
 
-    private boolean findPathToAvailableUsefulItem(AgentBody body) {
-        return false;
+    private abstract class ABreadthFirstSearchAStarGoal implements IPFGoal<Integer>{
+
+        int start;
+
+        public ABreadthFirstSearchAStarGoal(int start) {
+            this.start = start;
+        }
+        
+        @Override
+        public Integer getStart() {
+            return start;
+        }
+
+        @Override
+        public int getEstimatedCostToGoal(Integer node) {
+            if(isGoalReached(node)){
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+
+        @Override
+        public void setOpenList(IHeap<Integer> openList) {
+        }
+
+        @Override
+        public void setCloseList(Set<Integer> closedList) {
+        }
+        
     }
-
-    private boolean findPathToAvailableWeapon(AgentBody body) {
-        return false;
-    }
-
-    private boolean findPathToOponent(AgentBody body) {
-        return false;
-    }
-
-
     
 
 }

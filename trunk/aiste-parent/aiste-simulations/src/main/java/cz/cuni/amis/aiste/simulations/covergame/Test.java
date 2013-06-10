@@ -78,9 +78,9 @@ public class Test {
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv)
                 });
-        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors, 10000000);
+        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 10000000);
 
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(1000));
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);
         

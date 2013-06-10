@@ -21,6 +21,7 @@ import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController;
 import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
+import cz.cuni.amis.aiste.environment.impl.EnvironmentSpecificAgentController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
@@ -114,12 +115,14 @@ public class Test {
 
         
         List<IAgentController> controllers = new ArrayList<IAgentController>();
+        controllers.add(new EnvironmentSpecificAgentController());
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(1)));            
         controllers.add(new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN));
-        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1));            
+/*        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1));            
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 2));            
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(2)));            
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1, new JShop2Controller.StepsSinceFirstPlanInterruptTest(0)));            
+        * */
         
         List<IEnvironment> environments = new ArrayList<IEnvironment>();
 
@@ -184,11 +187,13 @@ public class Test {
                 continue;
             }
         }
-        
-        
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("JSHOPTest", environments, controllers, 100000, rand);
 
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(400));
+        List<Long> stepDelays = Arrays.asList(new Long[]{100L, 400L, 1000L});        
+        
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ReactiveTest", environments, controllers, stepDelays, 100);
+
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
+        experimentRunner.setRandomSeed(rand.nextLong());        
         ExperimentUtils.runSuiteSingleThreaded(suite, experimentRunner);
 
 

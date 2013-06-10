@@ -37,11 +37,14 @@ public class AisteExperiment extends AbstractExperiment {
     IEnvironment environment;
     
     List<IAgentExecutionDescriptor> descriptors;
+    
+    long stepDelay;
 
-    public AisteExperiment(IEnvironment environment, List<IAgentExecutionDescriptor> descriptors, long timeout) {
+    public AisteExperiment(IEnvironment environment, List<IAgentExecutionDescriptor> descriptors, long stepDelay, long timeout) {
         super(timeout);
         this.environment = environment;
         this.descriptors = descriptors;
+        this.stepDelay = stepDelay;
     }
 
     public List<IAgentExecutionDescriptor> getDescriptors() {
@@ -51,17 +54,21 @@ public class AisteExperiment extends AbstractExperiment {
     public IEnvironment getEnvironment() {
         return environment;
     }
+
+    public long getStepDelay() {
+        return stepDelay;
+    }
     
     
     
     @Override
     public ILoggingHeaders getExperimentParametersHeaders() {
-        return LoggingHeadersConcatenation.concatenate(new LoggingHeaders("envClass", "agentCount"), environment.getEnvironmentParametersHeaders());
+        return LoggingHeadersConcatenation.concatenate(new LoggingHeaders("envClass", "agentCount", "stepDelay"), environment.getEnvironmentParametersHeaders());
     }
 
     @Override
     public List<Object> getExperimentParameters() {
-        return new ListConcatenation<Object>(Arrays.asList(new Object[] {environment.getClass().getSimpleName(), descriptors.size()}), environment.getEnvironmentParametersValues());
+        return new ListConcatenation<Object>(Arrays.asList(new Object[] {environment.getClass().getSimpleName(), descriptors.size(), stepDelay}), environment.getEnvironmentParametersValues());
     }
 
     @Override

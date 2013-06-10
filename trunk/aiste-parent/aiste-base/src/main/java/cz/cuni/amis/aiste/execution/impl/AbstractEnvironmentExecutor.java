@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.execution.impl;
 
 import cz.cuni.amis.aiste.AisteException;
+import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.SimulationException;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.AgentBody;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import org.apache.log4j.Logger;
@@ -40,7 +42,7 @@ import org.apache.log4j.Logger;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecutor{
+public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecutor, IRandomizable{
     private final Logger logger = Logger.getLogger(AbstractEnvironmentExecutor.class);
     
     private IEnvironment environment = null;
@@ -49,8 +51,15 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     private List<IAgentController> activeControllers = new CopyOnWriteArrayList<IAgentController>();
     private long stepDelay;
 
+    protected Random rand = new Random();
+    
     public AbstractEnvironmentExecutor(long stepDelay) {
         this.stepDelay = stepDelay;
+    }
+
+    @Override
+    public void setRandomSeed(long seed) {
+        rand = new Random(seed);
     }
 
     
@@ -65,6 +74,16 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
             throw new AisteException("Environment may be set only once");
         }
         this.environment = environment;
+
+        if(environment instanceof IRandomizable){
+            ((IRandomizable)environment).setRandomSeed(rand.nextLong());
+        }        
+        for(Object representation : environment.getRepresentations()){
+            if(representation instanceof IRandomizable){
+                ((IRandomizable)representation).setRandomSeed(rand.nextLong());                
+            }
+        }
+        
         environment.init();
     }
 
@@ -98,6 +117,9 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     protected void startSimulation(){
         for(IAgentController controller :   activeControllers){
             try {
+                if(controller instanceof IRandomizable){
+                    ((IRandomizable)controller).setRandomSeed(rand.nextLong());                    
+                }
                 controller.start();
             } catch (Exception ex){
                 logger.info("Controller " + controller + " has raised exception during start(). It has been stopped.", ex);
