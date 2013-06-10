@@ -116,7 +116,7 @@ public class Test {
         
         List<IAgentController> controllers = new ArrayList<IAgentController>();
         controllers.add(new EnvironmentSpecificAgentController());
-        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(1)));            
+//        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(1)));            
         controllers.add(new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN));
 /*        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1));            
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 2));            
@@ -135,7 +135,7 @@ public class Test {
 
         
         Random rand = new Random(3865983846L);
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 30; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
                 
@@ -152,7 +152,7 @@ public class Test {
                 continue;
             }
         }
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 30; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
                 
@@ -170,7 +170,7 @@ public class Test {
             }
         }
         
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 30; i++) {
             SpyVsSpyEnvironmentDefinition envDef;
             try {
                 
@@ -190,7 +190,7 @@ public class Test {
 
         List<Long> stepDelays = Arrays.asList(new Long[]{100L, 400L, 1000L});        
         
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ReactiveTest", environments, controllers, stepDelays, 100);
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ReactiveTest2", environments, controllers, stepDelays, 100);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(rand.nextLong());        
