@@ -59,6 +59,11 @@ public class CGPlanningGoal extends AbstractPlanningGoal {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "CGPlanningGoal: " + type + '}';
+    }
+
 
     
     

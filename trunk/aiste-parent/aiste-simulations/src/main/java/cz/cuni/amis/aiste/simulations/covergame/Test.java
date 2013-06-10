@@ -72,14 +72,15 @@ public class Test {
         CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
+        cgEnv.setRandomSeed(54842L);        
 
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv)
                 });
-        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors, 100000);
+        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors, 10000000);
 
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(400));
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(1000));
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);
         

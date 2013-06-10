@@ -469,8 +469,12 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
          * Amount of health given for each round the agent was not hit.
          */
         int healPerRound = 10;
+
+        //TODO: Delay do healovani
         
         int shootDamage = 45;
+        
+        
         
         /**
          * The actual damage is chosen uniformly between rangeDamage - rangeDamageVariability and rangeDamage + rangeDamageVariability
