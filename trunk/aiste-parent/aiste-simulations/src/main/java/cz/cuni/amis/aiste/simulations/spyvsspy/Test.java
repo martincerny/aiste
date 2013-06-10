@@ -64,7 +64,7 @@ public class Test {
             info = PlannersPackUtils.getMetricFF();
         }
 
-        File plannersDirectory = new File("");
+        File plannersDirectory = new File(".");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
         plannerManager.extractAndPreparePlanner(plannersDirectory, info);
 
