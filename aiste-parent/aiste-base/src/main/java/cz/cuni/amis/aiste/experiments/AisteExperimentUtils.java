@@ -18,7 +18,6 @@
 package cz.cuni.amis.aiste.experiments;
 
 import cz.cuni.amis.aiste.AisteException;
-import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
@@ -26,15 +25,19 @@ import cz.cuni.amis.experiments.IExperimentSuite;
 import cz.cuni.amis.experiments.impl.ExperimentSuite;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 /**
  *
  * @author Martin Cerny
  */
 public class AisteExperimentUtils {
-    public static IExperimentSuite<AisteExperiment> createAllPossiblePairwiseCombinationsSuite(String name, List<? extends IEnvironment> environments, List<? extends IAgentController> controllers, long timeout, Random rand){
+    public static IExperimentSuite<AisteExperiment> createAllPossiblePairwiseCombinationsSuite(String name, List<? extends IEnvironment> environments, List<? extends IAgentController> controllers, long stepDelay, long stepsToTimeout){
+        return createAllPossiblePairwiseCombinationsSuite(name, environments, controllers, Collections.singletonList(stepDelay), stepsToTimeout);
+    }
+    
+    public static IExperimentSuite<AisteExperiment> createAllPossiblePairwiseCombinationsSuite(String name, List<? extends IEnvironment> environments, List<? extends IAgentController> controllers, List<Long> stepDelays, long stepsToTimeout){
         List<AisteExperiment> experiments = new ArrayList<AisteExperiment>();        
         for(IEnvironment env : environments){
             if(env.getInstantiationDescriptors().size() != 1){
@@ -42,9 +45,6 @@ public class AisteExperimentUtils {
             }
             IAgentType agentType = (IAgentType)env.getInstantiationDescriptors().keySet().iterator().next();
             
-            if(env instanceof IRandomizable){
-                ((IRandomizable)env).setRandomSeed(rand.nextLong());
-            }            
             
             for(IAgentController controller1: controllers){
                 for(Object representation1 : env.getRepresentations()){
@@ -64,8 +64,11 @@ public class AisteExperimentUtils {
                                        new AgentExecutionDescriptor(agentType, controller1, (IEnvironmentRepresentation)representation1),
                                     });
                                     
-                                    experiments.add(new AisteExperiment(env, descriptors, timeout));
-                                    experiments.add(new AisteExperiment(env, descriptors2, timeout));
+                                    for(long stepDelay : stepDelays){
+                                        long timeout = (stepsToTimeout + 3 /* Just a little reserve for startup*/) * stepDelay;
+                                        experiments.add(new AisteExperiment(env, descriptors, stepDelay, timeout));
+                                        experiments.add(new AisteExperiment(env, descriptors2, stepDelay, timeout));
+                                    }
                                 }
                             }
                         }                

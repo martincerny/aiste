@@ -17,13 +17,14 @@
 
 package cz.cuni.amis.aiste.experiments;
 
-import cz.cuni.amis.aiste.environment.IAction;
+import cz.cuni.amis.aiste.IRandomizable;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
+import cz.cuni.amis.aiste.execution.IEnvironmentExecutorFactory;
 import cz.cuni.amis.experiments.*;
 import cz.cuni.amis.experiments.impl.AbstractExperimentRunner;
 import cz.cuni.amis.experiments.impl.AbstractLogDataProvider;
@@ -37,33 +38,45 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  *
  * @author Martin Cerny
  */
-public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperiment> {
-    private IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory;
+public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperiment> implements IRandomizable{
+    private IEnvironmentExecutorFactory environmentExecutorFactory;
     private long maxSteps;
+    private Random rand = new Random();
 
     private IEnvironmentExecutor environmentExecutor;
     private IEnvironmentExecutionResult lastExecutionResult;
     private Map<Class, RankLoggingProvider> rankLoggingProviders;
 
-    public AisteExperimentRunner(IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory) {
+    public AisteExperimentRunner(IEnvironmentExecutorFactory environmentExecutorFactory) {
         this(environmentExecutorFactory, 0);
     }
 
-    public AisteExperimentRunner(IObjectFactory<IEnvironmentExecutor> environmentExecutorFactory, long maxSteps) {
+    public AisteExperimentRunner(IEnvironmentExecutorFactory environmentExecutorFactory, long maxSteps) {
         this.environmentExecutorFactory = environmentExecutorFactory;
         this.maxSteps = maxSteps;
         rankLoggingProviders = new HashMap<Class, RankLoggingProvider>();
     }
 
     @Override
+    public void setRandomSeed(long seed) {
+        rand = new Random(seed);
+    }
+    
+    
+
+    @Override
     protected void prepareExperiment(AisteExperiment experiment) {
         super.prepareExperiment(experiment);
-        environmentExecutor = environmentExecutorFactory.newObject();
+        environmentExecutor = environmentExecutorFactory.createExecutor(experiment);        
+        if(environmentExecutor instanceof IRandomizable){
+            ((IRandomizable)environmentExecutor).setRandomSeed(rand.nextLong());
+        }        
         environmentExecutor.setEnvironment(experiment.getEnvironment());
         for(IAgentExecutionDescriptor descriptor : experiment.getDescriptors()){
             environmentExecutor.addAgentController(descriptor);

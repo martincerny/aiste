@@ -14,24 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.execution.impl;
+package cz.cuni.amis.aiste.execution;
 
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.experiments.AisteExperiment;
-import cz.cuni.amis.utils.objectmanager.IObjectFactory;
 
 /**
  *
  * @author Martin Cerny
  */
-public class DefaultEnvironmentExecutorFactory implements IEnvironmentExecutorFactory {    
-
-    @Override
-    public IEnvironmentExecutor createExecutor(AisteExperiment experiment) {
-        return new DefaultEnvironmentExecutor(experiment.getStepDelay());
-    }
-    
-    
-    
+public interface IEnvironmentExecutorFactory {
+    IEnvironmentExecutor createExecutor(AisteExperiment experiment);
 }
