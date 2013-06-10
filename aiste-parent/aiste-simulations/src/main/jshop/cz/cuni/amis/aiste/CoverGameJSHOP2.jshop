@@ -11,14 +11,24 @@
             ;Move from navpoint to navpoint
             (:operator (!move ?body ?from ?to)
              (    (at ?body ?from)
-                  (adjacent ?from ?to) )
-             ((at ?body ?from) ) 
+                  (adjacent ?from ?to)
+                   )
+             ((at ?body ?from) 
+
+) 
              ((at ?body ?to))
              1
             )
 
             ;Important for translation into parallel plans
-            (:operator (!sync)
+            (:operator (!sync_start)
+                ()
+                ()
+                ()
+                0
+                )
+
+            (:operator (!sync_end)
                 ()
                 ()
                 ()
@@ -38,35 +48,40 @@ Direct   ( (at ?body ?from))
          ( (assign ?path (call find_path ?body ?from ?to ?constraint) ) 
                (call != ?path nil)
          )
-         ( (expand_move ?from ?path) )
+         ( (expand_move ?body ?from ?path) )
 )
 
-(:method (expand_move ?from ?path)
+(:method (expand_move ?body ?from ?path)
 Empty       ( (call = ?path nil) )
             ( () )
 Recursion   ( (assign ?head (call stdlib.head ?path) ) (assign ?tail (call stdlib.tail ?path) ) )
-            ( (!move ?from ?head) (expand_move ?head ?tail) )
+            ((!move ?body ?from ?head) (expand_move ?body ?head ?tail) )
 )
 
 (:method (take_cover ?body)
-    (:sort-by ?dist < ( (at ?body ?current_loc) (partial_cover_loc ?cover_loc) (distance ?current_loc ?cover_loc ?d)) ) 
-    ((move_directly ?body ?from ?to only_uncovered))
+InCover     ((partial_cover ?body))
+            ( () )
+FindCover   (:sort-by ?dist < ( (at ?body ?current_loc) (location ?cover_loc) (partial_cover_loc ?cover_loc) (distance ?current_loc ?cover_loc ?dist)) ) 
+            ((move_directly ?body ?current_loc ?cover_loc only_uncovered))
 )
 
 (:method (take_cover_all) 
-    ()
-    ( (take_cover body_0) (!sync))
+    ( () )
+    ( (take_cover body_0) (take_cover body_1) (!sync_start))
 )
 
 ;Domain axioms
-;"Type inheritance"
 (:- (partial_cover ?body) 
-    ( (at ?body ?loc) (forall (?o) (oponent ?o) (not (uncovered_by_oponent ?o ?loc) ) ) )
+    ( (at ?body ?loc) (partial_cover_loc ?loc) )
 )
-;(:- (body body_0) () ) 
-;(:- (body body_1) ()) 
-;(:- (oponent oponent_0) () ) 
-;(:- (oponent oponent_1) ()) 
+(:- (partial_cover_loc ?loc) 
+    ( (forall (?o) (oponent ?o) (not (uncovered_by_oponent ?o ?loc) ) ) )
+)
+
+(:- (body body_0) () ) 
+(:- (body body_1) ()) 
+(:- (oponent oponent_0) () ) 
+(:- (oponent oponent_1) ()) 
 
 )
 ;----------------------------------------------

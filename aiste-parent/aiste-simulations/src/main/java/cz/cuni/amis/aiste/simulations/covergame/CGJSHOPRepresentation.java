@@ -18,13 +18,14 @@ package cz.cuni.amis.aiste.simulations.covergame;
 
 import JSHOP2.TaskAtom;
 import JSHOP2.TaskList;
-import JSHOP2.TermList;
 import JSHOP2.State;
 import JSHOP2.Calculate;
 import java.util.ArrayList;
 import JSHOP2.JSHOP2;
 import JSHOP2.Predicate;
+import JSHOP2.TermList;
 import JSHOP2.TermNumber;
+import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.CoverGameJSHOP2;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IJShop2Problem;
@@ -37,6 +38,8 @@ import java.util.Map;
 import java.util.Queue;
 import org.apache.log4j.Logger;
 import static cz.cuni.amis.aiste.environment.impl.JShop2Utils.*;
+import cz.cuni.amis.aiste.environment.impl.SequencePlan;
+import java.util.List;
 
 /**
  *
@@ -53,15 +56,15 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
     Map<Loc, Integer> locationsToConstants;
     Map<Integer, Loc> constantsToLocations;
         
-    int bodyConstants[]; //= new int[] {CoverGameJSHOP2.CONST_BODY_0, CoverGameJSHOP2.CONST_BODY_1};
-    int oponentConstants[];// = new int[] {CoverGameJSHOP2.CONST_OPONENT_0, CoverGameJSHOP2.CONST_OPONENT_1};
+    int bodyConstants[] = new int[] {CoverGameJSHOP2.CONST_BODY_0, CoverGameJSHOP2.CONST_BODY_1};
+    int oponentConstants[] = new int[] {CoverGameJSHOP2.CONST_OPONENT_0, CoverGameJSHOP2.CONST_OPONENT_1};
     
     String[] additionalConstantNames;
     
     Map<AgentBody, JSHOP2> jshops = new HashMap<AgentBody, JSHOP2>();
             
     Map<AgentBody, java.util.List<Predicate> > staticDomainInfos = new HashMap<AgentBody, java.util.List<Predicate>>();
-     
+         
     
     public CGJSHOPRepresentation(CoverGame env) {
         super(env);
@@ -74,16 +77,16 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         
         locationsToConstants = new HashMap<Loc, Integer>();
         constantsToLocations = new HashMap<Integer, Loc>();
+    
         
-        
-        bodyConstants = new int[] {nextConstantIndex, nextConstantIndex + 1};
+/*        bodyConstants = new int[] {nextConstantIndex, nextConstantIndex + 1};
         oponentConstants = new int[] {nextConstantIndex + 2, nextConstantIndex + 3};
         additionalConstantNames[nextConstantIndex] = "body_0";
         additionalConstantNames[nextConstantIndex + 1] = "body_1";
         additionalConstantNames[nextConstantIndex + 2] = "oponent_0";
         additionalConstantNames[nextConstantIndex + 3] = "oponent_1";        
         nextConstantIndex += 4;
-        
+      */
         for(Loc location : env.defs.navGraph.keySet()){
             locationsToConstants.put(location,nextConstantIndex);
             constantsToLocations.put(nextConstantIndex, location);
@@ -94,13 +97,23 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         
     }
 
+    protected int constantToBodyId(int bodyConstant){
+        if(bodyConstant == bodyConstants[0]){
+            return 0;
+        } else if(bodyConstant == bodyConstants[1]){
+            return 1;
+        } else {
+            throw new AisteException("Parameter is not a body constant: " + bodyConstant);
+        }
+    }
+    
     protected int getMaxNumConstants(){
-        //TODO: count!
         return CoverGameJSHOP2.NUM_CONSTANTS + getNumAdditionalConstants();
     }
 
     protected int getNumAdditionalConstants() {
-        return 1000;
+        //TODO: count!
+        return 13000;
     }
     
     @Override
@@ -120,6 +133,7 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         //Adjacency
         for(Loc node : env.defs.navGraph.keySet()){            
             final Integer nodeConstantId = locationsToConstants.get(node);
+            staticDomainInfo.add(new Predicate(CoverGameJSHOP2.CONST_LOCATION, createTermList(jshop, nodeConstantId)));
             for(Loc otherNode : env.defs.navGraph.get(node)){
                 final Integer otherNodeConstantId = locationsToConstants.get(otherNode);
                 staticDomainInfo.add(new Predicate(CoverGameJSHOP2.CONST_ADJACENT, createTermList(jshop, nodeConstantId, otherNodeConstantId)));
@@ -196,6 +210,7 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         
         TaskList tasks;
         
+        //tasks = new TaskList(new TaskAtom(new Predicate(CoverGameJSHOP2.METHOD_TAKE_COVER, 0, createTermList(jshop, bodyConstants[0])), false, false));
         tasks = new TaskList(new TaskAtom(new Predicate(CoverGameJSHOP2.METHOD_TAKE_COVER_ALL, 0, TermList.NIL), false, false));
         
         return new JShop2Problem(additionalConstantNames, initialState, tasks);
@@ -204,7 +219,77 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
 
     @Override
     public IReactivePlan<? extends CGPairAction> translateAction(Queue<Predicate> actionsFromPlanner, AgentBody body) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        //eat sync actions at the beginning
+        while(!actionsFromPlanner.isEmpty() && (actionsFromPlanner.peek().getHead() == CoverGameJSHOP2.PRIMITIVE_SYNC_START || actionsFromPlanner.peek().getHead() == CoverGameJSHOP2.PRIMITIVE_SYNC_END)){
+            actionsFromPlanner.poll();
+        }
+
+        if(actionsFromPlanner.isEmpty()){
+            return new SequencePlan<CGPairAction>();
+        }
+        
+        List<List<CGAction>> actionsForBodies = new ArrayList<List<CGAction>>();
+        ArrayList<CGAction> actionsForBody1 = new ArrayList<CGAction>();
+        actionsForBodies.add(actionsForBody1);
+        ArrayList<CGAction> actionsForBody2 = new ArrayList<CGAction>();
+        actionsForBodies.add(actionsForBody2);
+        
+        while(!actionsFromPlanner.isEmpty() && actionsFromPlanner.peek().getHead() != CoverGameJSHOP2.PRIMITIVE_SYNC_START && actionsFromPlanner.peek().getHead() != CoverGameJSHOP2.PRIMITIVE_SYNC_END){
+            Predicate action = actionsFromPlanner.poll();
+            GroundActionInfo info = getGroundInfo(action);
+            switch(info.actionId){
+                case CoverGameJSHOP2.PRIMITIVE_MOVE : {
+                    Loc to = constantsToLocations.get(info.params.get(2));
+                    actionsForBodies.get(constantToBodyId(info.params.get(0))).add(new CGAction(CGAction.Action.MOVE, to));
+                    break;
+                }default :{
+                    throw new AisteException("Unsupported action: " + action.toString(jshops.get(body)));
+                }
+            }
+        }
+        
+        boolean syncStart;
+        
+        if(actionsFromPlanner.isEmpty()){
+            syncStart = true;
+        } else {
+            Predicate action = actionsFromPlanner.poll();
+            switch(action.getHead()){
+                case CoverGameJSHOP2.PRIMITIVE_SYNC_START : {
+                    syncStart = true;
+                    break;
+                }
+                case CoverGameJSHOP2.PRIMITIVE_SYNC_END : {
+                    syncStart = false;
+                    break;
+                }
+                default : {
+                    throw new AisteException("Unrecognized sync task: " + action.toString(jshops.get(body)));                    
+                }
+            }
+        }
+        
+        int pairPlanSize = Math.max(actionsForBodies.get(0).size(), actionsForBodies.get(1).size());
+            
+        List<CGPairAction> pairActions = new ArrayList<CGPairAction>(pairPlanSize);
+        
+        if(syncStart){
+            for(int i = 0; i < pairPlanSize; i++){
+                CGPairAction action;
+                if(i >= actionsForBody1.size()){
+                    action = new CGPairAction(CGAction.NO_OP_ACTION, actionsForBody2.get(i));
+                } else if (i >= actionsForBody2.size()){
+                    action = new CGPairAction(actionsForBody1.get(i), CGAction.NO_OP_ACTION);
+                } else {
+                    action = new CGPairAction(actionsForBody1.get(i), actionsForBody2.get(i));
+                }
+                pairActions.add(action);
+            }
+        } else {
+            throw new AisteException("Sync end not supported yet");
+        }
+        
+        return new SequencePlan<CGPairAction>(pairActions);
     }
     
     
