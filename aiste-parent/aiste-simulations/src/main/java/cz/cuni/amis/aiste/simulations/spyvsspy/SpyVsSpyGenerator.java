@@ -254,7 +254,7 @@ public class SpyVsSpyGenerator implements IRandomizable{
              * I create one instance to test (I will need to create a body and mess with it) and another identical to return, if the test is succesful
              */
             SpyVsSpyEnvironmentDefinition envDef = new SpyVsSpyEnvironmentDefinition(nodes, maxPlayers, startingLocations, neighbours, numTrapTypes, trapsCarriedCounts, numItemTypes, destination);
-            SpyVsSpy spyVsSpyToTest = new SpyVsSpy(envDef);
+            SpyVsSpy spyVsSpyToTest = new SpyVsSpy(envDef, 0/*For testing I can ignore weapons*/);
             
             
             if(plannerToTestDomain != null){

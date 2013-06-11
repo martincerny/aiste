@@ -94,13 +94,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
         agentsKilledThisRound = new HashSet<AgentBody>(original.agentsKilledThisRound);
     }
 
-    public SpyVsSpy(SpyVsSpyEnvironmentDefinition definition) {
+    public SpyVsSpy(SpyVsSpyEnvironmentDefinition definition, double attackSuccessProbability) {
         super(SpyVsSpyAction.class);
 
         int rewardDeath = -50;
         int rewardReachedGoal = 150;
         int rewardNothing = -1;
-        double attackSuccessProbability = 0.5;
 
         defs = new StaticDefs(definition.maxPlayers, definition.numTrapTypes, definition.trapCounts, definition.numItemTypes, rewardDeath, rewardReachedGoal, rewardNothing, attackSuccessProbability, definition.destination, definition.startingLocations, definition.nodes, definition.neighbours);
 

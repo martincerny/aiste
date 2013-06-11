@@ -57,22 +57,26 @@ public class Test {
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
 
-        ItSimplePlannerInformation info;
+        ItSimplePlannerInformation infos[];
         if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
-            info = PlannersPackUtils.getSGPlan6();
+             infos = new ItSimplePlannerInformation[] {
+                    PlannersPackUtils.getSGPlan6(),
+                    PlannersPackUtils.getBlackBox(),
+                    PlannersPackUtils.getMetricFF(),
+                };
         } else {
-            info = PlannersPackUtils.getMetricFF();
+             infos = new ItSimplePlannerInformation[] {
+                PlannersPackUtils.getMetricFF(),
+                PlannersPackUtils.getBlackBox()
+             };
         }
 
         File plannersDirectory = new File(".");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
-        plannerManager.extractAndPreparePlanner(plannersDirectory, info);
+        for(ItSimplePlannerInformation info : infos){
+            plannerManager.extractAndPreparePlanner(plannersDirectory, info);
+        }
 
-        IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info, plannersDirectory));
-
-        ValValidator.extractAndPrepareValidator(plannersDirectory);
-        //       IValidator validator = new ValValidator(plannersDirectory);
-        IValidator validator = null;
 
 
 
@@ -116,8 +120,13 @@ public class Test {
         
         List<IAgentController> controllers = new ArrayList<IAgentController>();
         controllers.add(new EnvironmentSpecificAgentController());
-//        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(1)));            
-        controllers.add(new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN));
+        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(1)));            
+        
+        for(ItSimplePlannerInformation plannerInfo : infos){
+            IAsyncPlanner pl = new ExternalPlanner(new ItSimplePlannerExecutor(plannerInfo, plannersDirectory));
+            controllers.add(new Planning4JController(pl, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN));
+        }
+        //controllers.add(new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN));
 /*        controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 1));            
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 2));            
         controllers.add(new JShop2Controller(AbstractPlanningController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN, 0, new JShop2Controller.StepsSinceFirstPlanInterruptTest(2)));            
@@ -133,64 +142,67 @@ public class Test {
                 plannerToTestDomain = new ExternalPlanner( new ItSimplePlannerExecutor(plannerToTestInfo, plannerBinariesDirectory));;
         }
 
+        double[] attackSuccessProbabilities = {0, 0.1,0.3,0.5};
         
-        Random rand = new Random(3865983846L);
-        for (int i = 0; i < 30; i++) {
-            SpyVsSpyEnvironmentDefinition envDef;
-            try {
-                
-                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
-                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 15, 3, 3, 2, 0.3, 5, plannerToTestDomain);
-                long generatorSeed = rand.nextLong();
-                System.out.println("Seed:" + generatorSeed);
-                generator.setRandomSeed(generatorSeed);
+        Random rand = new Random(969813546L);
+        for(double attackSuccessProbability : attackSuccessProbabilities){
+            for (int i = 0; i < 30; i++) {
+                SpyVsSpyEnvironmentDefinition envDef;
+                try {
 
-                envDef = generator.generateEnvironment();
-                environments.add(new SpyVsSpy(envDef));
-            } catch (AisteException ex) {
-                System.out.println("Generator failnul. i:" + i);
-                continue;
+                    //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                    SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 15, 3, 3, 2, 0.3, 5, plannerToTestDomain);
+                    long generatorSeed = rand.nextLong();
+                    System.out.println("Seed:" + generatorSeed);
+                    generator.setRandomSeed(generatorSeed);
+
+                    envDef = generator.generateEnvironment();
+                    environments.add(new SpyVsSpy(envDef, attackSuccessProbability));
+                } catch (AisteException ex) {
+                    System.out.println("Generator failnul. i:" + i);
+                    continue;
+                }
+            }
+            for (int i = 0; i < 30; i++) {
+                SpyVsSpyEnvironmentDefinition envDef;
+                try {
+
+                    //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                    SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30, 4, 4, 2, 0.5, 7, plannerToTestDomain);
+                    long generatorSeed = rand.nextLong();
+                    System.out.println("Seed:" + generatorSeed);
+                    generator.setRandomSeed(generatorSeed);
+
+                    envDef = generator.generateEnvironment();
+                    environments.add(new SpyVsSpy(envDef, attackSuccessProbability));
+                } catch (AisteException ex) {
+                    System.out.println("Generator failnul. i:" + i);
+                    continue;
+                }
+            }
+
+            for (int i = 0; i < 30; i++) {
+                SpyVsSpyEnvironmentDefinition envDef;
+                try {
+
+                    //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
+                    SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 70, 5, 5, 2, 0.3, 10, plannerToTestDomain);
+                    long generatorSeed = rand.nextLong();
+                    System.out.println("Seed:" + generatorSeed);
+                    generator.setRandomSeed(generatorSeed);
+
+                    envDef = generator.generateEnvironment();
+                    environments.add(new SpyVsSpy(envDef, attackSuccessProbability));
+                } catch (AisteException ex) {
+                    System.out.println("Generator failnul. i:" + i);
+                    continue;
+                }
             }
         }
-        for (int i = 0; i < 30; i++) {
-            SpyVsSpyEnvironmentDefinition envDef;
-            try {
-                
-                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
-                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 30 , 4, 4, 2, 0.5, 7, plannerToTestDomain);
-                long generatorSeed = rand.nextLong();
-                System.out.println("Seed:" + generatorSeed);
-                generator.setRandomSeed(generatorSeed);
 
-                envDef = generator.generateEnvironment();
-                environments.add(new SpyVsSpy(envDef));
-            } catch (AisteException ex) {
-                System.out.println("Generator failnul. i:" + i);
-                continue;
-            }
-        }
+        List<Long> stepDelays = Arrays.asList(new Long[]{50L, 100L, 500L, 1000L});        
         
-        for (int i = 0; i < 30; i++) {
-            SpyVsSpyEnvironmentDefinition envDef;
-            try {
-                
-                //int maxPlayers, int numNodes, double meanNodeDegree, int numItemTypes, int numTrapTypes, double itemTrappedProbability, int numWeapons,
-                SpyVsSpyGenerator generator = new SpyVsSpyGenerator(2, 70, 5, 5, 2, 0.3, 10, plannerToTestDomain);
-                long generatorSeed = rand.nextLong();
-                System.out.println("Seed:" + generatorSeed);
-                generator.setRandomSeed(generatorSeed);
-
-                envDef = generator.generateEnvironment();
-                environments.add(new SpyVsSpy(envDef));
-            } catch (AisteException ex) {
-                System.out.println("Generator failnul. i:" + i);
-                continue;
-            }
-        }
-
-        List<Long> stepDelays = Arrays.asList(new Long[]{100L, 400L, 1000L});        
-        
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ReactiveTest2", environments, controllers, stepDelays, 100);
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ComplexPreliminary", environments, controllers, stepDelays, 100);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(rand.nextLong());        
