@@ -53,6 +53,13 @@ public class EmptyReactivePlan<ACTION extends IAction> implements IReactivePlan<
     public IReactivePlan<ACTION> cloneForSimulation(ISimulableEnvironment<ACTION> environmentCopy) {
         return this;
     }
+
+    @Override
+    public boolean hasActions() {
+        return false;
+    }
+    
+    
     
     
 }

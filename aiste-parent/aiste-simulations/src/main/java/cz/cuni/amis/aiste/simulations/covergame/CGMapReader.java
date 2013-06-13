@@ -95,7 +95,7 @@ public class CGMapReader {
                 if(defs.squares[x][y] == null){
                     continue;
                 }
-                if(defs.squares[x][y].horizontalCover){
+                if(defs.squares[x][y].verticalCover){
                     if(x > 0 && defs.squares[x - 1][y] != null){
                         navPoints.add(new Loc(x - 1, y));
                     }
@@ -103,7 +103,7 @@ public class CGMapReader {
                         navPoints.add(new Loc(x + 1, y));
                     }
                 }
-                if(defs.squares[x][y].verticalCover){
+                if(defs.squares[x][y].horizontalCover){
                     if(y > 0 && defs.squares[x][y - 1] != null){
                         navPoints.add(new Loc(x, y - 1));
                     }

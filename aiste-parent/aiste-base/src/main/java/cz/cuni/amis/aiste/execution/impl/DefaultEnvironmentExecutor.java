@@ -70,6 +70,9 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
     public IEnvironmentExecutionResult executeEnvironment(long maxSteps) {
         environmentStoppedLatch = new CountDownLatch(1);
         startSimulation();
+        if(environmentStoppedLatch.getCount() <= 0){
+            return gatherExecutionResult();
+        }
         environmentStepTimer.scheduleAtFixedRate(new EnvironmentStepTask(maxSteps), 0, getStepDelay());
         try {
             environmentStoppedLatch.await();

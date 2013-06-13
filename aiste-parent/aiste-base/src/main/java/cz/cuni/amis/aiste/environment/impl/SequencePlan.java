@@ -69,6 +69,13 @@ public class SequencePlan<ACTION extends IAction> implements IReactivePlan<ACTIO
     }
 
     @Override
+    public boolean hasActions() {
+        return !getStatus().isFinished();
+    }
+    
+    
+
+    @Override
     public IReactivePlan<ACTION> cloneForSimulation(ISimulableEnvironment<ACTION> environmentCopy) {
         return new SequencePlan<ACTION>(actions.subList(currentIndex, actions.size()));
     }

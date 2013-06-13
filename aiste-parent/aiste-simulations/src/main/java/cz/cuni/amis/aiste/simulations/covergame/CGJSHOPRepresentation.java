@@ -39,6 +39,7 @@ import java.util.Queue;
 import org.apache.log4j.Logger;
 import static cz.cuni.amis.aiste.environment.impl.JShop2Utils.*;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
+import cz.cuni.amis.aiste.simulations.covergame.CoverGame.OpponentData;
 import java.util.List;
 
 /**
@@ -186,8 +187,8 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         
         CoverGame.CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
 
-        int ids[] = getOponentIds(body.getId());
-        OponentData oponentData[] = getOponentData(body.getId());
+        int ids[] = env.getOponentIds(body.getId());
+        OpponentData oponentData[] = env.getOpponentTeamData(body.getId()).opponentData;
         
         // body - related state
         for (int i = 0; i < 2; i++) {

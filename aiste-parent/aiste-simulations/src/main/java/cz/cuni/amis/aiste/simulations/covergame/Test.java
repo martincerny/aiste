@@ -68,19 +68,20 @@ public class Test {
 
         Planning4JController pddlController = new Planning4JController(planner, Planning4JController.ValidationMethod.NONE);
         JShop2Controller jshopController = new JShop2Controller(ValidationMethod.NONE);
+        JShop2Controller jshopController2 = new JShop2Controller(ValidationMethod.NONE);
 
         CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
-        cgEnv.setRandomSeed(54842L);        
 
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv)
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController2, cgEnv.getRepresentations().get(2))
                 });
-        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 10000000);
+        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
+        experimentRunner.setRandomSeed(548742L);
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);
         

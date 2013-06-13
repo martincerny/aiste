@@ -24,7 +24,7 @@ import cz.cuni.amis.aiste.environment.IAction;
  */
 public class CGAction implements IAction{
 
-    public enum Action {MOVE, SHOOT, SUPRESS, TAKE_FULL_COVER, NO_OP};
+    public enum Action {MOVE, SHOOT, SUPPRESS, TAKE_FULL_COVER, NO_OP};
     
     /**
      * Static instance for parameterless actions
@@ -56,5 +56,11 @@ public class CGAction implements IAction{
             return act.toString();
         }
     }
+
+    @Override
+    public String toString() {
+        return getLoggableRepresentation();
+    }
+    
     
 }

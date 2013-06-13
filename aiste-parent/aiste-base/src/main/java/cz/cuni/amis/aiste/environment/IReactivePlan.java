@@ -52,6 +52,15 @@ public interface IReactivePlan<ACTION extends IAction> {
     public ReactivePlanStatus getStatus();
     
     /**
+     * Returns true if the plan can provide any more actions.
+     * Note that it makes good sense for this to be true, eventhough the plan is completed or failed.
+     * In this case, it is interpreted as "something to do" as long no new plans are
+     * available.
+     * @return 
+     */
+    public boolean hasActions();
+    
+    /**
      * This is needed in order to allow plan validation by environment simulation.
      * This method should create a copy of the original plan, that retains all state,
      * but queries given environment instead of the original environment.

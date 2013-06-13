@@ -53,6 +53,21 @@
                             <commandlineArgs>-i "${basedir}/src/main/jshop" -o "${basedir}/target/generated-sources/jshop" --no-txt cz/cuni/amis/aiste/CoverGameJSHOP2.jshop</commandlineArgs>
                         </configuration>
                     </execution>                   
+                    <execution>
+                        <id>covergameWithRolesJSHOP</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>JSHOP2.InternalDomain</mainClass>
+                            <executableDependency>
+                                <groupId>net.sf.shop</groupId>
+                                <artifactId>jshop2</artifactId>
+                            </executableDependency>
+                            <commandlineArgs>-i "${basedir}/src/main/jshop" -o "${basedir}/target/generated-sources/jshop" --no-txt cz/cuni/amis/aiste/CoverGameWithRolesJSHOP2.jshop</commandlineArgs>
+                        </configuration>
+                    </execution>                   
                 </executions>
                 <configuration>
                     <basedir>${project.build.directory}</basedir>
