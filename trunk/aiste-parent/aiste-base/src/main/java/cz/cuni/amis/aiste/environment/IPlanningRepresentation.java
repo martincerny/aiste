@@ -62,5 +62,11 @@ public interface IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION
      * @return reactive plan or null, if reactive layer gave no advice
      */
     public IReactivePlan<? extends ACTION> evaluateReactiveLayer(AgentBody body);    
+
+    /**
+     * Rective plan to follow while no action from planner is available
+     * @return reactive plan or null, if there is no plan to follow
+     */
+    public IReactivePlan<? extends ACTION> getDefaultReactivePlan(AgentBody body);    
     
 }

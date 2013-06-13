@@ -20,6 +20,7 @@ import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePDDLRepresentation;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
+import cz.cuni.amis.aiste.simulations.covergame.CoverGame.OpponentData;
 import cz.cuni.amis.planning4j.ActionDescription;
 import cz.cuni.amis.planning4j.pddl.PDDLDomain;
 import cz.cuni.amis.planning4j.pddl.PDDLFunction;
@@ -132,8 +133,8 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
         CoverGame.CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
 
-        int ids[] = getOponentIds(body.getId());
-        OponentData oponentData[] = getOponentData(body.getId());
+        int ids[] = env.getOponentIds(body.getId());
+        OpponentData oponentData[] = env.getOpponentTeamData(body.getId()).opponentData;
 
         // body - related state
         for (int i = 0; i < 2; i++) {

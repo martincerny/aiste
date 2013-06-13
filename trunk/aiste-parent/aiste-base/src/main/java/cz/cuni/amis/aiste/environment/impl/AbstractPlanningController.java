@@ -406,6 +406,14 @@ extends AbstractAgentController<IAction, REPRESENTATION> {
             nextAction = activePlannerActionReactivePlan.nextAction();            
         } else {
             numStepsIdle.increment();
+            IReactivePlan defaultPlan = representation.getDefaultReactivePlan(body);
+            if(defaultPlan != null && defaultPlan.getStatus() == ReactivePlanStatus.EXECUTING){
+                nextAction = defaultPlan.nextAction();
+            }
+        }
+        
+        if(logger.isDebugEnabled()) {
+            logger.debug("Current reactive plan: " + activePlannerActionReactivePlan);
         }
         
         if(nextAction != null){

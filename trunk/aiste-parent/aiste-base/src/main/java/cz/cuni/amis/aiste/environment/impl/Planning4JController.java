@@ -132,6 +132,13 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
     }
 
     @Override
+    public String toString() {
+        return "Planning4JController{" + "planner=" + planner.getName() + '}';
+    }
+
+    
+    
+    @Override
     public String getLoggableRepresentation() {
         return planner.getName();
     }

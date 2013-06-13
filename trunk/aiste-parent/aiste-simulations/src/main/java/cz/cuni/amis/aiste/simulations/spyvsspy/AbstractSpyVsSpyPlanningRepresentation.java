@@ -74,6 +74,11 @@ public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PL
             return null;
         }
     }
+
+    @Override
+    public IReactivePlan<? extends SpyVsSpyAction> getDefaultReactivePlan(AgentBody body) {
+        return null;
+    }
     
     
     

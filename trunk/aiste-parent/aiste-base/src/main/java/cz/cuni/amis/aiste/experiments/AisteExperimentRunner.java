@@ -132,6 +132,9 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         if(! (provider instanceof IAgentController)){
             return super.getAdditionalLoggingDataValues(experiment, provider);            
         } else {
+            if(lastExecutionResult == null){
+                throw new ExperimentException("The environment has not provided any result.");
+            }
             IAgentController controller = (IAgentController)provider;
             IAgentExecutionResult agentResult = lastExecutionResult.getPerAgentResults().get(controller);
             if(agentResult == null){

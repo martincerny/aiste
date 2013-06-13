@@ -84,6 +84,12 @@ public class CompoundReactivePlan<ACTION extends IAction> implements IReactivePl
             subPlanIndex++;
         }
     }
+
+    @Override
+    public boolean hasActions() {
+        return subPlanIndex < subPlans.size() && subPlans.get(subPlanIndex).hasActions();
+    }
+    
     
     
 }

@@ -17,12 +17,19 @@
 
 package cz.cuni.amis.aiste.simulations.covergame;
 
+import com.sun.xml.internal.messaging.saaj.soap.ver1_1.Body1_1Impl;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;
+import cz.cuni.amis.aiste.environment.ReactivePlanStatus;
+import cz.cuni.amis.aiste.simulations.covergame.CoverGame.CGBodyPair;
+import cz.cuni.amis.aiste.simulations.covergame.Loc;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -36,41 +43,6 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
         this.env = env;
     }
 
-    
-    
-    protected int[] getOponentIds(int teamNo){
-        int[] ids = new int[2];
-        int idIndex = 0;
-        for(CoverGame.CGBodyInfo bodyInfo : env.bodyInfos){
-            if(bodyInfo.getTeamId() != teamNo){
-                ids[idIndex] = bodyInfo.id;
-                idIndex++;
-            }
-        }
-        return ids;
-    }
-    
-    protected OponentData[] getOponentData(int teamNo){
-        int [] ids = getOponentIds(teamNo);
-        OponentData[] data = new OponentData[ids.length];
-        for(int i = 0; i < ids.length; i++){
-            data[i] = new OponentData();
-            Loc oponentLocation = env.bodyInfos.get(ids[i]).loc;
-            for(Loc navPoint : env.defs.navGraph.keySet()){
-                if(env.isVisible(navPoint, oponentLocation)){
-                    data[i].visibleNavpoints.add(navPoint);
-                    if(!env.isCovered(navPoint, oponentLocation)){
-                        data[i].navpointsInvalidatingCover.add(navPoint);
-                    }
-                    if(!env.isCovered(oponentLocation, navPoint)){
-                        data[i].uncoveredNavpoints.add(navPoint);
-                    }
-                }
-            }
-        }
-        return data;
-        
-    }
     
     @Override
     public boolean isGoalState(AgentBody body, CGPlanningGoal goal) {
@@ -103,20 +75,19 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
         this.env = env;
     }
 
-    protected static class OponentData {
-        /**
-         * Navpoints that are not covered when oponent attacks
-         */
-        List<Loc> uncoveredNavpoints = new ArrayList<Loc>();
-        
-        /**
-         * Navpoints that are visible to oponent (and oponent is visible from there)
-         */
-        List<Loc> visibleNavpoints = new ArrayList<Loc>();
-        
-        /**
-         * Navpoints from which the oponent has no cover
-         */
-        List<Loc> navpointsInvalidatingCover = new ArrayList<Loc>();
+    @Override
+    public IReactivePlan<? extends CGPairAction> getDefaultReactivePlan(AgentBody body) {
+        CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
+        int body0Id = bodyPair.bodyInfo0.id;
+        int body1Id = bodyPair.bodyInfo1.id;
+        List<CGRolePlan> plan0 = getDefaultRolesForSingleAgent(body0Id);
+        List<CGRolePlan> plan1 = getDefaultRolesForSingleAgent(body1Id);
+        return new CGPairRolePlan(plan0, plan1);
     }
+
+    public List<CGRolePlan> getDefaultRolesForSingleAgent(int bodyId) {
+        return Arrays.asList(new CGRolePlan[] {new CGRoleDefensive(env, bodyId), new CGRoleOverWatch(env, bodyId, true)});
+    }
+
+    
 }

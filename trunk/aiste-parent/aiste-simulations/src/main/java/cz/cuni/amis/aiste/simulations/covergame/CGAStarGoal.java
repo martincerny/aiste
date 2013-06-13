@@ -16,37 +16,34 @@
  */
 package cz.cuni.amis.aiste.simulations.covergame;
 
-import cz.cuni.amis.aiste.environment.IAction;
+import cz.cuni.amis.pathfinding.map.IPFGoal;
+import cz.cuni.amis.utils.heap.IHeap;
+import java.util.Set;
 
 /**
  *
  * @author Martin Cerny
  */
-public class CGPairAction implements IAction {
-    private CGAction action1;
-    private CGAction action2;
+public abstract class CGAStarGoal implements IPFGoal<Loc> {
+    private CoverGame env;
+    private Loc start;
 
-    public CGPairAction(CGAction action1, CGAction action2) {
-        this.action1 = action1;
-        this.action2 = action2;
-    }
-
-    public CGAction getAction1() {
-        return action1;
-    }
-
-    public CGAction getAction2() {
-        return action2;
+    public CGAStarGoal(CoverGame env, Loc start) {
+        this.env = env;
+        this.start = start;
     }
 
     @Override
-    public String getLoggableRepresentation() {
-        return "[" + action1.getLoggableRepresentation() + ", " + action2.getLoggableRepresentation() + "]";
+    public Loc getStart() {
+        return start;
     }
 
     @Override
-    public String toString() {
-        return getLoggableRepresentation();
+    public void setOpenList(IHeap<Loc> openList) {
+    }
+
+    @Override
+    public void setCloseList(Set<Loc> closedList) {
     }
     
     

@@ -1,0 +1,138 @@
+(Defdomain CoverGameWithRolesJSHOP2
+   (
+        ;;operators
+        ;;format : 
+        ;; operator
+        ;;   preconditions
+        ;;   negative effects
+        ;;   positive effects
+        ;;   [cost] - optional
+
+        (:operator (!aggressive ?body)
+            ( (partial_cover ?body) )
+            ()
+            ()
+        )
+
+        (:operator (!aggressive_reckless ?body)
+            ()
+            ()
+            ()
+        )
+
+        (:operator (!overwatch_defensive ?body)
+            ( (partial_cover ?body) )
+            ()
+            ()
+        )
+
+        (:operator (!move_safe ?body ?target)
+            ( (at ?body ?loc) ) ;safe reachability is tested within decompositions
+            ( (at ?body ?loc) )
+            ( (at ?body ?target) )
+        )
+
+        (:operator (!move_reckless ?body ?target)
+            ( (at ?body ?loc) ) ;reachability is tested within decompositions
+            ( (at ?body ?loc) )
+            ( (at ?body ?target) )
+        )
+
+        (:operator (!defensive ?body)
+            ()
+            ()
+            ()
+            
+        )
+
+            ;Important for translation into parallel plans -> Means: "Continue in the role, until all agents have completed their task
+            (:operator (!sync)
+                ()
+                ()
+                ()
+                )
+
+
+(:method (kill ?opponent)
+Safe        ( (partial_cover_both) (someone_at_vantage_point ?opponent))
+            ( (!aggressive body_0) (!aggressive body_1) ) ;aggressive forces partial_cover
+Reckless    ( (low_health ?opponent) (high_health_uncovered) (at_vantage_point ?attacker ?opponent) (other ?attacker ?other))
+            ( (!aggressive_reckless ?attacker) (!aggressive ?other) )
+)
+
+(:method (move_safe ?body ?target) 
+AlreadyThere( (at ?body ?target) )
+            ( () )
+Move        ( (other ?body ?other) )
+            ( (!move_safe ?body ?target) (!overwatch_defensive ?other) (!sync) )
+)
+
+(:method (move_reckless ?body ?target)
+AlreadyThere( (at ?body ?target) )
+            ( () )
+Move        ( (other ?body ?other) )
+            ( (!move_reckless ?body ?target) (!aggressive ?other) (!sync) )
+            
+)
+
+(:method (win) 
+        ( () )
+        ( (kill) )
+)
+
+(:method (win) 
+Advance         ( (vantage_point_safe ?x ?body ?opponent) )
+                ( (move_safe ?body ?x) (kill ?opponent) )
+AdvanceReckless ( (vantage_point ?x ?body ?opponent) (low_health ?opponent) )
+                ( (move_reckless ?body ?x) (kill ?opponent) )
+)
+
+(:method (win)
+Defend          ( () )
+                ( (!defensive body_0) (!defensive body_1) )
+                    
+)
+
+
+
+;Domain axioms
+(:- (partial_cover ?body) 
+    ( (at ?body ?loc) (partial_cover_loc ?loc) )
+)
+(:- (partial_cover_loc ?loc) 
+    ( (forall (?o) (opponent ?o) (not (uncovered_by_opponent ?loc ?o) ) ) )
+)
+
+(:- (partial_cover_both)
+    ( (partial_cover body_0) (partial_cover body_1) )
+)
+
+(:- (high_health_uncovered)
+    ( (forall (?b) ( (body ?b) (not (partial_cover ?b) ) ) 
+            (high_health ?b)
+       ) )
+)
+
+(:- (at_vantage_point ?body ?opponent)
+    ( (at ?body ?loc) (vantage_point ?loc ?body ?opponent) )
+)
+
+(:- (someone_at_vantage_point ?opponent)
+    ( (body ?body) (at_vantage_point ?body ?opponent) )
+)
+
+(:- (body body_0) () ) 
+(:- (body body_1) ()) 
+
+(:- (other body_0 body_1) () )
+(:- (other body_1 body_0) () )
+
+(:- (opponent opponent_0) () ) 
+(:- (opponent opponent_1) ()) 
+
+)
+;----------------------------------------------
+
+
+)
+)

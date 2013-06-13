@@ -25,7 +25,7 @@ import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
  * @author Martin Cerny
  */
 public abstract class AbstractReactivePlan<ACTION extends IAction> implements IReactivePlan<ACTION> {
-
+    
     protected abstract void updateStepForNextAction();
     
     @Override
@@ -39,6 +39,13 @@ public abstract class AbstractReactivePlan<ACTION extends IAction> implements IR
     public IReactivePlan<ACTION> cloneForSimulation(ISimulableEnvironment<ACTION> environmentCopy) {
         throw new UnsupportedOperationException("Cloning for simulation is not supported for " + getClass().getName());
     }
+
+    @Override
+    public boolean hasActions() {
+        return !getStatus().isFinished();
+    }
+    
+    
     
     
 }
