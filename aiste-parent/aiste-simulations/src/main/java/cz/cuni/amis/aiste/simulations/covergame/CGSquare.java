@@ -28,6 +28,7 @@ public class CGSquare {
     
     Loc location;
 
+    boolean passable;
     boolean horizontalCover;
     boolean verticalCover;
     boolean isNavPoint;

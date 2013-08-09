@@ -17,19 +17,13 @@
 
 package cz.cuni.amis.aiste.simulations.covergame;
 
-import com.sun.xml.internal.messaging.saaj.soap.ver1_1.Body1_1Impl;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;
-import cz.cuni.amis.aiste.environment.ReactivePlanStatus;
 import cz.cuni.amis.aiste.simulations.covergame.CoverGame.CGBodyPair;
-import cz.cuni.amis.aiste.simulations.covergame.Loc;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  *

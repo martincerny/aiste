@@ -1,0 +1,58 @@
+27
+37
+####################s.#####
+####################..#####
+###.s.##.o...o...###o.#####
+###...HH.........###..#####
+###o............H##H..#####
+###...o..o..o.........#####
+###o.................o#####
+######H...H#H....H#H..#####
+#######...H#H....H##.H#####
+######H............#..#####
+H...|...........o.o#..#####
+........o..o.......#..#####
+.|..H........|.....#..#####
+.|.H####H...HH..o.o#..H####
+##.H####...........#.....s#
+##-...#...o.....H..#..o...#
+#H....#......o..H##H......#
+s..HH.#....|...........-..#
+...##.#...-..o...o....|...#
+s..HH.#....|...........-..#
+#H....#......o..H##H......#
+##-...#...o.....H..#..o...#
+##.H####...........#.....s#
+.|.H####H...HH..o.o#..H####
+.|..H........|.....#..#####
+........o..o.......#..#####
+H...|...........o.o#..#####
+######H............#..#####
+#######...H#H....H##.H#####
+######H...H#H....H#H..#####
+###o.................o#####
+###...o..o..o.........#####
+###o............H##H..#####
+###...HH.........###..#####
+###.s.##.o...o...###o.#####
+####################..#####
+####################s.#####
+
+
+This map is inspired by Gears Of War II - security 
+http://gearsofwar.wikia.com/wiki/Security?file=Security_map.jpg
+
+Format:
+width
+heigth
+map specs - a line for each row and a char for each square in level
+	chars have following meaning:
+		# - wall - not a passable square
+		H - wall with cover - not a passable square covering all four neighbouring squares
+        * - cover for all 4 neighbouring squares
+        | - vertical cover - cover for squares to left and right
+        - - horizontal cover - cover for squares to top and bottom
+        s - a spawning point - at least 5 needed
+        o - a nav point
+        anything else means empty square
+Everything below is ignored

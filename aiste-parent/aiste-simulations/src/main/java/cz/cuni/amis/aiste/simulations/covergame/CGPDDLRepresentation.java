@@ -61,8 +61,10 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     PDDLType oponentType;
     PDDLObjectInstance oponentInstances[];
     PDDLPredicate uncoveredByOponentPredicate;
+    PDDLPredicate visibleByOponentPredicate;
+    PDDLPredicate vantagePointPredicate;
+    
     PDDLPredicate oponentAtPredicate;
-    //PDDLPredicate uncoveresOponent;
 
     public CGPDDLRepresentation(CoverGame env) {
         super(env);
@@ -89,11 +91,13 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
         body_0_turn = new PDDLPredicate("body_0_turn");        
 
-        oponentAtPredicate = new PDDLPredicate("oponent_at",new PDDLParameter("?o", oponentType),  new PDDLParameter("loc", navPointType));
+        oponentAtPredicate = new PDDLPredicate("oponent_at",new PDDLParameter("o", oponentType),  new PDDLParameter("loc", navPointType));
         uncoveredByOponentPredicate = new PDDLPredicate("uncovered_by_oponent", new PDDLParameter("o", oponentType), new PDDLParameter("loc", navPointType));            
+        visibleByOponentPredicate = new PDDLPredicate("visible_by_oponent", new PDDLParameter("o", oponentType), new PDDLParameter("loc", navPointType));            
+        vantagePointPredicate = new PDDLPredicate("vantage_point", new PDDLParameter("o", oponentType), new PDDLParameter("loc", navPointType));            
         
         
-        bodyPDDLs = new OneBodyPDDL[]{new OneBodyPDDL(0), new OneBodyPDDL(1)};
+        bodyPDDLs = new OneBodyPDDL[]{new OneBodyPDDL(0, env), new OneBodyPDDL(1, env)};
         oponentInstances = new PDDLObjectInstance[] { new PDDLObjectInstance("oponent_1", oponentType), new PDDLObjectInstance("oponent_2", oponentType)};
 
     }
@@ -223,9 +227,10 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         List<PDDLPredicate> bodyPredicates = new ArrayList<PDDLPredicate>();
         String bodyPrefix;
 
-        //TODO coverednoop action, and add high cost to uncovered noop
-        public OneBodyPDDL(int bodyId) {
+        public OneBodyPDDL(int bodyId, CoverGame cg) {
             bodyPrefix = "body_" + bodyId + "_";
+            
+            String uncoveredCostString = Double.toString(1d / cg.defs.partialCoverAimPenalty);
 
 
             bodyAtPredicate = new PDDLPredicate(bodyPrefix + "at", new PDDLParameter("loc", navPointType));            
@@ -245,14 +250,14 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
             moveAction.setPositiveEffects(bodyAtPredicate.stringAfterSubstitution("?to"),
                     "increase (total-cost) 1",
                     "when (" + coveredCondition + ") (" + partialCoverPredicate.stringAfterSubstitution() + ")",
-                    "when (not (" + coveredCondition + ")) (not (" + partialCoverPredicate.stringAfterSubstitution() + "))"
+                    "when (not (" + coveredCondition + ")) (and (not (" + partialCoverPredicate.stringAfterSubstitution() + ")) (increase (total-cost) "+ uncoveredCostString + "))"
                     );            
             moveAction.setNegativeEffects(bodyAtPredicate.stringAfterSubstitution("?from"), fullCoverPredicate.stringAfterSubstitution());
             bodyActions.add(moveAction);
 
             noOpAction = new PDDLSimpleAction(bodyPrefix + "noop", new PDDLParameter("to", navPointType));
             noOpAction.setPreconditionList(bodyAtPredicate.stringAfterSubstitution("?to"));
-            noOpAction.addPositiveEffect("when (not (" + coveredCondition + ") ) (increase (total-cost) 10)");            
+            noOpAction.addPositiveEffect("when (not (" + coveredCondition + ") ) (increase (total-cost) "+ uncoveredCostString + ")");            
             bodyActions.add(noOpAction);
 
             for (PDDLSimpleAction action : bodyActions) {

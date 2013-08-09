@@ -17,14 +17,11 @@
 package cz.cuni.amis.aiste.simulations.covergame;
 
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController.ValidationMethod;
-import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
-import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
-import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
-import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
+import cz.cuni.amis.aiste.execution.impl.ManualAdvanceEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.experiments.AisteExperiment;
 import cz.cuni.amis.aiste.experiments.AisteExperimentRunner;
 import cz.cuni.amis.experiments.utils.ExperimentUtils;
@@ -70,7 +67,7 @@ public class Test {
         JShop2Controller jshopController = new JShop2Controller(ValidationMethod.NONE);
         JShop2Controller jshopController2 = new JShop2Controller(ValidationMethod.NONE);
 
-        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
+        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map2.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
 
@@ -78,9 +75,9 @@ public class Test {
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController2, cgEnv.getRepresentations().get(2))
                 });
-        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000);
+        AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000000);
 
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(548742L);
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);

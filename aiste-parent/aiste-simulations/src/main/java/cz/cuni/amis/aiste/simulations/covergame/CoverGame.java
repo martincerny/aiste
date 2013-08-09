@@ -88,8 +88,12 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             char[][] display = new char[defs.levelWidth][defs.levelHeight];
             for(int x = 0; x < defs.levelWidth; x++){
                 for(int y = 0; y < defs.levelHeight;y++){
-                    if(defs.squares[x][y] == null){
-                        display[x][y] = '#';
+                    if(!defs.squares[x][y].passable){
+                        if(defs.squares[x][y].horizontalCover && defs.squares[x][y].verticalCover){
+                            display[x][y] = 'H';                            
+                        } else {
+                            display[x][y] = '#';
+                        }
                     }
                     else if(defs.squares[x][y].horizontalCover){
                         if(defs.squares[x][y].verticalCover){
@@ -109,12 +113,25 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             }
             
             StringBuilder infoBuilder = new StringBuilder("==== Step " + getTimeStep() + " ======\n");
+            infoBuilder.append("\t");
+            for (int x = 0; x < defs.levelWidth; x++) {
+                    infoBuilder.append(x % 10);                
+            }
+            infoBuilder.append("\n");
+            
             for (int y = 0; y < defs.levelHeight; y++) {
+                infoBuilder.append(y % 100).append("\t");
                 for (int x = 0; x < defs.levelWidth; x++) {
                     infoBuilder.append(display[x][y]);
                 }
                 infoBuilder.append("\n");
             }
+            infoBuilder.append("\t");
+            for (int x = 0; x < defs.levelWidth; x++) {
+                    infoBuilder.append(x % 10);                
+            }
+            infoBuilder.append("\n");
+            
             for(CGBodyInfo bodyInfo : bodyInfos){
                 infoBuilder.append(bodyInfo.id).append(": ").append(bodyInfo.toString()).append("\n");
             }
@@ -261,16 +278,16 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     
     public List<CGSquare> getNeighbouringSquares(Loc l){
         List<CGSquare> neighbours = new ArrayList<CGSquare>(4);
-        if(l.x > 0 && defs.squares[l.x - 1][l.y] != null){
+        if(l.x > 0 && defs.squares[l.x - 1][l.y].passable){
             neighbours.add(defs.squares[l.x - 1][l.y]);
         }
-        if(l.y > 0 && defs.squares[l.x][l.y - 1] != null){
+        if(l.y > 0 && defs.squares[l.x][l.y - 1].passable){
             neighbours.add(defs.squares[l.x][l.y - 1]);
         }
-        if(l.x < defs.levelWidth - 1 && defs.squares[l.x + 1][l.y] != null){
+        if(l.x < defs.levelWidth - 1 && defs.squares[l.x + 1][l.y].passable){
             neighbours.add(defs.squares[l.x + 1][l.y]);
         }
-        if(l.y < defs.levelHeight - 1 && defs.squares[l.x][l.y + 1] != null){
+        if(l.y < defs.levelHeight - 1 && defs.squares[l.x][l.y + 1].passable){
             neighbours.add(defs.squares[l.x][l.y + 1]);
         }
         return neighbours;
@@ -309,16 +326,16 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             //at close combat distance, there is no cover
             return false;
         }
-        if(from.x < to.x - 1 && defs.squares[to.x - 1][to.y] != null && defs.squares[to.x - 1][to.y].verticalCover){
+        if(from.x < to.x - 1  && defs.squares[to.x - 1][to.y].verticalCover){
             return true;
         }
-        if(from.x > to.x + 1 && defs.squares[to.x + 1][to.y] != null && defs.squares[to.x + 1][to.y].verticalCover){
+        if(from.x > to.x + 1  && defs.squares[to.x + 1][to.y].verticalCover){
             return true;
         }
-        if(from.y < to.y - 1 && defs.squares[to.x][to.y - 1] != null && defs.squares[to.x][to.y - 1].horizontalCover){
+        if(from.y < to.y - 1  && defs.squares[to.x][to.y - 1].horizontalCover){
             return true;
         }
-        if(from.y > to.y + 1 && defs.squares[to.x][to.y + 1] != null && defs.squares[to.x][to.y + 1].horizontalCover){
+        if(from.y > to.y + 1  && defs.squares[to.x][to.y + 1].horizontalCover){
             return true;
         }
         return false;
@@ -520,7 +537,10 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
 
     protected double getHitProbability(CGBodyInfo bodyInfo, CGBodyInfo targetInfo) {
         double distance = bodyInfo.getLoc().distanceTo(targetInfo.getLoc());
-        double hitProbability = defs.basicAim * (1 / Math.sqrt(distance));
+        if(distance < 1){
+            distance = 1;
+        }
+        double hitProbability = defs.basicAim * (1 / (0.1 * distance + 0.9));
         boolean covered = isCovered(bodyInfo.getLoc(), targetInfo.getLoc());
         boolean fullCover = covered && targetInfo.takingFullCover;
         boolean supressed = bodyInfo.suppressed;
@@ -641,7 +661,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         Map<Loc,List<Loc>> navGraph;
         
-        double maxDistancePerTurn = 3;
+        double maxDistancePerTurn = 3.5;
         
         int maxHealth = 100;
         

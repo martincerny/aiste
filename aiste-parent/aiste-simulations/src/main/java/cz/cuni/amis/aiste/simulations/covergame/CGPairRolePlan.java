@@ -22,6 +22,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -33,6 +34,8 @@ public class CGPairRolePlan extends AbstractReactivePlan<CGPairAction> {
 
     
     List<Queue<CGRolePlan>> allPlans;
+    
+    private final Logger logger = Logger.getLogger(CGPairRolePlan.class);
     
     public CGPairRolePlan(List<CGRolePlan> plansBody0, List<CGRolePlan> plansBody1) {
         if(plansBody0.isEmpty() || plansBody1.isEmpty()){
@@ -83,11 +86,13 @@ public class CGPairRolePlan extends AbstractReactivePlan<CGPairAction> {
 
     @Override
     public ReactivePlanStatus getStatus() {
-        if(plansBody0.isEmpty() && plansBody1.isEmpty()){
+        //logger.trace("Plan statuses :" + plansBody0.peek().getStatus() + ", " + plansBody1.peek().getStatus());        
+        if((plansBody0.isEmpty() || (plansBody0.size() == 1 && plansBody0.peek().getStatus() == ReactivePlanStatus.COMPLETED)) 
+                && (plansBody1.isEmpty() || (plansBody1.size() == 1 && plansBody1.peek().getStatus() == ReactivePlanStatus.COMPLETED)) ){
             return ReactivePlanStatus.COMPLETED;
         }
-        else if(plansBody0.peek().getStatus() == ReactivePlanStatus.FAILED 
-                || plansBody1.peek().getStatus() == ReactivePlanStatus.FAILED){
+        else if((!plansBody0.isEmpty() && plansBody0.peek().getStatus() == ReactivePlanStatus.FAILED) 
+                || (!plansBody1.isEmpty() && plansBody1.peek().getStatus() == ReactivePlanStatus.FAILED)){
             return ReactivePlanStatus.FAILED;
         } else {
             return ReactivePlanStatus.EXECUTING;

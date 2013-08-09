@@ -114,7 +114,7 @@ public class CGUtils {
      */
     public static boolean isVisible(Loc from, Loc to, CGSquare[][] squares){
         for(Loc pointOnLine : getPointsOnLine(from, to)){
-            if(squares[pointOnLine.x][pointOnLine.y] == null){
+            if(!squares[pointOnLine.x][pointOnLine.y].passable){
                 return false;
             }             
         }
