@@ -70,6 +70,14 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         super(env);
         fixedMapFloydWarshall = new FloydWarshall<Loc>(env.defs.navGraphMap);
         
+        for(Loc l1 : env.defs.navGraph.keySet()){
+            for(Loc l2 : env.defs.navGraph.keySet()){
+                if(fixedMapFloydWarshall.getPathCost(l1, l2) >= Integer.MAX_VALUE){
+                    throw new AisteException("Unreachable pair of navpoints: " + l1 + ", " + l2);
+                }
+            }
+        }
+        
         additionalConstantNames = new String[getNumAdditionalConstants()];
         final int problemConstantOffset = CoverGameWithRolesJSHOP2.NUM_CONSTANTS;
         
@@ -202,16 +210,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                 for(Loc vantage_point : opponentData[opp].navpointsInvalidatingCover){
                     int distance = fixedMapFloydWarshall.getPathCost(bodyLoc, vantage_point);
                     if(distance < nearestSafeVantageDistance){
-                        int possibleUncoveredShots = 0;
-                        List<Loc> path = fixedMapFloydWarshall.getPath(bodyLoc, vantage_point);
-                        path.add(vantage_point);
-                        for(Loc pathLoc : path){
-                            for(int opp2 = 0; opp2 < 2; opp2++){
-                                if(opponentData[opp2].uncoveredNavpoints.contains(pathLoc)){
-                                    possibleUncoveredShots++;
-                                }
-                            }
-                        }
+                        int possibleUncoveredShots = getPossibleUncoveredShots(bodyLoc, vantage_point, opponentData);
                         if(possibleUncoveredShots <= 3 && distance < nearestVantageDistance){
                             nearestVantageDistance = distance;
                             nearestVantage = vantage_point;
@@ -223,16 +222,34 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                         }
                     }
                 }
+                
                 if(nearestVantage != null){
-                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT, createTermList(jshop, locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp])));
+                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT, createTermList(jshop, locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp])));                    
                 }
                 if(nearestSafeVantage != null){
                     initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT_SAFE, createTermList(jshop, locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp])));
                 }
-//                if(logger.isDebugEnabled()){
-//                    logger.debug(body.getId() + ": Body " + bodyId + " nearest vantage for opp " + opp + ": " + nearestVantage);
-//                    logger.debug(body.getId() + ": Body " + bodyId + " nearest safe vantage for opp " + opp + ": " + nearestSafeVantage);
-//                }
+                
+                Loc nearestAttackPoint = null;
+                int nearestAttackDistance = Integer.MAX_VALUE;                
+                for(Loc attackPoint : opponentData[opp].visibleNavpoints){
+                    int distance = fixedMapFloydWarshall.getPathCost(bodyLoc, attackPoint);
+                    if(distance < nearestAttackDistance && getPossibleUncoveredShots(bodyLoc, attackPoint, opponentData) < 1){
+                        nearestAttackPoint = attackPoint;
+                        nearestAttackDistance = distance;
+                    }
+                }
+                
+                if(nearestAttackPoint != null){
+                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_ATTACK_POINT, createTermList(jshop, locationsToConstants.get(nearestAttackPoint), bodyConstants[bodyId], opponentConstants[opp])));                    
+                }
+                
+                
+                if(logger.isDebugEnabled()){
+                    logger.debug(body.getId() + ": Body " + bodyId + " nearest vantage for opp " + opp + ": " + nearestVantage + " distance: " + nearestVantageDistance);
+                    logger.debug(body.getId() + ": Body " + bodyId + " nearest safe vantage for opp " + opp + ": " + nearestSafeVantage + " distance: " + nearestSafeVantageDistance);
+                    logger.debug(body.getId() + ": Body " + bodyId + " nearest attack point for opp " + opp + ": " + nearestAttackPoint + " distance: " + nearestAttackDistance);
+                }
             }
         }
 
@@ -311,6 +328,20 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
             logger.debug(body.getId() + ": RolePlan: " + plan);
         }
         return plan;
+    }
+
+    protected int getPossibleUncoveredShots(Loc bodyLoc, Loc vantage_point, OpponentData[] opponentData) {
+        int possibleUncoveredShots = 0;
+        List<Loc> path = fixedMapFloydWarshall.getPath(bodyLoc, vantage_point);
+        path.add(vantage_point);
+        for(Loc pathLoc : path){
+            for(int opp2 = 0; opp2 < 2; opp2++){
+                if(opponentData[opp2].uncoveredNavpoints.contains(pathLoc)){
+                    possibleUncoveredShots++;
+                }
+            }
+        }
+        return possibleUncoveredShots;
     }
     
     

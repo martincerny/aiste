@@ -53,7 +53,7 @@
                 )
 
 
-(:method (kill ?opponent)
+(:method (kill)
 Safe        ( (partial_cover_both) (someone_at_vantage_point ?opponent))
             ( (!aggressive body_0) (!aggressive body_1) ) ;aggressive forces partial_cover
 Reckless    ( (low_health ?opponent) (high_health_uncovered) (at_vantage_point ?attacker ?opponent) (other ?attacker ?other))
@@ -76,15 +76,32 @@ Move        ( (other ?body ?other) )
 )
 
 (:method (win) 
-        ( () )
-        ( (kill) )
+     ( () )
+    ( (kill) )
 )
 
 (:method (win) 
 Advance         ( (vantage_point_safe ?x ?body ?opponent) )
                 ( (move_safe ?body ?x) (kill ?opponent) )
+)
+
+(:method (win) 
 AdvanceReckless ( (vantage_point ?x ?body ?opponent) (low_health ?opponent) )
                 ( (move_reckless ?body ?x) (kill ?opponent) )
+)
+
+
+(:method (win) 
+DoubleFire1      ( (at ?body ?loc) (attack_point ?loc ?body ?opponent)
+                        (other ?body ?body2) (attack_point ?loc2 ?body2 ?opponent) )
+                ( (move_safe ?body2 ?loc2) (kill ?opponent))
+)
+
+
+(:method (win) 
+DoubleFire2     ( (attack_point ?loc ?body ?opponent)
+                        (other ?body ?body2) (attack_point ?loc2 ?body2 ?opponent) )
+                ( (move_safe ?body ?loc) (move_safe ?body2 ?loc2) (kill ?opponent))
 )
 
 (:method (win)

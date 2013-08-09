@@ -53,7 +53,7 @@ public class CGRoleDefensive extends CGRolePlan {
         }
     }
 
-    public boolean isSafe() {
+    protected boolean isSafe() {
         CGBodyInfo bodyInfo = getBodyInfo();
         return !env.getOpponentTeamData(bodyInfo.team.getId()).allUncoveredNavPoints.contains(bodyInfo.loc);
     }
@@ -63,7 +63,7 @@ public class CGRoleDefensive extends CGRolePlan {
     @Override
     public ReactivePlanStatus getStatus() {
         if(!isSafe()){
-            if(getPath() != null){
+            if(hasPath()){
                 return ReactivePlanStatus.EXECUTING;
             } else {
                 return ReactivePlanStatus.FAILED;

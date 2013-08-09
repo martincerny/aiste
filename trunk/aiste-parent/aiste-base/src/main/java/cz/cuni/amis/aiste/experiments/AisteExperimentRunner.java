@@ -18,6 +18,7 @@
 package cz.cuni.amis.aiste.experiments;
 
 import cz.cuni.amis.aiste.IRandomizable;
+import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.environment.IEnvironment;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
@@ -39,12 +40,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author Martin Cerny
  */
 public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperiment> implements IRandomizable{
+    private final Logger logger = Logger.getLogger(AisteExperimentRunner.class);
+    
     private IEnvironmentExecutorFactory environmentExecutorFactory;
     private long maxSteps;
     private Random rand = new Random();
@@ -97,6 +101,9 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
             rankLoggingProviders.get(experiment.environment.getClass()).logExperimentResults(lastExecutionResult);  
             return EExperimentRunResult.SUCCESS;
         } finally {
+            for(AgentBody body : (List<AgentBody>)experiment.environment.getAllBodies()){
+                logger.info("Total reward for " + body.getId() + " :" + experiment.environment.getTotalReward(body));
+            }
             environmentExecutor.shutdown();            
         }
     }
@@ -153,6 +160,8 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
             environmentExecutor.shutdown();
         }
     }
+    
+    
     
     private class RankLoggingProvider extends AbstractLogDataProvider {
 

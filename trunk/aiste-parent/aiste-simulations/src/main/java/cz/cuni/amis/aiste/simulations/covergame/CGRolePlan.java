@@ -96,13 +96,17 @@ public abstract class CGRolePlan extends AbstractReactivePlan<CGAction> {
      * @return  The first step action or null, if no path is found
      */
     CGAction followPath(){
-        List<Loc> path = getPath();
-        if(path != null && path.size() > 1){
+        if(hasPath()){
             return new CGAction(CGAction.Action.MOVE, path.get(1));
         }
         else {
             return null;
         }
+    }
+
+    protected boolean hasPath() {
+        List<Loc> path = getPath();
+        return path != null && path.size() > 1;
     }
     
     

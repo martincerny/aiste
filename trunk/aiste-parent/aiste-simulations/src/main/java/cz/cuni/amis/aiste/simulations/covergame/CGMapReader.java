@@ -47,67 +47,71 @@ public class CGMapReader {
         Set<Loc> navPoints = new HashSet<Loc>();
         
         //----- Read the map ----
-        for(int y = 0; y < defs.levelWidth; y++){
+        for(int y = 0; y < defs.levelHeight; y++){
             String line = sc.nextLine();
-            for(int x = 0; x < defs.levelHeight; x++){
+            for(int x = 0; x < defs.levelWidth; x++){
+                CGSquare newSquare = new CGSquare();
+                defs.squares[x][y] = newSquare;
+                newSquare.passable = true;
                 char squareChar = line.charAt(x);
-                if(squareChar == '#'){
-                    defs.squares[x][y] = null;
-                } else {
-                    CGSquare newSquare = new CGSquare();
-                    defs.squares[x][y] = newSquare;
-                    boolean isNavPoint = false;
-                    switch(squareChar){
-                        case '-' : {
-                            newSquare.horizontalCover = true;
-                            break;
-                        }
-                        case '|' : {
-                            newSquare.verticalCover = true;
-                            break;
-                        }                            
-                        case '*' : {
-                            newSquare.horizontalCover = true;
-                            newSquare.verticalCover = true;
-                            break;
-                        }
-                        case 'o' : {
-                            isNavPoint = true;
-                            break;
-                        }
-                        case 's' : {
-                            defs.playerSpawningLocations.add(new Loc(x,y));
-                            isNavPoint = true;
-                            break;
-                        }
+                boolean isNavPoint = false;
+                switch(squareChar){
+                    case '#' : {
+                        newSquare.passable = false;                            
+                        break;
                     }
-                    newSquare.isNavPoint = isNavPoint;
-                    if(isNavPoint){
-                        navPoints.add(new Loc(x,y));
+                    case 'H' : {
+                        newSquare.passable = false;
+                        newSquare.horizontalCover = true;
+                        newSquare.verticalCover = true;
+                        break;
                     }
+                    case '-' : {
+                        newSquare.horizontalCover = true;
+                        break;
+                    }
+                    case '|' : {
+                        newSquare.verticalCover = true;
+                        break;
+                    }                            
+                    case '*' : {
+                        newSquare.horizontalCover = true;
+                        newSquare.verticalCover = true;
+                        break;
+                    }
+                    case 'o' : {
+                        isNavPoint = true;
+                        break;
+                    }
+                    case 's' : {
+                        defs.playerSpawningLocations.add(new Loc(x,y));
+                        isNavPoint = true;
+                        break;
+                    }
+                }
+                newSquare.isNavPoint = isNavPoint;
+                if(isNavPoint){
+                    navPoints.add(new Loc(x,y));
                 }
             }
         }
         
         //find navpoints close to covers
-        for(int x = 0; x < defs.levelHeight; x++){
-            for(int y = 0; y < defs.levelWidth; y++){
-                if(defs.squares[x][y] == null){
-                    continue;
-                }
+        for(int x = 0; x < defs.levelWidth; x++){
+            for(int y = 0; y < defs.levelHeight; y++){
                 if(defs.squares[x][y].verticalCover){
-                    if(x > 0 && defs.squares[x - 1][y] != null){
+                    if(x > 0 && defs.squares[x - 1][y].passable){
                         navPoints.add(new Loc(x - 1, y));
                     }
-                    if(x < defs.levelWidth - 1 && defs.squares[x + 1][y] != null){
+                    if(x < defs.levelWidth - 1 && defs.squares[x + 1][y].passable){
                         navPoints.add(new Loc(x + 1, y));
                     }
                 }
                 if(defs.squares[x][y].horizontalCover){
-                    if(y > 0 && defs.squares[x][y - 1] != null){
+                    if(y > 0 && defs.squares[x][y - 1].passable){
                         navPoints.add(new Loc(x, y - 1));
                     }
-                    if(y < defs.levelHeight - 1 && defs.squares[x][y + 1] != null){
+                    if(y < defs.levelHeight - 1 && defs.squares[x][y + 1].passable){
                         navPoints.add(new Loc(x, y + 1));
                     }
                 }
