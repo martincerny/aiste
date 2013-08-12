@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.simulations.covergame;
 
 import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController.ValidationMethod;
+import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
@@ -73,7 +74,7 @@ public class Test {
 
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
                     new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController2, cgEnv.getRepresentations().get(2))
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv.getRepresentations().get(2))
                 });
         AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000000);
 

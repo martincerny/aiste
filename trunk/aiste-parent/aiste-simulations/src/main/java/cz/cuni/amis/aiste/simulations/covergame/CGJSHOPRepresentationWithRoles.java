@@ -39,6 +39,7 @@ import static cz.cuni.amis.aiste.environment.impl.JShop2Utils.*;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import cz.cuni.amis.aiste.simulations.covergame.CoverGame.CGBodyPair;
 import cz.cuni.amis.aiste.simulations.covergame.CoverGame.OpponentData;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -114,6 +115,18 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
             throw new AisteException("Parameter is not a body constant: " + bodyConstant);
         }
     }
+    
+    protected int opponentConstantToBodyIndex(GroundActionInfo info, AgentBody body) throws AisteException {
+        int opponentConstantId = info.params.get(1);
+        if(opponentConstantId == opponentConstants[0]){
+            return 0;                        
+        } else if(opponentConstantId == opponentConstants[1]) {
+            return 1;
+        } else {
+            throw new AisteException("Unrecognized oponent constant: " + opponentConstantId + ": " + jshops.get(body).getDomain().getConstant(opponentConstantId));
+        }
+    }
+    
     
     protected int getMaxNumConstants(){
         return CoverGameWithRolesJSHOP2.NUM_CONSTANTS + getNumAdditionalConstants();
@@ -300,11 +313,13 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_AGGRESSIVE : {
-                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(env, bodyId, 0));
+                    int opponentId = opponentConstantToBodyIndex(info, body);
+                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(env, bodyId, 0, opponentId));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_AGGRESSIVE_RECKLESS : {
-                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(env, bodyId, 1));
+                    int opponentId = opponentConstantToBodyIndex(info, body);
+                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(env, bodyId, 1, opponentId));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_DEFENSIVE : {
@@ -343,6 +358,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         }
         return possibleUncoveredShots;
     }
+
     
     
 }

@@ -8,13 +8,13 @@
         ;;   positive effects
         ;;   [cost] - optional
 
-        (:operator (!aggressive ?body)
+        (:operator (!aggressive ?body ?opponent)
             ( (partial_cover ?body) )
             ()
             ()
         )
 
-        (:operator (!aggressive_reckless ?body)
+        (:operator (!aggressive_reckless ?body ?opponent)
             ()
             ()
             ()
@@ -53,11 +53,11 @@
                 )
 
 
-(:method (kill)
+(:method (kill ?opponent)
 Safe        ( (partial_cover_both) (someone_at_vantage_point ?opponent))
-            ( (!aggressive body_0) (!aggressive body_1) ) ;aggressive forces partial_cover
+            ( (!aggressive body_0 ?opponent) (!aggressive body_1 ?opponent) ) ;aggressive forces partial_cover
 Reckless    ( (low_health ?opponent) (high_health_uncovered) (at_vantage_point ?attacker ?opponent) (other ?attacker ?other))
-            ( (!aggressive_reckless ?attacker) (!aggressive ?other) )
+            ( (!aggressive_reckless ?attacker ?opponent) (!aggressive ?other ?opponent) )
 )
 
 (:method (move_safe ?body ?target) 
@@ -76,8 +76,8 @@ Move        ( (other ?body ?other) )
 )
 
 (:method (win) 
-     ( () )
-    ( (kill) )
+     ( (opponent ?o) )
+    ( (kill ?o) )
 )
 
 (:method (win) 
