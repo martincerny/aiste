@@ -33,14 +33,16 @@ import java.util.List;
 public class CGRoleAggressive extends CGRolePlan {
 
     private int maxThreatsToAdvance;
+    private int preferredTarget;
 
-    public CGRoleAggressive(CoverGame env, int bodyId){
-        this(env, bodyId, 0);
+    public CGRoleAggressive(CoverGame env, int bodyId, int preferredTarget){
+        this(env, bodyId, preferredTarget, 0);
     }
     
-    public CGRoleAggressive(CoverGame env, int bodyId, int maxThreatsToAdvance) {
+    public CGRoleAggressive(CoverGame env, int bodyId, int opponentId, int maxThreatsToAdvance) {
         super(env, bodyId);
         this.maxThreatsToAdvance = maxThreatsToAdvance;
+        this.preferredTarget = opponentId;
     }
     
     
