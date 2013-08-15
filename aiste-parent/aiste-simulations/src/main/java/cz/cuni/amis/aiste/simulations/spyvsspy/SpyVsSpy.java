@@ -310,8 +310,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     bodyInfo.numTrapsCarried[targetTrap]--;
                     
                     //update marker data
-                    for(ChangesSinceMarker changes : markerData.values()){
-                        changes.numTrapsSet++;
+                    if(!isSimulation){
+                        for(ChangesSinceMarker changes : markerData.values()){
+                            changes.numTrapsSet++;
+                        }
                     }
                     
                     if (logger.isDebugEnabled() && !isSimulation) {
@@ -340,8 +342,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         location.numTrapRemovers[targetTrap]--;
                         
                         //update marker data
-                        for(ChangesSinceMarker changes : markerData.values()){
-                            changes.numRemoversTaken++;
+                        if(!isSimulation){
+                            for(ChangesSinceMarker changes : markerData.values()){
+                                changes.numRemoversTaken++;
+                            }
                         }
                         
                         if (logger.isDebugEnabled() && !isSimulation) {
@@ -372,8 +376,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         location.items.remove(targetItem);
                         
                         //update marker data
-                        for(ChangesSinceMarker changes : markerData.values()){
-                            changes.numItemsTaken++;
+                        if(!isSimulation){
+                            for(ChangesSinceMarker changes : markerData.values()){
+                                changes.numItemsTaken++;
+                            }
                         }
                         
                         if (logger.isDebugEnabled() && !isSimulation) {
@@ -401,10 +407,12 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                         location.numWeapons--;
                         
                         //update marker data
-                        for(ChangesSinceMarker changes : markerData.values()){
-                            changes.numWeaponsTaken++;
+                        if(!isSimulation){
+                            for(ChangesSinceMarker changes : markerData.values()){
+                                changes.numWeaponsTaken++;
+                            }
                         }
-                        
+
                         if (logger.isDebugEnabled() && !isSimulation) {
                             logger.debug(agentBody.getId() + ": Succesful action: " + action.getLoggableRepresentation() + " from: " + bodyInfo);
                         }
@@ -427,8 +435,10 @@ public class SpyVsSpy extends AbstractSynchronizedEnvironment<SpyVsSpyAction>
                     bodyInfo.locationIndex = action.getActionTarget();
 
                     //update marker data
-                    for(ChangesSinceMarker changes : markerData.values()){
-                        changes.numAgentMoves++;
+                    if(!isSimulation){
+                        for(ChangesSinceMarker changes : markerData.values()){
+                            changes.numAgentMoves++;
+                        }
                     }
                     
                     if (logger.isDebugEnabled() && !isSimulation) {

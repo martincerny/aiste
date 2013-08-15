@@ -187,7 +187,7 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         
         CoverGame.CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
 
-        int ids[] = env.getOponentIds(body.getId());
+        int ids[] = env.getOpponentIds(body.getId());
         OpponentData oponentData[] = env.getOpponentTeamData(body.getId()).opponentData;
         
         // body - related state

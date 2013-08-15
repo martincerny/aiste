@@ -181,7 +181,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         
         CoverGame.CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
 
-        int opponentIds[] = env.getOponentIds(body.getId());
+        int opponentIds[] = env.getOpponentIds(body.getId());
         OpponentData opponentData[] = env.getOpponentTeamData(body.getId()).opponentData;
 
         

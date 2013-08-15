@@ -40,13 +40,26 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
     
     @Override
     public boolean isGoalState(AgentBody body, CGPlanningGoal goal) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        //If no action has failed, I only need to check expected damage
+        for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
+            double worstCaseShots = env.getMarkerData(body).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex];
+            double expectedWorstCaseDamage = env.defs.shootDamage * worstCaseShots;
+            if(expectedWorstCaseDamage > env.bodyPairs.get(body.getId()).getBodyInfo(bodyIndex).health){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public boolean environmentChangedConsiderablySinceLastMarker(AgentBody body) {
-        //TODO
-        return false;
+        CoverGame.MarkerData data = env.getMarkerData(body);
+        if(data.diedSinceMarker){
+            return true;
+        } else {
+            //TODO check for significant movement
+            return false;
+        }
     }
 
     @Override
@@ -56,12 +69,12 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
 
     @Override
     public List<CGPlanningGoal> getRelevantGoals(AgentBody body) {
-        return Collections.singletonList(new CGPlanningGoal(CGPlanningGoal.Type.FIND_COVER, 10));
+        return Collections.singletonList(new CGPlanningGoal(CGPlanningGoal.Type.WIN, 10));
     }
 
     @Override
     public void setMarker(AgentBody body) {
-        //TODO
+        env.setMarker(body);        
     }
 
     @Override

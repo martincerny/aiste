@@ -24,7 +24,13 @@ import cz.cuni.amis.aiste.environment.impl.AbstractPlanningGoal;
  * @author Martin Cerny
  */
 public class CGPlanningGoal extends AbstractPlanningGoal {
-    public enum Type {FIND_COVER, ATTACK};
+    public enum Type { 
+        /**
+         * A generic goal for systems that search for only one solution
+         */
+        WIN, 
+        FIND_COVER, 
+        ATTACK};
 
     private Type type;
 

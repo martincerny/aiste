@@ -57,24 +57,25 @@ public class Test {
             info = PlannersPackUtils.getMetricFF();
         }
 
-        File plannersDirectory = new File("");
+        File plannersDirectory = new File(".");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
         plannerManager.extractAndPreparePlanner(plannersDirectory, info);
 
         IAsyncPlanner planner = new ExternalPlanner(new ItSimplePlannerExecutor(info, plannersDirectory));
 
 
-        Planning4JController pddlController = new Planning4JController(planner, Planning4JController.ValidationMethod.NONE);
-        JShop2Controller jshopController = new JShop2Controller(ValidationMethod.NONE);
-        JShop2Controller jshopController2 = new JShop2Controller(ValidationMethod.NONE);
+        Planning4JController pddlController = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+        Planning4JController pddlController2 = new Planning4JController(planner, Planning4JController.ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+        JShop2Controller jshopController = new JShop2Controller(ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
+        JShop2Controller jshopController2 = new JShop2Controller(ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
 
         CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map2.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
 
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv.getRepresentations().get(2))
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(1)),
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController2, cgEnv.getRepresentations().get(1))
                 });
         AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000000);
 
