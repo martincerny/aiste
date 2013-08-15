@@ -55,6 +55,51 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     List<Long> lastOpponentTeamDataEvalStep;
     List<OpponentTeamData> lastOpponentTeamData;
     
+    List<MarkerData> markerData;
+    /**
+     * True if this environment is a clone, created only for simulation
+     */
+    boolean isSimulation;    
+    
+    /**
+     * Create a duplicate of the environment. (defs are linked directly, rest of the data is copied).
+     * @param original 
+     */
+    private CoverGame(CoverGame original){
+        super(original);
+        defs = original.defs;
+        isSimulation = original.isSimulation;
+        
+        bodyInfos = new ArrayList<CGBodyInfo>();
+        //prefill the array so that I can call set on correct locations
+        for(int i = 0; i < original.bodyInfos.size(); i++){
+            bodyInfos.add(null);
+        }
+        bodyPairs = new ArrayList<CGBodyPair>();
+        lastOpponentTeamData = new ArrayList<OpponentTeamData>();
+        lastOpponentTeamDataEvalStep = new ArrayList<Long>();
+        markerData = new ArrayList<MarkerData>();
+        
+        for(CGBodyPair originalPair : original.bodyPairs ){
+            CGBodyPair copyPair = new CGBodyPair(originalPair.body);
+            
+            CGBodyInfo body0 = new CGBodyInfo(originalPair.bodyInfo0, copyPair);            
+            CGBodyInfo body1 = new CGBodyInfo(originalPair.bodyInfo1, copyPair);
+            
+            bodyInfos.set(body0.id, body0);
+            bodyInfos.set(body1.id, body1);
+                    
+            copyPair.bodyInfo0 = body0;
+            copyPair.bodyInfo1 = body1;
+            
+            bodyPairs.add(copyPair);            
+            lastOpponentTeamData.add(null);
+            lastOpponentTeamDataEvalStep.add(-1L);
+            markerData.add(new MarkerData(original.markerData.get(originalPair.getId())));
+        }
+        
+    }
+    
     public CoverGame(StaticDefs defs) {
         super(CGPairAction.class);
         this.defs = defs;
@@ -70,6 +115,10 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         registerRepresentation(new CGPDDLRepresentation(this));        
         registerRepresentation(new CGJSHOPRepresentationWithRoles(this));        
         //registerRepresentation(new CGJSHOPRepresentation(this));        
+
+        isSimulation = false;
+
+        markerData = new ArrayList<MarkerData>();
     }      
     
     @Override
@@ -77,13 +126,23 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         Map<CGBodyInfo, CGAction> individualActionsToPerform = new HashMap<CGBodyInfo, CGAction>();
         
+        //calculate possible threats for simulation
+        for(AgentBody body : getActiveBodies()){
+            for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
+                for(int opponentIndex = 0; opponentIndex < 2; opponentIndex++){
+                    markerData.get(body.getId()).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex] +=
+                            getHitProbability(bodyPairs.get(body.getId()).getBodyInfo(bodyIndex), bodyInfos.get(getOpponentIds(body.getId())[opponentIndex]));                               
+                }
+            }
+        }
+        
         for(AgentBody body: actionsToPerform.keySet()){
             CGBodyPair bodyPair = bodyPairs.get(body.getId());
             individualActionsToPerform.put(bodyPair.bodyInfo0, actionsToPerform.get(body).getAction1());
             individualActionsToPerform.put(bodyPair.bodyInfo1, actionsToPerform.get(body).getAction2());
         }
     
-        if(logger.isDebugEnabled()){
+        if(logger.isDebugEnabled()  && !isSimulation){
             //Draw the playground
             char[][] display = new char[defs.levelWidth][defs.levelHeight];
             for(int x = 0; x < defs.levelWidth; x++){
@@ -160,13 +219,19 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             if(action.act == CGAction.Action.SUPPRESS){                
                 CGBodyInfo targetInfo = bodyInfos.get((Integer)action.target);                
                 if(bodyInfo.suppressCooldown > 0){
-                    logger.info(bodyInfo.id + ": Invalid supress. Cooldown not zero: " + bodyInfo.suppressCooldown) ;                                        
+                    if(!isSimulation){
+                        logger.info(bodyInfo.id + ": Invalid supress. Cooldown not zero: " + bodyInfo.suppressCooldown);
+                    }
+                    agentFailedAction(bodyInfo.team.body);                    
                 }
                 else if(!isVisible(bodyInfo.loc, targetInfo.loc)){
-                    logger.info(bodyInfo.id + ": Invalid supress. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());                    
+                    if(!isSimulation){
+                        logger.info(bodyInfo.id + ": Invalid supress. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());                    
+                    }
+                    agentFailedAction(bodyInfo.team.body);                    
                 } else {
                     targetInfo.suppressed = true;
-                    if(logger.isDebugEnabled()){
+                    if(logger.isDebugEnabled()  && !isSimulation){
                         logger.debug(bodyInfo.id + ": Succesful suppress on: " + targetInfo.id);                            
                     }                    
                 }
@@ -183,20 +248,24 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                 CGBodyInfo targetInfo = bodyInfos.get((Integer) action.target);
                 agentsToUncover.add(bodyInfo);
                 if (!isVisible(bodyInfo.getLoc(), targetInfo.getLoc())) {
-                    logger.info(bodyInfo.id + ": Invalid ranged attack. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());
+                    if(!isSimulation){
+                        logger.info(bodyInfo.id + ": Invalid ranged attack. Target not visible. From: " + bodyInfo.getLoc() + " to: " + targetInfo.getLoc());
+                    }
+                    agentFailedAction(bodyInfo.team.body);                    
                 } else {
                     double hitProbability = getHitProbability(bodyInfo, targetInfo);
-                    if (rand.nextDouble() <= hitProbability) {
+                    if (rand.nextDouble() <= hitProbability || isSimulation) {
+                        //In simulation, I always hit
                         int damage = rand.nextInt(defs.shootDamageVariability * 2) + defs.shootDamage - defs.shootDamageVariability;
                         targetInfo.health -= damage;
                         targetInfo.numTurnsNotHit = 0;
                         agentsNotHit.remove(targetInfo.id);                        
-                        if(logger.isDebugEnabled()){
+                        if(logger.isDebugEnabled()  && !isSimulation){
                             logger.debug(bodyInfo.id + ": Succesful ranged attack on:" + targetInfo.id + " damage: " + damage);                            
                         }
                     } else {
-                        if(logger.isDebugEnabled()){
-                            logger.debug(bodyInfo.id + ": Ranged attack missed.");                            
+                        if(logger.isDebugEnabled()  && !isSimulation){
+                            logger.debug(bodyInfo.id + ": Ranged attack on:" + targetInfo.id + " missed.");                            
                         }                        
                     }
                 }
@@ -231,22 +300,31 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                 Loc targetLocation = (Loc)action.target;
                 bodyInfo.takingFullCover = false;
                 if(bodyInfo.getLoc().distanceTo(targetLocation) > defs.maxDistancePerTurn){
-                    logger.info(bodyInfo.id + ": Invalid movement - to far. From: " + bodyInfo.getLoc() + " To:" + targetLocation);
+                    if(!isSimulation){
+                        logger.info(bodyInfo.id + ": Invalid movement - to far. From: " + bodyInfo.getLoc() + " To:" + targetLocation);
+                    }
+                    agentFailedAction(bodyInfo.team.body);                    
                 } else if(!isVisible(bodyInfo.getLoc(), targetLocation)) {
-                    logger.info(bodyInfo.id + ": Invalid movement - impassable terrain. To:" + targetLocation);
+                    if(!isSimulation){
+                        logger.info(bodyInfo.id + ": Invalid movement - impassable terrain. To:" + targetLocation);
+                    }
+                    agentFailedAction(bodyInfo.team.body);                    
                 }
                 else {
                     bodyInfo.loc = targetLocation;
-                    if(logger.isDebugEnabled()){
+                    if(logger.isDebugEnabled()  && !isSimulation){
                         logger.debug(bodyInfo.id + ": Succesful move to:" + targetLocation);                            
                     }
                 }
             } else if(action.act == CGAction.Action.TAKE_FULL_COVER){
                 if(!isThereNeighbouringCover(bodyInfo.loc)){
-                    logger.info(bodyInfo.id + ": Invalid full cover - no cover near " + bodyInfo.loc);                    
+                    if(!isSimulation){
+                        logger.info(bodyInfo.id + ": Invalid full cover - no cover near " + bodyInfo.loc);                    
+                    }
+                    agentFailedAction(bodyInfo.team.body);                    
                 } else {
                     bodyInfo.takingFullCover = true;
-                    if(logger.isDebugEnabled()){
+                    if(logger.isDebugEnabled() && !isSimulation){
                         logger.debug(bodyInfo.id + ": Succesful full cover");                            
                     }
                 }
@@ -269,7 +347,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         Map<AgentBody, Double> rewardsMap = new HashMap<AgentBody, Double>(getActiveBodies().size());
         for(CGBodyPair bodypair : bodyPairs){
             rewardsMap.put(bodypair.body, rewards[bodypair.body.getId()]);
-            if(logger.isDebugEnabled()){
+            if(logger.isDebugEnabled() && !isSimulation){
                 logger.debug("Reward " + bodypair.body.getId() + ": " + rewards[bodypair.body.getId()]);
             }
         }
@@ -389,6 +467,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         lastOpponentTeamData.add(null);
         lastOpponentTeamDataEvalStep.add(-1L);
         
+        markerData.add(createMarkerData(newBody));        
+        
         return newBody;
     }
 
@@ -401,7 +481,13 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
 
     @Override
     public ISimulableEnvironment<CGPairAction> cloneForSimulation() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        CoverGame clone = new CoverGame(this);
+        clone.isSimulation = true;
+        //reset marker so that I can count possible risks
+        for(AgentBody body : getActiveBodies()){
+            clone.setMarker(body);
+        }
+        return clone;
     }
 
     @Override
@@ -409,12 +495,28 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         return nextStepInternal(actions);
     }
     
+    protected MarkerData createMarkerData(AgentBody body){
+        MarkerData data = new MarkerData();
+        for(int oppId : getOpponentIds(body.getId())){
+            data.opponentLocationsAtMarker.add(bodyInfos.get(oppId).loc);
+        }
+        return data;
+    }
+    
+    void setMarker(AgentBody body){
+        markerData.set(body.getId(), createMarkerData(body));
+    }
+    
+    MarkerData getMarkerData(AgentBody body){
+        return markerData.get(body.getId());
+    }
+    
     /**
      * Helper method for representations. Purposefully package visibility
      * @param teamNo
      * @return 
      */
-    int[] getOponentIds(int teamNo){
+    int[] getOpponentIds(int teamNo){
         int[] ids = new int[2];
         int idIndex = 0;
         for(CoverGame.CGBodyInfo bodyInfo : bodyInfos){
@@ -453,7 +555,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         if(lastOpponentTeamDataEvalStep.get(teamNo) == getTimeStep()){
             return lastOpponentTeamData.get(teamNo);
         }
-        int [] ids = getOponentIds(teamNo);
+        int [] ids = getOpponentIds(teamNo);
         OpponentData[] opponentData = new OpponentData[ids.length];
         OpponentTeamData data = new OpponentTeamData();
         
@@ -494,7 +596,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         int leastCoverId = -1;
         int leastCoverLevel = Integer.MAX_VALUE;
         CGBodyInfo bodyInfo = bodyInfos.get(bodyId);
-        for(int oppId : getOponentIds(bodyInfo.team.getId())){
+        for(int oppId : getOpponentIds(bodyInfo.team.getId())){
             CGBodyInfo oppInfo = bodyInfos.get(oppId);
             if(!isVisible(bodyInfo.loc, oppInfo.loc)){
                 continue;
@@ -535,7 +637,10 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         return threats;
     }
 
-    protected double getHitProbability(CGBodyInfo bodyInfo, CGBodyInfo targetInfo) {
+    double getHitProbability(CGBodyInfo bodyInfo, CGBodyInfo targetInfo) {
+        if(!isVisible(bodyInfo.loc, targetInfo.loc)){
+            return 0;
+        }
         double distance = bodyInfo.getLoc().distanceTo(targetInfo.getLoc());
         if(distance < 1){
             distance = 1;
@@ -556,7 +661,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             multiplier *= defs.supressedAimPenalty;
         }
         hitProbability *= multiplier;
-        if (logger.isTraceEnabled()) {
+        if (logger.isTraceEnabled() && !isSimulation) {
             logger.trace("Distance: " + distance + " Covered: " + covered + " Full cover: " + fullCover + " Supressed:" + supressed + ", hit probability: " + hitProbability);
         }
         return hitProbability;
@@ -580,6 +685,21 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         int suppressCooldown;
         
         int numTurnsNotHit;
+        
+        /**
+         * A copy constructor
+         * @param original
+         * @param copiedPair 
+         */
+        protected CGBodyInfo(CGBodyInfo original, CGBodyPair copiedPair){
+            this(original.id, copiedPair);
+            this.loc = original.loc;
+            this.health = original.health;
+            this.takingFullCover = original.takingFullCover;
+            this.suppressed = original.suppressed;
+            this.suppressCooldown = original.suppressCooldown;
+            this.numTurnsNotHit = original.numTurnsNotHit;
+        }
         
         public CGBodyInfo(int id, CGBodyPair team) {
             this.id = id;
@@ -759,5 +879,25 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         List<Loc> navpointsInvalidatingCover = new ArrayList<Loc>();
     }
         
-    
+    static class MarkerData {
+        boolean diedSinceMarker = false;
+        List<Loc> opponentLocationsAtMarker;
+        double[] expectedWorstCaseShotsReceivedSinceMarker = new double[2];
+
+        public MarkerData() {
+            opponentLocationsAtMarker = new ArrayList<Loc>();
+        }
+        
+        /**
+         * A copy constructor
+         * @param original 
+         */
+        public MarkerData(MarkerData original){
+            diedSinceMarker = original.diedSinceMarker;
+            opponentLocationsAtMarker = new ArrayList<Loc>(original.opponentLocationsAtMarker);
+            for(int i = 0; i < original.expectedWorstCaseShotsReceivedSinceMarker.length;i++){
+                expectedWorstCaseShotsReceivedSinceMarker[i] = original.expectedWorstCaseShotsReceivedSinceMarker[i];
+            }
+        }
+    }
 }

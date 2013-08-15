@@ -53,7 +53,7 @@ public class CGRoleOverWatch extends CGRolePlan {
             CGBodyInfo partnerInfo = env.bodyPairs.get(bodyInfo.getTeamId()).getOtherInfo(bodyInfo);
             int largestThreat = -1;
             double largestThreatAim = 0;            
-            for(int opp : env.getOponentIds(bodyInfo.getTeamId())){
+            for(int opp : env.getOpponentIds(bodyInfo.getTeamId())){
                 CGBodyInfo opponentInfo = env.bodyInfos.get(opp);
                 if(env.isVisible(partnerInfo.loc, opponentInfo.loc) && env.isVisible(bodyInfo.loc, opponentInfo.loc)) {
                     double aim = env.getHitProbability(opponentInfo, partnerInfo);
