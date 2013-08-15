@@ -61,6 +61,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
      */
     boolean isSimulation;    
     
+    List<CGBodyInfo> agentsKilledLastRound = new ArrayList<CGBodyInfo>();
+    
     /**
      * Create a duplicate of the environment. (defs are linked directly, rest of the data is copied).
      * @param original 
@@ -124,14 +126,19 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     @Override
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, CGPairAction> actionsToPerform) {
         
+        agentsKilledLastRound.clear();
+        
         Map<CGBodyInfo, CGAction> individualActionsToPerform = new HashMap<CGBodyInfo, CGAction>();
         
         //calculate possible threats for simulation
         for(AgentBody body : getActiveBodies()){
             for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
                 for(int opponentIndex = 0; opponentIndex < 2; opponentIndex++){
-                    markerData.get(body.getId()).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex] +=
-                            getHitProbability(bodyPairs.get(body.getId()).getBodyInfo(bodyIndex), bodyInfos.get(getOpponentIds(body.getId())[opponentIndex]));                               
+                    double hitProbability = getHitProbability(bodyPairs.get(body.getId()).getBodyInfo(bodyIndex), bodyInfos.get(getOpponentIds(body.getId())[opponentIndex]));
+                    markerData.get(body.getId()).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex] += hitProbability;                               
+                    if(hitProbability > markerData.get(body.getId()).maxShotProbabilitySinceMarker[bodyIndex]){
+                        markerData.get(body.getId()).maxShotProbabilitySinceMarker[bodyIndex] = hitProbability;
+                    }
                 }
             }
         }
@@ -233,7 +240,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                     targetInfo.suppressed = true;
                     if(logger.isDebugEnabled()  && !isSimulation){
                         logger.debug(bodyInfo.id + ": Succesful suppress on: " + targetInfo.id);                            
-                    }                    
+                    }   
+                    bodyInfo.suppressCooldown = defs.supressCooldown;
                 }
             }
         }
@@ -285,9 +293,17 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                 //the +1 reward to the other team
                 rewards[1 - bodyInfo.team.body.getId()] += 1;
                 
+                //update markers
+                markerData.get(bodyInfo.getTeamId()).diedSinceMarker = true;
+                
                 //clear agent action for this round
                 individualActionsToPerform.put(bodyInfo, new CGAction(CGAction.Action.NO_OP, null));
                                 
+                //the agent has failed any action it wanted to do
+                agentFailedAction(bodyInfo.team.body);                
+                
+                agentsKilledLastRound.add(bodyInfo);
+                        
                 //respawn agent
                 respawnAgent(bodyInfo);                
             }
@@ -883,6 +899,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         boolean diedSinceMarker = false;
         List<Loc> opponentLocationsAtMarker;
         double[] expectedWorstCaseShotsReceivedSinceMarker = new double[2];
+        double[] maxShotProbabilitySinceMarker = new double[2];
 
         public MarkerData() {
             opponentLocationsAtMarker = new ArrayList<Loc>();
@@ -897,6 +914,9 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             opponentLocationsAtMarker = new ArrayList<Loc>(original.opponentLocationsAtMarker);
             for(int i = 0; i < original.expectedWorstCaseShotsReceivedSinceMarker.length;i++){
                 expectedWorstCaseShotsReceivedSinceMarker[i] = original.expectedWorstCaseShotsReceivedSinceMarker[i];
+            }
+            for(int i = 0; i < original.maxShotProbabilitySinceMarker.length;i++){
+                maxShotProbabilitySinceMarker[i] = original.maxShotProbabilitySinceMarker[i];
             }
         }
     }

@@ -72,12 +72,11 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     
     //joint actions
     PDDLSimpleAction attackCrossfireAction;
-    PDDLSimpleAction attackSingleAction;
-    PDDLSimpleAction defendAction;
+    PDDLSimpleAction holdPositionAction;
     
     //tuning parameters for joint actions
-    double defendCost = 100;
-    double attackSingleCost = 3;
+    double holdPositionCost = 10;
+    double attackSingleCost = 5;
 
     public CGPDDLRepresentation(CoverGame env) {
         super(env);
@@ -111,23 +110,39 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         
         winPredicate = new PDDLPredicate("win");
         
-        opponentInstances = new PDDLObjectInstance[] { new PDDLObjectInstance("opponent_1", opponentType), new PDDLObjectInstance("opponent_2", opponentType)};
+        opponentInstances = new PDDLObjectInstance[] { new PDDLObjectInstance("opponent_0", opponentType), new PDDLObjectInstance("opponent_1", opponentType)};
         
         bodyPDDLs = new OneBodyPDDL[]{new OneBodyPDDL(0, env), new OneBodyPDDL(1, env)};
         bodyPDDLs[0].createJointActions(bodyPDDLs[1]);
         bodyPDDLs[1].createJointActions(bodyPDDLs[0]);
 
         /* Joint actions */
-        defendAction = new PDDLSimpleAction("defend");
-        defendAction.setPreconditionList(
+        holdPositionAction = new PDDLSimpleAction("hold_position", new PDDLParameter("loc0", navPointType), new PDDLParameter("loc1", navPointType), new PDDLParameter("op0", opponentType), new PDDLParameter("op1", opponentType));
+        holdPositionAction.setPreconditionList(
                 body_0_turn.stringAfterSubstitution(),
                 bodyPDDLs[0].partialCoverPredicate.stringAfterSubstitution(), 
-                bodyPDDLs[1].partialCoverPredicate.stringAfterSubstitution());
-        defendAction.setPositiveEffects(winPredicate.stringAfterSubstitution(),
-                "increase (total-cost) " + Double.toString(defendCost));
-        
-        
+                bodyPDDLs[1].partialCoverPredicate.stringAfterSubstitution(),
+                bodyPDDLs[0].bodyAtPredicate.stringAfterSubstitution("?loc0"),
+                bodyPDDLs[1].bodyAtPredicate.stringAfterSubstitution("?loc1"),
+                visibleByOpponentPredicate.stringAfterSubstitution("?op0", "?loc0"),
+                visibleByOpponentPredicate.stringAfterSubstitution("?op1", "?loc1")
+                );
+        holdPositionAction.setPositiveEffects(winPredicate.stringAfterSubstitution(),
+                "increase (total-cost) " + Double.toString(holdPositionCost));
 
+        
+        attackCrossfireAction = new PDDLSimpleAction("attackCrossfire", new PDDLParameter("target", opponentType), new PDDLParameter("loc0", navPointType), new PDDLParameter("loc1", navPointType));
+        attackCrossfireAction.setPreconditionList(
+                body_0_turn.stringAfterSubstitution(),
+                bodyPDDLs[0].partialCoverPredicate.stringAfterSubstitution(), 
+                bodyPDDLs[1].partialCoverPredicate.stringAfterSubstitution(),
+                bodyPDDLs[0].bodyAtPredicate.stringAfterSubstitution("?loc0"),
+                bodyPDDLs[1].bodyAtPredicate.stringAfterSubstitution("?loc1"),
+                vantagePointPredicate.stringAfterSubstitution("?target", "?loc0"),
+                vantagePointPredicate.stringAfterSubstitution("?target", "?loc1")
+        );
+        attackCrossfireAction.setPositiveEffects(winPredicate.stringAfterSubstitution());        
+        //crossfire has zero cost, as it is the most desired situation    
     }
 
     @Override
@@ -146,7 +161,8 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         
         domain.addFunction(new PDDLFunction("total-cost"));        
         
-        domain.addAction(defendAction);
+        domain.addAction(holdPositionAction);
+        domain.addAction(attackCrossfireAction);        
 
         for (OneBodyPDDL pddl : bodyPDDLs) {
             for (PDDLSimpleAction action : pddl.bodyActions) {
@@ -244,12 +260,23 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
         CGBodyPair bodypair = env.bodyPairs.get(body.getId());
         //Check for joint actions
-        if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(defendAction.getName()))){
+        if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(holdPositionAction.getName()))){
             actionsFromPlanner.poll();
-            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleDefensive(env, bodypair.bodyInfo0.id)), Collections.<CGRolePlan>singletonList(new CGRoleDefensive(env, bodypair.bodyInfo1.id)));
+            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(env, bodypair.bodyInfo0.id)), Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(env, bodypair.bodyInfo1.id)));
+        } else if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(attackCrossfireAction.getName()))){
+            actionsFromPlanner.poll();
+            int targetIndex = getBodyIndexFromOpponentInstanceName(body, nextAction.getParameters().get(0));
+            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo0.id, targetIndex)), Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo1.id, targetIndex)));
         }
+        
         //body-related joint actions
         for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
+            if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(bodyPDDLs[bodyIndex].attackSingleAction.getName()))){
+                actionsFromPlanner.poll();
+                int targetIndex = getBodyIndexFromOpponentInstanceName(body, nextAction.getParameters().get(0));
+                return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo0.id, targetIndex)), Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo1.id, targetIndex)));
+            }
+            
             CGAction mainAction = null;
             CGAction supportAction = null;
             if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(bodyPDDLs[bodyIndex].attackWithSupportAgainst_0_Action.getName()))){
@@ -312,15 +339,20 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         throw new IllegalArgumentException("Unrecognized action");
     }
     
-    protected int getBodyIdFromOpponentInstanceName(AgentBody body, String opponentInstanceName){
+    protected int getBodyIndexFromOpponentInstanceName(AgentBody body, String opponentInstanceName){
         if(opponentInstanceName.equals(Planning4JUtils.normalizeIdentifier(opponentInstances[0].getName()))){
-            return getBodyIdFromOpponentIndex(body, 0);
+            return 0;
         }
         else if(opponentInstanceName.equals(Planning4JUtils.normalizeIdentifier(opponentInstances[1].getName()))){
-            return getBodyIdFromOpponentIndex(body, 1);
+            return 1;
         } else {
             throw new IllegalArgumentException("Unrecognized opp name: " + opponentInstanceName);
         }
+    }
+    
+    
+    protected int getBodyIdFromOpponentInstanceName(AgentBody body, String opponentInstanceName){
+        return getBodyIdFromOpponentIndex(body, getBodyIndexFromOpponentInstanceName(body, opponentInstanceName));        
     }
     
     protected int getBodyIdFromOpponentIndex(AgentBody body, int opponentIndex){
@@ -347,6 +379,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         PDDLPredicate bodyAtPredicate;
         PDDLPredicate partialCoverPredicate;
         PDDLPredicate fullCoverPredicate;
+        PDDLPredicate canSupressPredicate;
         
         PDDLSimpleAction moveAction;
         PDDLSimpleAction noOpAction;
@@ -359,6 +392,8 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         PDDLSimpleAction attackWithSupportAgainst_1_Action;
         PDDLSimpleAction moveWithSupportAgainst_0_Action;
         PDDLSimpleAction moveWithSupportAgainst_1_Action;
+        
+        PDDLSimpleAction attackSingleAction;
         
         List<PDDLSimpleAction> bodyActions = new ArrayList<PDDLSimpleAction>();
         List<PDDLSimpleAction> jointActions = new ArrayList<PDDLSimpleAction>();
@@ -381,6 +416,9 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
             fullCoverPredicate = new PDDLPredicate(bodyPrefix + "full_cover");
             bodyPredicates.add(fullCoverPredicate);
+            
+            canSupressPredicate = new PDDLPredicate(bodyPrefix + "can_supress");
+            bodyPredicates.add(canSupressPredicate);
 
             /* Body acitons */
             moveAction = new PDDLSimpleAction(bodyPrefix + "move", new PDDLParameter("from", navPointType), new PDDLParameter("to", navPointType));
@@ -406,6 +444,9 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
             for (PDDLSimpleAction action : bodyActions) {
                 action.addPositiveEffect("when (not (" + partialCoverPredicate.stringAfterSubstitution() + ")) (increase (total-cost) "+ uncoveredCostString + ")");
+                
+                //all actions allow me to supress next turn
+                action.addPositiveEffect(canSupressPredicate.stringAfterSubstitution());
                 if (bodyId == 0) {
                     action.addPrecondition(body_0_turn.stringAfterSubstitution());
                     action.addNegativeEffect(body_0_turn.stringAfterSubstitution());
@@ -419,16 +460,33 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         
         protected void createJointActions(OneBodyPDDL otherBody){
             /* Joint actions with this body in lead role*/
+            
             attackWithSupportAgainst_0_Action = createAttackWithSupportAction(otherBody, opponentInstances[0], opponentInstances[1]);
             attackWithSupportAgainst_1_Action = createAttackWithSupportAction(otherBody, opponentInstances[1], opponentInstances[0]);
+            /* Attack with support does not seem effective - removing
             jointActions.add(attackWithSupportAgainst_0_Action);
             jointActions.add(attackWithSupportAgainst_1_Action);
-
+            */
+ 
             moveWithSupportAgainst_0_Action = createMoveWithSupportAction(otherBody, opponentInstances[0], opponentInstances[1]);
             moveWithSupportAgainst_1_Action = createMoveWithSupportAction(otherBody, opponentInstances[1], opponentInstances[0]);
             jointActions.add(moveWithSupportAgainst_0_Action);
             jointActions.add(moveWithSupportAgainst_1_Action);
 
+            
+            attackSingleAction = new PDDLSimpleAction(bodyPrefix + "attackSingle", new PDDLParameter("target", opponentType), new PDDLParameter("loc0", navPointType), new PDDLParameter("loc1", navPointType));
+            attackSingleAction.setPreconditionList(
+                    body_0_turn.stringAfterSubstitution(),
+                    partialCoverPredicate.stringAfterSubstitution(), 
+                    otherBody.partialCoverPredicate.stringAfterSubstitution(),
+                    bodyAtPredicate.stringAfterSubstitution("?loc0"),
+                    otherBody.bodyAtPredicate.stringAfterSubstitution("?loc1"),
+                    vantagePointPredicate.stringAfterSubstitution("?target", "?loc0")                    
+            );
+            attackSingleAction.setPositiveEffects(winPredicate.stringAfterSubstitution(),
+                    "increase (total-cost) " + Double.toString(attackSingleCost));        
+            jointActions.add(attackSingleAction);
+            
             for(PDDLSimpleAction jointAction : jointActions){
                 jointAction.addPrecondition(body_0_turn.stringAfterSubstitution());                
             }            
@@ -437,6 +495,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         private PDDLSimpleAction createAttackWithSupportAction(OneBodyPDDL otherBody, PDDLObjectInstance supressedOpponent, PDDLObjectInstance otherOpponent){
             PDDLSimpleAction action = new PDDLSimpleAction(bodyPrefix + "attack_with_support_against_" + supressedOpponent.getName(), new PDDLParameter("target", opponentType), new PDDLParameter("my_loc", navPointType), new PDDLParameter("other_loc", navPointType));
             action.setPreconditionList(
+                    otherBody.canSupressPredicate.stringAfterSubstitution(),
                     bodyAtPredicate.stringAfterSubstitution("?my_loc"),
                     otherBody.bodyAtPredicate.stringAfterSubstitution("?other_loc"),
                     visibleByOpponentPredicate.stringAfterSubstitution(supressedOpponent.getNameForPDDL(), "?other_loc"),
@@ -447,12 +506,14 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
             action.setPositiveEffects(
                     winPredicate.stringAfterSubstitution()
                     );
+            action.setNegativeEffects(otherBody.canSupressPredicate.stringAfterSubstitution());
             return action;
         } 
 
         private PDDLSimpleAction createMoveWithSupportAction(OneBodyPDDL otherBody, PDDLObjectInstance supressedOpponent, PDDLObjectInstance otherOpponent){
             PDDLSimpleAction action = new PDDLSimpleAction(bodyPrefix + "move_with_support_against_" + supressedOpponent.getName(), new PDDLParameter("from", navPointType), new PDDLParameter("to", navPointType), new PDDLParameter("other_loc", navPointType));
             action.setPreconditionList(
+                    otherBody.canSupressPredicate.stringAfterSubstitution(),
                     bodyAtPredicate.stringAfterSubstitution("?from"),
                     otherBody.bodyAtPredicate.stringAfterSubstitution("?other_loc"),
                     visibleByOpponentPredicate.stringAfterSubstitution(supressedOpponent.getNameForPDDL(), "?other_loc"),
@@ -460,6 +521,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                     PDDLOperators.makeNot(uncoveredByOpponentPredicate.stringAfterSubstitution(otherOpponent, "?from")),
                     PDDLOperators.makeNot(uncoveredByOpponentPredicate.stringAfterSubstitution(otherOpponent, "?other_loc"))                   
                     );
+            action.setNegativeEffects(otherBody.canSupressPredicate.stringAfterSubstitution());
             
             String coveredCondition = getCoveredCondition("?to");
             

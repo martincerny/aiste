@@ -110,7 +110,7 @@ implements IFutureListener<PLANNING_RESULT>
      * This allows the planner to issue actions the same step the planning was started, if
      * the planner returns swiftly.
      */
-    boolean actionIssuedThisStep = false;
+    boolean reactiveActionIssuedThisStep = false;
     
     
     
@@ -242,6 +242,16 @@ implements IFutureListener<PLANNING_RESULT>
         
         boolean startedPlanningThisStep = false;
         
+        if(representation instanceof IActionFailureRepresentation){
+            if(((IActionFailureRepresentation)representation).lastActionFailed(body)){
+                logger.info(body.getId() + ": Action failed, ivalidating plan.");
+                clearPlan();
+                startPlanning();;
+                startedPlanningThisStep = true;
+            }            
+        }
+        
+        
         //The current goal was invalidated by a new one. Lets go for it.
         IPlanningGoal newGoal = selectGoal();
         if(!newGoal.equals(goalForPlanning)){
@@ -298,7 +308,7 @@ implements IFutureListener<PLANNING_RESULT>
          * Evaluate actions from plan
          */
         if(logger.isDebugEnabled()){
-            logger.debug("Reactive plan for planner status:" + activePlannerActionReactivePlan.getStatus());
+            logger.debug(body.getId() + ": Reactive plan for planner status:" + activePlannerActionReactivePlan.getStatus());
         }
         findNextAction: do {
             switch (activePlannerActionReactivePlan.getStatus()) {
@@ -340,6 +350,7 @@ implements IFutureListener<PLANNING_RESULT>
         IAction nextAction = null;
         if(reactiveLayerActive){
             nextAction = activeReactiveLayerPlan.nextAction();
+            reactiveActionIssuedThisStep = true;
             logger.info(body.getId() + ": Reactive layer in cotrol, action: " + nextAction.getLoggableRepresentation());            
             if(!activePlannerActionReactivePlan.getStatus().isFinished() && nextAction.equals(activePlannerActionReactivePlan.peek())){
                 //if the action is the same as in the original plan, we should advance both reactive plans
@@ -348,24 +359,23 @@ implements IFutureListener<PLANNING_RESULT>
         }
         else if(!activePlannerActionReactivePlan.getStatus().isFinished()){
             nextAction = activePlannerActionReactivePlan.nextAction();            
+            reactiveActionIssuedThisStep = false;
         } else {
             numStepsIdle.increment();
             IReactivePlan defaultPlan = representation.getDefaultReactivePlan(body);
             if(defaultPlan != null && defaultPlan.getStatus() == ReactivePlanStatus.EXECUTING){
                 nextAction = defaultPlan.nextAction();
             }
+            reactiveActionIssuedThisStep = false;
         }
         
         if(logger.isDebugEnabled()) {
-            logger.debug("Current reactive plan: " + activePlannerActionReactivePlan);
+            logger.debug(body.getId() + ": Current reactive plan: " + activePlannerActionReactivePlan);
         }
         
         if(nextAction != null){
-            actionIssuedThisStep = true;
             getEnvironment().act(getBody(), nextAction);                        
-        } else {
-            actionIssuedThisStep = false;
-        }
+        } 
         
         if(reactiveLayerActive){
             logRuntime("REACTIVE_LAYER", nextAction);
@@ -521,14 +531,29 @@ implements IFutureListener<PLANNING_RESULT>
                     if (planValid) {
                         boolean overwriteCurrentPlan = false;
                         if (currentPlan.isEmpty() && activePlannerActionReactivePlan.getStatus().isFinished()) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(body.getId() + ": No current plan, using new plan.");
+                            }
                             overwriteCurrentPlan = true;
                         } else if (goalForPlanning.getPriority() > executedGoal.getPriority()) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(body.getId() + ": New plan achieves higher priority goal, using new plan.");
+                            }
                             overwriteCurrentPlan = true;
                         } else if (getPlanCost(currentPlan) > getPlanCost(newPlanDeque)) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(body.getId() + ": New plan has lower cost, using new plan.");
+                            }                            
                             overwriteCurrentPlan = true;
                         } else if (!validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal)) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(body.getId() + ": Current plan is no longer valid, using new plan.");
+                            }
                             overwriteCurrentPlan = true;
                         } else {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(body.getId() + ": New plan is no better than old plan. Keeping old plan.");
+                            }
                             //I have just validated the current plan
                             planValidatedForThisStep = true;
                         }
@@ -544,7 +569,10 @@ implements IFutureListener<PLANNING_RESULT>
                             //current plan was overwritten with new plan, which was validated
                             planValidatedForThisStep = true;
                             
-                            if(!actionIssuedThisStep){
+                            if(!reactiveActionIssuedThisStep){
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(body.getId() + ": Overwriting previous non-reactive action.");
+                                }
                                 //I have finished planning and no action was issued yet in this step -> lets do the first action of our plan
                                 getNextReactivePlanFromCurrentPlan();
                                 if(!activePlannerActionReactivePlan.getStatus().isFinished()){
@@ -552,7 +580,12 @@ implements IFutureListener<PLANNING_RESULT>
                                 }                                
                             }
                         }
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(body.getId() + ": Freshly received plan is not valid.");
+                        }
                     }
+                            
 
                 } else {
                     numUnsuccesfulPlanning.increment();

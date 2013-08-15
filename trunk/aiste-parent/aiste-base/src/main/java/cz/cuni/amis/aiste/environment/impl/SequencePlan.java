@@ -79,6 +79,25 @@ public class SequencePlan<ACTION extends IAction> implements IReactivePlan<ACTIO
     public IReactivePlan<ACTION> cloneForSimulation(ISimulableEnvironment<ACTION> environmentCopy) {
         return new SequencePlan<ACTION>(actions.subList(currentIndex, actions.size()));
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        for(int i = 0; i < actions.size(); i++){
+            if(i != 0){
+                sb.append(", ");
+            }
+            if(i == currentIndex){
+                sb.append(" -> ");
+            }
+            sb.append(actions.get(i).toString());
+        }
+        sb.append("] - ");
+        sb.append(getStatus());
+        return sb.toString();
+    }
+    
+    
     
     
     
