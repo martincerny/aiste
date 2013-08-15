@@ -33,16 +33,16 @@ import java.util.List;
 public class CGRoleAggressive extends CGRolePlan {
 
     private int maxThreatsToAdvance;
-    private int preferredTarget;
+    private int preferredTargetIndex;
 
-    public CGRoleAggressive(CoverGame env, int bodyId, int preferredTarget){
-        this(env, bodyId, preferredTarget, 0);
+    public CGRoleAggressive(CoverGame env, int bodyId, int preferredTargetIndex){
+        this(env, bodyId, preferredTargetIndex, 0);
     }
     
-    public CGRoleAggressive(CoverGame env, int bodyId, int opponentId, int maxThreatsToAdvance) {
+    public CGRoleAggressive(CoverGame env, int bodyId, int preferredTargetIndex, int maxThreatsToAdvance) {
         super(env, bodyId);
         this.maxThreatsToAdvance = maxThreatsToAdvance;
-        this.preferredTarget = opponentId;
+        this.preferredTargetIndex = preferredTargetIndex;
     }
     
     
@@ -70,10 +70,19 @@ public class CGRoleAggressive extends CGRolePlan {
     
     @Override
     public ReactivePlanStatus getStatus() {
-        CGBodyInfo bodyInfo = getBodyInfo();
+        CGBodyInfo bodyInfo = getBodyInfo();        
+        
+        boolean enemyKilledLastRound = false;
+        for(CGBodyInfo killedInfo : env.agentsKilledLastRound){
+            if(killedInfo.getTeamId() != bodyInfo.getTeamId()){
+                enemyKilledLastRound = true;
+                break;
+            }
+        }
+        
         if(env.getNumThreats(bodyId, bodyInfo.loc) > maxThreatsToAdvance){
             return ReactivePlanStatus.FAILED;
-        } else if(env.getBestTarget(bodyId) < 0) {
+        } else if(enemyKilledLastRound) {
             return ReactivePlanStatus.COMPLETED;
         } else {
             return ReactivePlanStatus.EXECUTING;            

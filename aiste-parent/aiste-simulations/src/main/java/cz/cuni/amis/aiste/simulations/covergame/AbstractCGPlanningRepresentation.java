@@ -18,6 +18,7 @@
 package cz.cuni.amis.aiste.simulations.covergame;
 
 import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
 import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;
 import cz.cuni.amis.aiste.simulations.covergame.CoverGame.CGBodyPair;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER_ACTION>  implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, CGPairAction, CoverGame, CGPlanningGoal>{
+public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER_ACTION>  implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, CGPairAction, CoverGame, CGPlanningGoal>, IActionFailureRepresentation{
 
     protected CoverGame env;
 
@@ -37,17 +38,26 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
         this.env = env;
     }
 
+    @Override
+    public boolean lastActionFailed(AgentBody body) {
+        return env.lastActionFailed(body);                
+    }
+
+    
     
     @Override
     public boolean isGoalState(AgentBody body, CGPlanningGoal goal) {
         //If no action has failed, I only need to check expected damage
-        for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
+/*        for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
             double worstCaseShots = env.getMarkerData(body).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex];
             double expectedWorstCaseDamage = env.defs.shootDamage * worstCaseShots;
             if(expectedWorstCaseDamage > env.bodyPairs.get(body.getId()).getBodyInfo(bodyIndex).health){
                 return false;
             }
-        }
+            if(env.getMarkerData(body).maxShotProbabilitySinceMarker[bodyIndex] > 0.6){
+                return false;
+            }
+        }*/
         return true;
     }
 

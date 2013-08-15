@@ -58,6 +58,12 @@ public class EmptyReactivePlan<ACTION extends IAction> implements IReactivePlan<
     public boolean hasActions() {
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "[]";
+    }
+    
     
     
     
