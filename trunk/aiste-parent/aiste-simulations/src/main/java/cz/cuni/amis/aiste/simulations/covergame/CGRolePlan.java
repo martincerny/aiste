@@ -109,6 +109,6 @@ public abstract class CGRolePlan extends AbstractReactivePlan<CGAction> {
         return path != null && path.size() > 1;
     }
     
-    
+    protected abstract CGRolePlan cloneForSimulation(CoverGame cgCopy);
     
 }

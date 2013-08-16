@@ -133,6 +133,11 @@ public class CGRoleDefensive extends CGRolePlan {
         return "Defensive";
     }
 
+    @Override
+    protected CGRolePlan cloneForSimulation(CoverGame cgCopy) {
+        return new CGRoleDefensive(cgCopy, bodyId);
+    }
+
     
     
 }

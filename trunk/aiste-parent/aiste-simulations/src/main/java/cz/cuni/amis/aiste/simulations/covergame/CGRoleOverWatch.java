@@ -93,6 +93,11 @@ public class CGRoleOverWatch extends CGRolePlan {
         return "OverWatch{" + "preferSuppression=" + preferSuppression + '}';
     }
 
+    @Override
+    protected CGRolePlan cloneForSimulation(CoverGame cgCopy) {
+        return new CGRoleOverWatch(cgCopy, bodyId, preferSuppression);
+    }
+
   
 
     

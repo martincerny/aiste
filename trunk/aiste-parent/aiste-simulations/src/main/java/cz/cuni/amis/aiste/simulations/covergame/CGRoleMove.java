@@ -134,6 +134,11 @@ public class CGRoleMove extends CGRolePlan {
         return "Move{" + "maxThreats=" + maxThreats + ", target=" + target + '}';
     }
 
+    @Override
+    protected CGRolePlan cloneForSimulation(CoverGame cgCopy) {
+        return new CGRoleMove(cgCopy, bodyId, target, maxThreats);
+    }
+
     
     
 }
