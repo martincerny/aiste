@@ -16,6 +16,8 @@
  */
 package cz.cuni.amis.aiste.simulations.covergame;
 
+import cz.cuni.amis.aiste.environment.IReactivePlan;
+import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.ReactivePlanStatus;
 import cz.cuni.amis.aiste.environment.impl.AbstractReactivePlan;
 import cz.cuni.amis.aiste.simulations.covergame.CoverGame.CGBodyInfo;
@@ -152,6 +154,12 @@ public class CGRoleAggressive extends CGRolePlan {
     public String toString() {
         return "Aggressive{maxThreatsToAdvance=" + maxThreatsToAdvance + '}';
     }
+
+    @Override
+    protected CGRolePlan cloneForSimulation(CoverGame cgCopy) {
+        return new CGRoleAggressive(cgCopy, bodyId, preferredTargetIndex, maxThreatsToAdvance);
+    }
+
 
     
     

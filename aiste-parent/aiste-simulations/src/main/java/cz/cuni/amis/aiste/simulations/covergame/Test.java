@@ -22,6 +22,7 @@ import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
+import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.execution.impl.ManualAdvanceEnvironmentExecutorFactory;
 import cz.cuni.amis.aiste.experiments.AisteExperiment;
 import cz.cuni.amis.aiste.experiments.AisteExperimentRunner;
@@ -69,7 +70,7 @@ public class Test {
         JShop2Controller jshopController = new JShop2Controller(ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
         JShop2Controller jshopController2 = new JShop2Controller(ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
 
-        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map2.txt"));
+        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
 
@@ -79,7 +80,8 @@ public class Test {
                 });
         AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000000);
 
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
+//        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(548742L);
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);

@@ -16,10 +16,13 @@
  */
 package cz.cuni.amis.aiste.simulations.covergame;
 
+import cz.cuni.amis.aiste.environment.IReactivePlan;
+import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.ReactivePlanStatus;
 import cz.cuni.amis.aiste.environment.impl.AbstractReactivePlan;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import org.apache.log4j.Logger;
@@ -37,7 +40,7 @@ public class CGPairRolePlan extends AbstractReactivePlan<CGPairAction> {
     
     private final Logger logger = Logger.getLogger(CGPairRolePlan.class);
     
-    public CGPairRolePlan(List<CGRolePlan> plansBody0, List<CGRolePlan> plansBody1) {
+    public CGPairRolePlan(Collection<CGRolePlan> plansBody0, Collection<CGRolePlan> plansBody1) {
         if(plansBody0.isEmpty() || plansBody1.isEmpty()){
             throw new IllegalArgumentException("Plans must be non-empty");
         }
@@ -102,6 +105,20 @@ public class CGPairRolePlan extends AbstractReactivePlan<CGPairAction> {
     @Override
     public String toString() {
         return "0: " + plansBody0 + ", 1: " + plansBody1;
+    }
+
+    protected Queue<CGRolePlan> cloneSubplanForSimulation(Queue<CGRolePlan> originalPlan, CoverGame cg){
+        Queue<CGRolePlan> plan = new ArrayDeque<CGRolePlan>(originalPlan.size());
+        for(CGRolePlan subplan : originalPlan){
+            plan.add(subplan.cloneForSimulation(cg));
+        }
+        return plan;
+    }
+    
+    @Override
+    public IReactivePlan<CGPairAction> cloneForSimulation(ISimulableEnvironment<CGPairAction> environmentCopy) {
+        CoverGame cgCopy = (CoverGame)environmentCopy;
+        return new CGPairRolePlan(cloneSubplanForSimulation(plansBody0, cgCopy), cloneSubplanForSimulation(plansBody1, cgCopy));
     }
 
     
