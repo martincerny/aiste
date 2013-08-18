@@ -49,11 +49,11 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
     private boolean debugMode;
     
     /**
-     * If actual execution delay between succesive environment steps is greater
+     * If actual execution delay between succesive environment steps is greater by a factor larger
      * than this, it is assumed, that the environment does not react fast enough
      * for current stepDelay and an exception is thrown.
      */
-    private static final long MILISECOND_TOLERANCE_FOR_ENVIRONMENT_STEPS = 50;
+    private static final double STEP_TOLERANCE_FACTOR = 1.2;
 
     public DefaultEnvironmentExecutor(long stepDelay, int maxNotificationInstancesPerController) {
         super(stepDelay);
@@ -132,7 +132,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
                 synchronized (getEnvironment()) {
                     if(lastExecutionTime > 0){
                         long delay = System.currentTimeMillis() - lastExecutionTime;
-                        if (!isDebugMode() && delay > getStepDelay() + MILISECOND_TOLERANCE_FOR_ENVIRONMENT_STEPS) {
+                        if (!isDebugMode() && delay > getStepDelay() * STEP_TOLERANCE_FACTOR) {
                             throw new SimulationException("Two succesive simulation steps were run after " + delay + " ms, but should be " + getStepDelay() + " ms");
                         }
                     }
