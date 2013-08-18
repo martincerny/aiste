@@ -120,6 +120,9 @@ public class CGMapReader {
         
         //generate nav graph - which pairs are reachable by single movement
         for(Loc np1 : navPoints){
+            //Some navpoints were added - mark them as nav points
+            defs.squares[np1.x][np1.y].isNavPoint = true;
+            
             List<Loc> neighbours = new ArrayList<Loc>();
             for(Loc np2: navPoints){
                 if(!np1.equals(np2) && CGUtils.distance(np1, np2) <= defs.maxDistancePerTurn && CGUtils.isVisible(np1, np2, defs.squares)){

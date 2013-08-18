@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package cz.cuni.amis.aiste.simulations.covergame;
 
-import cz.cuni.amis.aiste.simulations.fps1.*;
-import java.util.Set;
+import java.io.File;
+import java.io.IOException;
 
 /**
- * A non-changing information traversable square on FPS1 map.
- * @author Martin Cerny
+ *
+ * @author Martin
  */
-public class CGSquare {    
+public class RenderMain {
     
-    boolean passable;
-    boolean horizontalCover;
-    boolean verticalCover;
-    boolean isNavPoint;
+    public static void main(String []args) throws IOException {
+        String mapName = "cg_map_simple";
+        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/" + mapName+  ".txt"));
+        new CGMapRenderer(true,true).renderMap(defs, new File("./" + mapName + ".png"));
+    }
 }
