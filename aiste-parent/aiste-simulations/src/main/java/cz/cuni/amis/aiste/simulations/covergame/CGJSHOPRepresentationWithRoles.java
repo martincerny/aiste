@@ -279,6 +279,14 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
 
     @Override
     public IReactivePlan<? extends CGPairAction> translateAction(Queue<Predicate> actionsFromPlanner, AgentBody body) {
+        return translateActionForSimulation(env, actionsFromPlanner, body);
+    }    
+    
+    @Override
+    public IReactivePlan<? extends CGPairAction> translateActionForSimulation(CoverGame simulationEnv, Queue<Predicate> actionsFromPlanner, AgentBody body) {
+
+    
+    
         //eat sync actions at the beginning
         while(!actionsFromPlanner.isEmpty() && (actionsFromPlanner.peek().getHead() == CoverGameWithRolesJSHOP2.PRIMITIVE_SYNC)){
             actionsFromPlanner.poll();
@@ -294,7 +302,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         ArrayList<CGRolePlan> actionsForBody2 = new ArrayList<CGRolePlan>();
         actionsForBodies.add(actionsForBody2);
         
-        int[] bodyIds = env.getTeamIds(body.getId());
+        int[] bodyIds = simulationEnv.getTeamIds(body.getId());
         
         JSHOP2 jshop = jshops.get(body);
         
@@ -310,30 +318,30 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
             switch(info.actionId){
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_MOVE_SAFE : {
                     Loc target = constantsToLocations.get(info.params.get(1));
-                    actionsForBodies.get(bodyIndex).add(new CGRoleMove(env, bodyId, target, 0));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleMove(simulationEnv, bodyId, target, 0));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_MOVE_RECKLESS : {
                     Loc target = constantsToLocations.get(info.params.get(1));
-                    actionsForBodies.get(bodyIndex).add(new CGRoleMove(env, bodyId, target, 1));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleMove(simulationEnv, bodyId, target, 1));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_AGGRESSIVE : {
                     int opponentId = opponentConstantToBodyIndex(info, body);
-                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(env, bodyId, 0, opponentId));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, 0, opponentId));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_AGGRESSIVE_RECKLESS : {
                     int opponentId = opponentConstantToBodyIndex(info, body);
-                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(env, bodyId, 1, opponentId));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, 1, opponentId));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_DEFENSIVE : {
-                    actionsForBodies.get(bodyIndex).add(new CGRoleDefensive(env, bodyId));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleDefensive(simulationEnv, bodyId));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_OVERWATCH_DEFENSIVE : {
-                    actionsForBodies.get(bodyIndex).add(new CGRoleOverWatch(env, bodyId, true));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleOverWatch(simulationEnv, bodyId, true));
                     break;
                 }
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_ADDED_COST : {
@@ -347,9 +355,9 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         }
         
         
-        CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
+        CGBodyPair bodyPair = simulationEnv.bodyPairs.get(body.getId());
         CGPairRolePlan plan = new CGPairRolePlan(actionsForBody1, actionsForBody2);
-        if(logger.isDebugEnabled() && !env.isSimulation){
+        if(logger.isDebugEnabled() && !simulationEnv.isSimulation){
             logger.debug(body.getId() + ": RolePlan: " + plan);
         }
         return plan;

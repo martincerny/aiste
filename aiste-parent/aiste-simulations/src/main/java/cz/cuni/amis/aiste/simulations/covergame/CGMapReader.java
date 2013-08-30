@@ -50,7 +50,7 @@ public class CGMapReader {
         for(int y = 0; y < defs.levelHeight; y++){
             String line = sc.nextLine();
             for(int x = 0; x < defs.levelWidth; x++){
-                CGSquare newSquare = new CGSquare();
+                CGSquare newSquare = new CGSquare(x,y);
                 defs.squares[x][y] = newSquare;
                 newSquare.passable = true;
                 char squareChar = line.charAt(x);
@@ -125,7 +125,7 @@ public class CGMapReader {
             
             List<Loc> neighbours = new ArrayList<Loc>();
             for(Loc np2: navPoints){
-                if(!np1.equals(np2) && CGUtils.distance(np1, np2) <= defs.maxDistancePerTurn && CGUtils.isVisible(np1, np2, defs.squares)){
+                if(!np1.equals(np2) && CGUtils.distance(np1, np2) <= defs.maxDistancePerTurn && CGUtils.isVisible(np1, np2, defs)){
                     neighbours.add(np2);
                 }
             }

@@ -21,7 +21,9 @@ import cz.cuni.amis.aiste.environment.IReactivePlan;
 import cz.cuni.amis.aiste.environment.ISimulablePlanningRepresentation;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
+import cz.cuni.amis.planning4j.ActionDescription;
 import java.util.List;
+import java.util.Queue;
 
 /**
  *
@@ -81,6 +83,11 @@ public abstract class AbstractSpyVsSpyPlanningRepresentation<DOMAIN, PROBLEM, PL
     }
     
     
+    @Override
+    public IReactivePlan<? extends SpyVsSpyAction> translateActionForSimulation(SpyVsSpy environment, Queue<PLANNER_ACTION> actionsFromPlanner, AgentBody body) {
+        //In this representation, action translation is not connected to particular environment instance
+        return translateAction(actionsFromPlanner, body);
+    }
     
     
 }

@@ -255,6 +255,14 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     }
 
     @Override
+    public IReactivePlan<? extends CGPairAction> translateActionForSimulation(CoverGame environment, Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
+        //In this representation, action translation is not connected to particular environment instance
+        return translateAction(actionsFromPlanner, body);
+    }
+
+    
+    
+    @Override
     public IReactivePlan<? extends CGPairAction> translateAction(Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
         ActionDescription nextAction = actionsFromPlanner.peek();
 

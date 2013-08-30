@@ -16,16 +16,27 @@
  */
 package cz.cuni.amis.aiste.environment;
 
+import java.util.Queue;
+
 /**
  *
  * @author Martin Cerny
  */
 public interface ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION extends IAction, ENVIRONMENT extends IEnvironment, GOAL extends IPlanningGoal> 
-extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION, GOAL>, ISimulableEnvironmentRepresentation<ENVIRONMENT> {    
+extends IPlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, ACTION, GOAL> {    
     /**
      * Check whether given body is in goal state. Useful especially for simulations.
      * @param body
      * @return 
      */
     public boolean isGoalState(AgentBody body, GOAL goal);
+    
+    /**
+     * Translates an initial segment of a plan into actions for a specified simulated copy of the environment. The processed actions are removed from the respective queue
+     * @param actionFromPlanner
+     * @param body
+     * @return 
+     */
+    public IReactivePlan<? extends ACTION> translateActionForSimulation(ENVIRONMENT environment, Queue<PLANNER_ACTION> actionsFromPlanner, AgentBody body);    
+    
 }

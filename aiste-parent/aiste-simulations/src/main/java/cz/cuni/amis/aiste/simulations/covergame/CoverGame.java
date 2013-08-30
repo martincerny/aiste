@@ -328,29 +328,11 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     }
     
     public List<CGSquare> getNeighbouringSquares(Loc l){
-        List<CGSquare> neighbours = new ArrayList<CGSquare>(4);
-        if(l.x > 0 && defs.squares[l.x - 1][l.y].passable){
-            neighbours.add(defs.squares[l.x - 1][l.y]);
-        }
-        if(l.y > 0 && defs.squares[l.x][l.y - 1].passable){
-            neighbours.add(defs.squares[l.x][l.y - 1]);
-        }
-        if(l.x < defs.levelWidth - 1 && defs.squares[l.x + 1][l.y].passable){
-            neighbours.add(defs.squares[l.x + 1][l.y]);
-        }
-        if(l.y < defs.levelHeight - 1 && defs.squares[l.x][l.y + 1].passable){
-            neighbours.add(defs.squares[l.x][l.y + 1]);
-        }
-        return neighbours;
+        return CGUtils.getNeighbouringSquares(l, defs);
     }
     
     public boolean isThereNeighbouringCover(Loc l){
-        for(CGSquare sq : getNeighbouringSquares(l)){
-            if(sq.horizontalCover || sq.verticalCover){
-                return true;
-            }
-        } 
-        return false;
+        return CGUtils.isThereNeighbouringCover(l, defs);
     }
     
 
@@ -362,7 +344,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
      * @return 
      */
     public boolean isVisible(Loc from, Loc to){
-        return CGUtils.isVisible(from, to, defs.squares);
+        return CGUtils.isVisible(from, to, defs);
     }
     
     /**

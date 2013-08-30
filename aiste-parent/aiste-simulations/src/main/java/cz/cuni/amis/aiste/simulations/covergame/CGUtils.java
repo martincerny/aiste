@@ -107,12 +107,12 @@ public class CGUtils {
     }    
     
     /**
-     * Visibility is checked by Bresenham's algorithm, taken from http://tech-algorithm.com/articles/drawing-line-using-bresenham-algorithm/
+     * Direct visibility is checked by Bresenham's algorithm, taken from http://tech-algorithm.com/articles/drawing-line-using-bresenham-algorithm/
      * @param from
      * @param to
      * @return 
      */
-    public static boolean isVisible(Loc from, Loc to, CGSquare[][] squares){
+    public static boolean isDirectlyVisible(Loc from, Loc to, CGSquare[][] squares){
         for(Loc pointOnLine : getPointsOnLine(from, to)){
             if(!squares[pointOnLine.x][pointOnLine.y].passable){
                 return false;
@@ -120,5 +120,53 @@ public class CGUtils {
         }
         return true;
     }    
+
+    /**
+     * Direct visibility implies visibility, but a place is considered visible also if it is directly visible
+     * from any of the neighbouring traversable squares.
+     * @param from
+     * @param to
+     * @param squares
+     * @return 
+     */
+    public static boolean isVisible(Loc from, Loc to, CoverGame.StaticDefs defs){
+        if(isDirectlyVisible(from, to, defs.squares)){
+            return true;
+        }
+        
+        for(CGSquare sq: getNeighbouringSquares(from, defs)){
+            if(sq.passable && isDirectlyVisible(sq.loc, to, defs.squares)){
+                return true;
+            }
+        }
+        
+        return false;
+    }    
+    
+    public static List<CGSquare> getNeighbouringSquares(Loc l, CoverGame.StaticDefs defs){
+        List<CGSquare> neighbours = new ArrayList<CGSquare>(4);
+        if(l.x > 0 && defs.squares[l.x - 1][l.y].passable){
+            neighbours.add(defs.squares[l.x - 1][l.y]);
+        }
+        if(l.y > 0 && defs.squares[l.x][l.y - 1].passable){
+            neighbours.add(defs.squares[l.x][l.y - 1]);
+        }
+        if(l.x < defs.levelWidth - 1 && defs.squares[l.x + 1][l.y].passable){
+            neighbours.add(defs.squares[l.x + 1][l.y]);
+        }
+        if(l.y < defs.levelHeight - 1 && defs.squares[l.x][l.y + 1].passable){
+            neighbours.add(defs.squares[l.x][l.y + 1]);
+        }
+        return neighbours;
+    }
+    
+    public static boolean isThereNeighbouringCover(Loc l, CoverGame.StaticDefs defs){
+        for(CGSquare sq : getNeighbouringSquares(l, defs)){
+            if(sq.horizontalCover || sq.verticalCover){
+                return true;
+            }
+        } 
+        return false;
+    }
     
 }

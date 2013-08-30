@@ -219,6 +219,14 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
     }
 
     @Override
+    public IReactivePlan<? extends CGPairAction> translateActionForSimulation(CoverGame environment, Queue<Predicate> actionsFromPlanner, AgentBody body) {
+        //For plain representation, the transaltion is the same for simulation and regular run
+        return translateAction(actionsFromPlanner, body);
+    }
+
+    
+    
+    @Override
     public IReactivePlan<? extends CGPairAction> translateAction(Queue<Predicate> actionsFromPlanner, AgentBody body) {
         //eat sync actions at the beginning
         while(!actionsFromPlanner.isEmpty() && (actionsFromPlanner.peek().getHead() == CoverGameJSHOP2.PRIMITIVE_SYNC_START || actionsFromPlanner.peek().getHead() == CoverGameJSHOP2.PRIMITIVE_SYNC_END)){

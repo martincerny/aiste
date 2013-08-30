@@ -53,9 +53,5 @@ public abstract class AbstractFPS1PlanningRepresentation <DOMAIN, PROBLEM, PLANN
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    @Override
-    public void setEnvironment(FPS1 env) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 
 }
