@@ -68,7 +68,7 @@ SafeWithDoubleFire
 Safe        ( (partial_cover_both) )
             ( (!aggressive ?attack_lead ?opponent) (!overwatch_defensive ?other) ) ;aggressive forces partial_cover
 Reckless    ( (low_health ?opponent) (high_health_uncovered) )
-            ( (!aggressive_reckless ?attacker ?opponent) (!aggressive_reckless ?other ?opponent) )
+            ( (!aggressive_reckless ?attack_lead ?opponent) (!aggressive_reckless ?other ?opponent) )
 )
 
 (:method (move_safe ?body ?target) 
