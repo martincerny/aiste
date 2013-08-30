@@ -80,7 +80,18 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
             throw new SimulationException("Waiting for simulation to finish interrupted", ex);
         } finally {
             stopSimulation();
+        }        
+        
+        /**
+         * Wait for two simulation steps to avoid most of terrible concurrency issues when
+         * a controller has not finished shutdown for an environment before a second environment is started
+         */
+        try {
+            Thread.sleep(getStepDelay() * 2);
+        } catch(InterruptedException ex){
+            logger.warn("Waiting at the end of experiment interrupted.");
         }
+        
         return gatherExecutionResult();
     }
 

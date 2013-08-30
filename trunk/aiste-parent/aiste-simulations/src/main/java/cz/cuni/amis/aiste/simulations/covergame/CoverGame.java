@@ -24,6 +24,7 @@ import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
 import cz.cuni.amis.pathfinding.map.IPFKnownMap;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.log4j.Logger;
 
 /**
@@ -61,7 +62,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
      */
     boolean isSimulation;    
     
-    List<CGBodyInfo> agentsKilledLastRound = new ArrayList<CGBodyInfo>();
+    List<CGBodyInfo> agentsKilledLastRound = new CopyOnWriteArrayList<CGBodyInfo>();
     
     /**
      * Create a duplicate of the environment. (defs are linked directly, rest of the data is copied).
@@ -82,7 +83,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         lastOpponentTeamDataEvalStep = new ArrayList<Long>();
         markerData = new ArrayList<MarkerData>();
         
-        agentsKilledLastRound = new ArrayList<CGBodyInfo>(original.agentsKilledLastRound);
+        agentsKilledLastRound = new CopyOnWriteArrayList<CGBodyInfo>(original.agentsKilledLastRound);
         
         for(CGBodyPair originalPair : original.bodyPairs ){
             CGBodyPair copyPair = new CGBodyPair(originalPair.body);
@@ -108,23 +109,28 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         super(CGPairAction.class);
         this.defs = defs;
         
-        /* Create empty agent data*/
-        bodyInfos = new ArrayList<CGBodyInfo>();
-        bodyPairs = new ArrayList<CGBodyPair>();
-        lastOpponentTeamData = new ArrayList<OpponentTeamData>();
-        lastOpponentTeamDataEvalStep = new ArrayList<Long>();
         
         
         registerRepresentation(this);
         registerRepresentation(new CGPDDLRepresentation(this));        
         registerRepresentation(new CGJSHOPRepresentationWithRoles(this));        
         //registerRepresentation(new CGJSHOPRepresentation(this));        
+    }      
+
+    @Override
+    public void init() {
+        super.init();
+        /* Create empty agent data*/
+        bodyInfos = new ArrayList<CGBodyInfo>();
+        bodyPairs = new ArrayList<CGBodyPair>();
+        lastOpponentTeamData = new ArrayList<OpponentTeamData>();
+        lastOpponentTeamDataEvalStep = new ArrayList<Long>();
 
         isSimulation = false;
 
         markerData = new ArrayList<MarkerData>();
-    }      
-    
+    }
+
     @Override
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, CGPairAction> actionsToPerform) {
         

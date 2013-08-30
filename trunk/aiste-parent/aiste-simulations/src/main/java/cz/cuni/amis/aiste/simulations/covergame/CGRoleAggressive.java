@@ -16,14 +16,10 @@
  */
 package cz.cuni.amis.aiste.simulations.covergame;
 
-import cz.cuni.amis.aiste.environment.IReactivePlan;
-import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import cz.cuni.amis.aiste.environment.ReactivePlanStatus;
-import cz.cuni.amis.aiste.environment.impl.AbstractReactivePlan;
 import cz.cuni.amis.aiste.simulations.covergame.CoverGame.CGBodyInfo;
 import cz.cuni.amis.pathfinding.alg.astar.AStarResult;
 import cz.cuni.amis.pathfinding.map.IPFMapView;
-import cz.cuni.amis.utils.astar.AStarGoal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;

@@ -58,10 +58,12 @@ implements IFutureListener<PLANNING_RESULT>
     protected int numFailuresSinceLastImportantEnvChange = 0;
 
     protected void cancelPlanFutureIfRunning() {
-        if (planFuture != null){
-            synchronized(planFuture){//synchronized so that setResult cannot be called from within planning process
-                 if(!planFuture.isDone()) {
-                    planFuture.cancel(true);
+        IFutureWithListeners<PLANNING_RESULT> planFutureCopy = planFuture;
+        if (planFutureCopy != null){
+            planFutureCopy.removeFutureListener(this);            
+            synchronized(planFutureCopy){//synchronized so that setResult cannot be called from within planning process
+                 if(!planFutureCopy.isDone()) {
+                    planFutureCopy.cancel(true);
                 }        
             }
         }
@@ -423,6 +425,11 @@ implements IFutureListener<PLANNING_RESULT>
                 
                 //those casts are safe, beacause types are enforced in constructor if validation is set to environment simulation
                 ISimulableEnvironment environmentCopy = ((ISimulableEnvironment)environment).cloneForSimulation();
+                if(environment.isFinished()){
+                    //the environment has been finished while we have been busy, lets stop the validation
+                    //the check has to be AFTER cloning the environment, otherwise a race condition is possible
+                    return false;
+                }
                 ISimulablePlanningRepresentation simulableRepresentaion = (ISimulablePlanningRepresentation)representation;
                 
                 
@@ -495,7 +502,14 @@ implements IFutureListener<PLANNING_RESULT>
 
     @Override
     public synchronized void futureEvent(FutureWithListeners<PLANNING_RESULT> fwl, FutureStatus fs, FutureStatus fs1) {
-        switch (planFuture.getStatus()) {
+        if(fwl != planFuture){
+            //The plan future was changed by a different thread
+            fwl.removeFutureListener(this);
+            fwl.cancel(true);
+            return;
+        }        
+        //to avoid concurrency issues, all actions are executed on method parameter and not on the class field copy of plan future
+        switch (fwl.getStatus()) {
             case FUTURE_IS_BEING_COMPUTED: {
                 //Do nothing and wait
                 break;
@@ -507,13 +521,13 @@ implements IFutureListener<PLANNING_RESULT>
                 break;
             }
             case COMPUTATION_EXCEPTION: {
-                logger.info(body.getId() + ": Exception during planning:", planFuture.getException());
+                logger.info(body.getId() + ": Exception during planning:", fwl.getException());
                 numPlanningExceptions.increment();
                 processPlanningFailure();
                 break;
             }
             case FUTURE_IS_READY: {
-                PLANNING_RESULT planningResult = planFuture.get();
+                PLANNING_RESULT planningResult = fwl.get();
                 long planningTime = System.currentTimeMillis() - lastPlanningStartTime;
                 if (isPlanningResultSucces(planningResult)) {
                     List<PLANNER_ACTION> plannerActions = getActionsFromPlanningResult(planningResult);
@@ -604,9 +618,9 @@ implements IFutureListener<PLANNING_RESULT>
                 
         }
         
-        if (planFuture.isDone()) {
+        if (fwl.isDone()) {
             timeSpentPlanning.taskFinished();
-            planFuture.removeFutureListener(this);                
+            fwl.removeFutureListener(this);                
             planFuture = null;
         }
 
