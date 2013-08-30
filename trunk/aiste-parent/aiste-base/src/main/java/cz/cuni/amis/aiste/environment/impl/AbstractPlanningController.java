@@ -438,7 +438,8 @@ implements IFutureListener<PLANNING_RESULT>
                     Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(planToValidate);
                     do {
                         while (!currentReactivePlan.getStatus().isFinished()){
-                            environmentCopy.simulateOneStep(Collections.singletonMap(body, currentReactivePlan.nextAction()));
+                            IAction nextAction = currentReactivePlan.nextAction();
+                            environmentCopy.simulateOneStep(Collections.singletonMap(body, nextAction));
                             if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
                                 return false;
                             }                        
@@ -485,8 +486,16 @@ implements IFutureListener<PLANNING_RESULT>
         if(planFuture != null){
             planFuture.removeFutureListener(this);
         }
-        planFuture = startPlanningProcess();
-        planFuture.addFutureListener(this);
+        synchronized(this){
+            planFuture = startPlanningProcess();
+            
+            //for the unlikely event that the future completes before startPlanningProcess() returns 
+            if(!planFuture.isDone()){
+                planFuture.addFutureListener(this);
+            } else {
+                futureEvent((FutureWithListeners<PLANNING_RESULT>)planFuture, FutureStatus.FUTURE_IS_BEING_COMPUTED, planFuture.getStatus());
+            }
+        }
     }
 
     @Override

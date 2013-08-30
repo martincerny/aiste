@@ -235,9 +235,11 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         ArrayList<CGAction> actionsForBody2 = new ArrayList<CGAction>();
         actionsForBodies.add(actionsForBody2);
         
+        JSHOP2 jshop = jshops.get(body);
+        
         while(!actionsFromPlanner.isEmpty() && actionsFromPlanner.peek().getHead() != CoverGameJSHOP2.PRIMITIVE_SYNC_START && actionsFromPlanner.peek().getHead() != CoverGameJSHOP2.PRIMITIVE_SYNC_END){
             Predicate action = actionsFromPlanner.poll();
-            GroundActionInfo info = getGroundInfo(action);
+            GroundActionInfo info = getGroundInfo(jshop, action);
             switch(info.actionId){
                 case CoverGameJSHOP2.PRIMITIVE_MOVE : {
                     Loc to = constantsToLocations.get(info.params.get(2));

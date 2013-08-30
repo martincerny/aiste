@@ -22,6 +22,7 @@ import JSHOP2.Predicate;
 import JSHOP2.Term;
 import JSHOP2.TermConstant;
 import JSHOP2.TermList;
+import JSHOP2.TermNumber;
 import cz.cuni.amis.aiste.AisteException;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +51,7 @@ public class JShop2Utils {
         return ret;
     }
     
-    public static GroundActionInfo getGroundInfo(Predicate actionFromPlanner){
+    public static GroundActionInfo getGroundInfo(JSHOP2 context, Predicate actionFromPlanner){
         int actionId = actionFromPlanner.getHead();
         java.util.List<Integer> actionParams = new ArrayList<Integer>();
 
@@ -58,10 +59,17 @@ public class JShop2Utils {
         if (param instanceof TermList) {
             for (Term listTerm = param; !listTerm.isNil(); listTerm = ((TermList) listTerm).getList().getTail()) {
                 Term head = ((TermList) listTerm).getList().getHead();
-                if (!(head instanceof TermConstant)) {
-                    throw new AisteException("Cannot translate non-constant parameter");
+                if (head instanceof TermConstant) {
+                    actionParams.add(((TermConstant) head).getIndex());
+                } else if (head instanceof TermNumber){
+                    double number = ((TermNumber)head).getNumber();
+                    if(Math.floor(number) != number){
+                        throw new AisteException("Floating point numbers cannot be translated. Value: " + number);                        
+                    }
+                    actionParams.add((int)number);
+                } else {
+                    throw new AisteException("Cannot translate parameter of class " + head.getClass().getSimpleName() + ", value: " + head.toString(context));
                 }
-                actionParams.add(((TermConstant) head).getIndex());
             }
         } else //-- If the argument list is not a list term (which should not happen
         //-- usually, but there is no reason to assume that it will not happen.

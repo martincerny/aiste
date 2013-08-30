@@ -20,6 +20,7 @@ import cz.cuni.amis.aiste.environment.impl.AbstractPlanningController.Validation
 import cz.cuni.amis.aiste.environment.impl.DoNothingAgentController;
 import cz.cuni.amis.aiste.environment.impl.JShop2Controller;
 import cz.cuni.amis.aiste.environment.impl.Planning4JController;
+import cz.cuni.amis.aiste.environment.impl.ReactivePlanController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.DefaultEnvironmentExecutorFactory;
@@ -70,18 +71,27 @@ public class Test {
         JShop2Controller jshopController = new JShop2Controller(ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
         JShop2Controller jshopController2 = new JShop2Controller(ValidationMethod.ENVIRONMENT_SIMULATION_WHOLE_PLAN);
 
-        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map1.txt"));
+        
+        CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map_iregular.txt"));
 
         CoverGame cgEnv = new CoverGame(defs);
 
+//        ReactivePlanController<CGPairAction> reactiveController = new ReactivePlanController<CGPairAction>(new CGPairRolePlan(
+//                Collections.<CGRolePlan>singletonList(new CGRoleMove(cgEnv, 2, new Loc(19,15), 0)), 
+//                Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(cgEnv, 3, true))));
+        
+        
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(1)),
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController2, cgEnv.getRepresentations().get(1))
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController2, cgEnv.getRepresentations().get(2)),
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), reactiveController, cgEnv.getRepresentations().get(2)),
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(1)),
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController2, cgEnv.getRepresentations().get(1))
                 });
         AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000000);
 
-//        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
+//        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(548742L);
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);

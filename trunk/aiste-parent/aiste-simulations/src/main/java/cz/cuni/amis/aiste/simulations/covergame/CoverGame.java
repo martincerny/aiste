@@ -82,6 +82,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         lastOpponentTeamDataEvalStep = new ArrayList<Long>();
         markerData = new ArrayList<MarkerData>();
         
+        agentsKilledLastRound = new ArrayList<CGBodyInfo>(original.agentsKilledLastRound);
+        
         for(CGBodyPair originalPair : original.bodyPairs ){
             CGBodyPair copyPair = new CGBodyPair(originalPair.body);
             
@@ -126,6 +128,10 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     @Override
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, CGPairAction> actionsToPerform) {
         
+        if(logger.isDebugEnabled() && !isSimulation){
+            logger.debug("==== Step " + getTimeStep() + " ======\n");
+        }
+        
         agentsKilledLastRound.clear();
         
         Map<CGBodyInfo, CGAction> individualActionsToPerform = new HashMap<CGBodyInfo, CGAction>();
@@ -149,60 +155,6 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             individualActionsToPerform.put(bodyPair.bodyInfo1, actionsToPerform.get(body).getAction2());
         }
     
-        if(logger.isDebugEnabled()  && !isSimulation){
-            //Draw the playground
-            char[][] display = new char[defs.levelWidth][defs.levelHeight];
-            for(int x = 0; x < defs.levelWidth; x++){
-                for(int y = 0; y < defs.levelHeight;y++){
-                    if(!defs.squares[x][y].passable){
-                        if(defs.squares[x][y].horizontalCover && defs.squares[x][y].verticalCover){
-                            display[x][y] = 'H';                            
-                        } else {
-                            display[x][y] = '#';
-                        }
-                    }
-                    else if(defs.squares[x][y].horizontalCover){
-                        if(defs.squares[x][y].verticalCover){
-                            display[x][y] = '*';
-                        } else {
-                            display[x][y] = '-';
-                        }
-                    } else if(defs.squares[x][y].verticalCover){
-                        display[x][y] = '|';
-                    } else {
-                        display[x][y] = '.';
-                    }
-                }
-            }
-            for(CGBodyInfo bodyInfo : bodyInfos){
-                display[bodyInfo.loc.x][bodyInfo.loc.y] = Integer.toString(bodyInfo.id).charAt(0);                
-            }
-            
-            StringBuilder infoBuilder = new StringBuilder("==== Step " + getTimeStep() + " ======\n");
-            infoBuilder.append("\t");
-            for (int x = 0; x < defs.levelWidth; x++) {
-                    infoBuilder.append(x % 10);                
-            }
-            infoBuilder.append("\n");
-            
-            for (int y = 0; y < defs.levelHeight; y++) {
-                infoBuilder.append(y % 100).append("\t");
-                for (int x = 0; x < defs.levelWidth; x++) {
-                    infoBuilder.append(display[x][y]);
-                }
-                infoBuilder.append("\n");
-            }
-            infoBuilder.append("\t");
-            for (int x = 0; x < defs.levelWidth; x++) {
-                    infoBuilder.append(x % 10);                
-            }
-            infoBuilder.append("\n");
-            
-            for(CGBodyInfo bodyInfo : bodyInfos){
-                infoBuilder.append(bodyInfo.id).append(": ").append(bodyInfo.toString()).append("\n");
-            }
-            logger.debug(infoBuilder.toString());            
-        }
         
         
         double [] rewards = new double[] { 0d, 0d}; //indexed by team id - the same rewards are given to all agents in the team
@@ -367,6 +319,11 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                 logger.debug("Reward " + bodypair.body.getId() + ": " + rewards[bodypair.body.getId()]);
             }
         }
+        
+        if(logger.isDebugEnabled()  && !isSimulation){
+            outputEnvironmentStateToLogger();            
+        }
+        
         return rewardsMap;
     }
     
@@ -508,7 +465,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
 
     @Override
     public Map<AgentBody, Double> simulateOneStep(Map<AgentBody, CGPairAction> actions) {
-        return nextStepInternal(actions);
+        return nextStepWithGivenActions(actions);
     }
     
     protected MarkerData createMarkerData(AgentBody body){
@@ -681,6 +638,61 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             logger.trace("Distance: " + distance + " Covered: " + covered + " Full cover: " + fullCover + " Supressed:" + supressed + ", hit probability: " + hitProbability);
         }
         return hitProbability;
+    }
+
+    protected void outputEnvironmentStateToLogger() {
+        //Draw the playground
+        char[][] display = new char[defs.levelWidth][defs.levelHeight];
+        for(int x = 0; x < defs.levelWidth; x++){
+            for(int y = 0; y < defs.levelHeight;y++){
+                if(!defs.squares[x][y].passable){
+                    if(defs.squares[x][y].horizontalCover && defs.squares[x][y].verticalCover){
+                        display[x][y] = 'H';                            
+                    } else {
+                        display[x][y] = '#';
+                    }
+                }
+                else if(defs.squares[x][y].horizontalCover){
+                    if(defs.squares[x][y].verticalCover){
+                        display[x][y] = '*';
+                    } else {
+                        display[x][y] = '-';
+                    }
+                } else if(defs.squares[x][y].verticalCover){
+                    display[x][y] = '|';
+                } else {
+                    display[x][y] = '.';
+                }
+            }
+        }
+        for(CGBodyInfo bodyInfo : bodyInfos){
+            display[bodyInfo.loc.x][bodyInfo.loc.y] = Integer.toString(bodyInfo.id).charAt(0);                
+        }
+        
+        StringBuilder infoBuilder = new StringBuilder("Environment state:\n");
+        infoBuilder.append("\t");
+        for (int x = 0; x < defs.levelWidth; x++) {
+                infoBuilder.append(x % 10);                
+        }
+        infoBuilder.append("\n");
+        
+        for (int y = 0; y < defs.levelHeight; y++) {
+            infoBuilder.append(y % 100).append("\t");
+            for (int x = 0; x < defs.levelWidth; x++) {
+                infoBuilder.append(display[x][y]);
+            }
+            infoBuilder.append("\n");
+        }
+        infoBuilder.append("\t");
+        for (int x = 0; x < defs.levelWidth; x++) {
+                infoBuilder.append(x % 10);                
+        }
+        infoBuilder.append("\n");
+        
+        for(CGBodyInfo bodyInfo : bodyInfos){
+            infoBuilder.append(bodyInfo.id).append(": ").append(bodyInfo.toString()).append("\n");
+        }
+        logger.debug(infoBuilder.toString());
     }
 
     

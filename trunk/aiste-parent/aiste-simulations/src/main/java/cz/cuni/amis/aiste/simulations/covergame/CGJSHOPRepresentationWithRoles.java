@@ -229,7 +229,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                             nearestVantage = vantage_point;
                         }                    
                         
-                        if(possibleUncoveredShots <= 1){
+                        if(possibleUncoveredShots == 0){
                             nearestSafeVantageDistance = distance;
                             nearestSafeVantage = vantage_point;
                         }
@@ -247,7 +247,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                 int nearestAttackDistance = Integer.MAX_VALUE;                
                 for(Loc attackPoint : opponentData[opp].visibleNavpoints){
                     int distance = fixedMapFloydWarshall.getPathCost(bodyLoc, attackPoint);
-                    if(distance < nearestAttackDistance && getPossibleUncoveredShots(bodyLoc, attackPoint, opponentData) < 1){
+                    if(distance < nearestAttackDistance && getPossibleUncoveredShots(bodyLoc, attackPoint, opponentData) == 0){
                         nearestAttackPoint = attackPoint;
                         nearestAttackDistance = distance;
                     }
@@ -296,9 +296,15 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         
         int[] bodyIds = env.getTeamIds(body.getId());
         
+        JSHOP2 jshop = jshops.get(body);
+        
         while(!actionsFromPlanner.isEmpty() && actionsFromPlanner.peek().getHead() != CoverGameWithRolesJSHOP2.PRIMITIVE_SYNC){
             Predicate action = actionsFromPlanner.poll();
-            GroundActionInfo info = getGroundInfo(action);
+            GroundActionInfo info = getGroundInfo(jshop, action);
+            if(info.actionId == CoverGameWithRolesJSHOP2.PRIMITIVE_ADDED_COST){
+                //added cost action can safely be ignored
+                continue;
+            }            
             int bodyIndex = constantToBodyIndex(info.params.get(0));
             int bodyId = bodyIds[bodyIndex];
             switch(info.actionId){
@@ -330,6 +336,10 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                     actionsForBodies.get(bodyIndex).add(new CGRoleOverWatch(env, bodyId, true));
                     break;
                 }
+                case CoverGameWithRolesJSHOP2.PRIMITIVE_ADDED_COST : {
+                    //ignored action
+                    break;
+                }
                 default :{
                     throw new AisteException("Unsupported action: " + action.toString(jshops.get(body)));
                 }
@@ -339,12 +349,22 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
         
         CGBodyPair bodyPair = env.bodyPairs.get(body.getId());
         CGPairRolePlan plan = new CGPairRolePlan(actionsForBody1, actionsForBody2);
-        if(logger.isDebugEnabled()){
+        if(logger.isDebugEnabled() && !env.isSimulation){
             logger.debug(body.getId() + ": RolePlan: " + plan);
         }
         return plan;
     }
 
+    protected boolean isCovered(Loc loc, OpponentData[] opponentData){
+        for(int opp2 = 0; opp2 < 2; opp2++){
+            if(opponentData[opp2].uncoveredNavpoints.contains(loc)){
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
     protected int getPossibleUncoveredShots(Loc bodyLoc, Loc vantage_point, OpponentData[] opponentData) {
         int possibleUncoveredShots = 0;
         List<Loc> path = fixedMapFloydWarshall.getPath(bodyLoc, vantage_point);
