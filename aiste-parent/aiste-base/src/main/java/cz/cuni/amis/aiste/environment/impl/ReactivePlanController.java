@@ -14,38 +14,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cuni.amis.aiste.simulations.covergame;
+package cz.cuni.amis.aiste.environment.impl;
 
-import cz.cuni.amis.pathfinding.map.IPFGoal;
-import cz.cuni.amis.utils.heap.IHeap;
-import java.util.Set;
+import cz.cuni.amis.aiste.environment.IAction;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
+import cz.cuni.amis.aiste.environment.IReactivePlan;
 
 /**
  *
  * @author Martin Cerny
  */
-public abstract class CGAStarGoal implements IPFGoal<Loc> {
-    protected CoverGame env;
-    private Loc start;
+public class ReactivePlanController<ACTION extends IAction> extends AbstractAgentController<ACTION, IEnvironmentRepresentation> {
 
-    public CGAStarGoal(CoverGame env, Loc start) {
-        this.env = env;
-        this.start = start;
+    private IReactivePlan<ACTION> plan;
+
+    public ReactivePlanController(IReactivePlan<ACTION> plan) {
+        this.plan = plan;
     }
 
+    
+    
     @Override
-    public Loc getStart() {
-        return start;
-    }
-
-    @Override
-    public void setOpenList(IHeap<Loc> openList) {
-    }
-
-    @Override
-    public void setCloseList(Set<Loc> closedList) {
+    public void onSimulationStep(double reward) {
+        super.onSimulationStep(reward);
+        if(!plan.getStatus().isFinished()){
+            environment.act(body, plan.nextAction());        
+        }
     }
     
     
+    
+    @Override
+    public Class getRepresentationClass() {
+        return IEnvironmentRepresentation.class;
+    }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "ReactivePlan";
+    }
     
 }

@@ -117,7 +117,7 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
     @Override
     protected void getDebugRepresentationOfPlannerActions(Collection<Predicate> plannerActions, StringBuilder planSB) {
         for(Predicate act : plannerActions){
-            JShop2Utils.GroundActionInfo info = JShop2Utils.getGroundInfo(act);
+            JShop2Utils.GroundActionInfo info = JShop2Utils.getGroundInfo(jshop, act);
             planSB.append(" (").append(jshop.getDomain().getPrimitiveTasks()[info.actionId]);
             for(int constantIndex  : info.params){
                 planSB.append(" ").append(jshop.getConstant(constantIndex).toString(jshop));

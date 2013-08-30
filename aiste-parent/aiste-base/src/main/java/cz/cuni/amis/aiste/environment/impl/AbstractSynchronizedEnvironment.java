@@ -18,6 +18,7 @@ package cz.cuni.amis.aiste.environment.impl;
 
 import cz.cuni.amis.aiste.environment.IAction;
 import cz.cuni.amis.aiste.environment.AgentBody;
+import cz.cuni.amis.aiste.environment.ISimulableEnvironment;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -75,6 +76,20 @@ public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> ex
         synchronized(this){
             Map<AgentBody, Double> result = nextStepInternal(actionsCopy);
             return result;
+        }
+    }
+    
+    /**
+     * Intended especially for environments with straightforward implementation of simulability,
+     * allowing for direct representation of {@link ISimulableEnvironment#simulateOneStep(java.util.Map) }
+     * @param actions
+     * @return 
+     */
+    protected Map<AgentBody, Double> nextStepWithGivenActions(Map<AgentBody, ACTION> actions){
+        synchronized(actionsMutex){
+            actionsForNextStep.clear();
+            actionsForNextStep.putAll(actions);
+            return nextStep();
         }
     }
 

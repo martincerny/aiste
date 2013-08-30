@@ -361,9 +361,10 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
         if (!actionFromPlanner.isGround()) {
             throw new AisteException("Cannot translate non-ground action");
         }
+        JSHOP2 jshop = jshops.get(body);
 
-        Domain domain = jshops.get(body).getDomain();
-        GroundActionInfo info = getGroundInfo(actionFromPlanner);
+        Domain domain = jshop.getDomain();
+        GroundActionInfo info = getGroundInfo(jshop, actionFromPlanner);
         String actionName = domain.getPrimitiveTasks()[info.actionId];
         
         

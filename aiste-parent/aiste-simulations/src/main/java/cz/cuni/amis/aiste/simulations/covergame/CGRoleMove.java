@@ -75,7 +75,6 @@ public class CGRoleMove extends CGRolePlan {
     }
 
     /**
-     * Aggressive path computation - unused
      * @return 
      */
     @Override
@@ -85,12 +84,12 @@ public class CGRoleMove extends CGRolePlan {
 
             @Override
             public boolean isGoalReached(Loc actualNode) {
-                return env.getOpponentTeamData(bodyInfo.getTeamId()).allVisibleNavPoints.contains(actualNode);
+                return target.equals(actualNode);
             }
 
             @Override
             public int getEstimatedCostToGoal(Loc node) {
-                return (int)(CGUtils.distance(this.getStart(), node) / env.defs.maxDistancePerTurn);
+                return (int)(CGUtils.distance(target, node) / env.defs.maxDistancePerTurn);
             }
                         
         }, new IPFMapView<Loc>() {
@@ -112,7 +111,7 @@ public class CGRoleMove extends CGRolePlan {
 
             @Override
             public boolean isNodeOpened(Loc node) {
-                return env.getNumThreats(bodyId, node) < maxThreats;
+                return env.getNumThreats(bodyId, node) <= maxThreats;
             }
 
             @Override

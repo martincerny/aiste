@@ -82,10 +82,12 @@ public class CGRoleAggressive extends CGRolePlan {
             }
         }
         
-        if(env.getNumThreats(bodyId, bodyInfo.loc) > maxThreatsToAdvance){
+        if(enemyKilledLastRound) {
+            return ReactivePlanStatus.COMPLETED;            
+        } else if(env.getNumThreats(bodyId, bodyInfo.loc) > maxThreatsToAdvance){
             return ReactivePlanStatus.FAILED;
-        } else if(enemyKilledLastRound) {
-            return ReactivePlanStatus.COMPLETED;
+        } else if(env.getBestTarget(bodyId) < 0 && !hasPath()){
+            return ReactivePlanStatus.FAILED;
         } else {
             return ReactivePlanStatus.EXECUTING;            
         }
