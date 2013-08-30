@@ -30,4 +30,9 @@ public class CGSquare {
     boolean horizontalCover;
     boolean verticalCover;
     boolean isNavPoint;
+    Loc loc;
+    
+    public CGSquare(int x, int y){
+        loc = new Loc(x,y);
+    }
 }

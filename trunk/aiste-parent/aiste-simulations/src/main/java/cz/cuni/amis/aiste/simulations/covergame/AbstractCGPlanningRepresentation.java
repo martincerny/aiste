@@ -87,10 +87,6 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
         env.setMarker(body);        
     }
 
-    @Override
-    public void setEnvironment(CoverGame env) {
-        this.env = env;
-    }
 
     @Override
     public IReactivePlan<? extends CGPairAction> getDefaultReactivePlan(AgentBody body) {

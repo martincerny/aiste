@@ -162,7 +162,7 @@ implements IFutureListener<PLANNING_RESULT>
             if(!(environment instanceof ISimulableEnvironment)){
                 throw new AisteException("Validation method set to environment simulation, but the environment is not simulable");
             }
-            if(!(representation instanceof ISimulableEnvironmentRepresentation)){
+            if(!(representation instanceof ISimulablePlanningRepresentation)){
                 throw new AisteException("Validation method set to environment simulation, but the representation is not simulable");
             }
             
@@ -424,38 +424,33 @@ implements IFutureListener<PLANNING_RESULT>
                 //those casts are safe, beacause types are enforced in constructor if validation is set to environment simulation
                 ISimulableEnvironment environmentCopy = ((ISimulableEnvironment)environment).cloneForSimulation();
                 ISimulablePlanningRepresentation simulableRepresentaion = (ISimulablePlanningRepresentation)representation;
-                simulableRepresentaion.setEnvironment(environmentCopy);
                 
                 
-                try {                    
-                    IReactivePlan currentReactivePlan;
-                    try {
-                        currentReactivePlan = unexecutedReactivePlan.cloneForSimulation(environmentCopy);
-                    } catch (UnsupportedOperationException ex){
-                        throw new AisteException(body.getId() + ": Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
+                IReactivePlan currentReactivePlan;
+                try {
+                    currentReactivePlan = unexecutedReactivePlan.cloneForSimulation(environmentCopy);
+                } catch (UnsupportedOperationException ex){
+                    throw new AisteException(body.getId() + ": Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
+                }
+
+                Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(planToValidate);
+                do {
+                    while (!currentReactivePlan.getStatus().isFinished()){
+                        IAction nextAction = currentReactivePlan.nextAction();
+                        environmentCopy.simulateOneStep(Collections.singletonMap(body, nextAction));
+                        if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
+                            return false;
+                        }                        
+                    }
+                    if(currentReactivePlan.getStatus() == ReactivePlanStatus.FAILED){
+                        return false;
                     }
 
-                    Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(planToValidate);
-                    do {
-                        while (!currentReactivePlan.getStatus().isFinished()){
-                            IAction nextAction = currentReactivePlan.nextAction();
-                            environmentCopy.simulateOneStep(Collections.singletonMap(body, nextAction));
-                            if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
-                                return false;
-                            }                        
-                        }
-                        if(currentReactivePlan.getStatus() == ReactivePlanStatus.FAILED){
-                            return false;
-                        }
-                        
-                        if(!currentPlanCopy.isEmpty()){
-                            currentReactivePlan = simulableRepresentaion.translateAction(currentPlanCopy, body);
-                        }
-                    } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
-                    return simulableRepresentaion.isGoalState(body, goal);
-                } finally {
-                    simulableRepresentaion.setEnvironment(environment);
-                }
+                    if(!currentPlanCopy.isEmpty()){
+                        currentReactivePlan = simulableRepresentaion.translateActionForSimulation(environmentCopy, currentPlanCopy, body);
+                    }
+                } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
+                return simulableRepresentaion.isGoalState(body, goal);
             }
         }
         

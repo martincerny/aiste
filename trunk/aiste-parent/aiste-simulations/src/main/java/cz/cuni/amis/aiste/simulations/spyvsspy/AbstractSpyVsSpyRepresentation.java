@@ -20,7 +20,6 @@ package cz.cuni.amis.aiste.simulations.spyvsspy;
 import cz.cuni.amis.aiste.AisteException;
 import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.IActionFailureRepresentation;
-import cz.cuni.amis.aiste.environment.ISimulableEnvironmentRepresentation;
 import cz.cuni.amis.aiste.environment.impl.CompoundReactivePlan;
 import cz.cuni.amis.aiste.environment.impl.SequencePlan;
 import cz.cuni.amis.aiste.simulations.spyvsspy.SpyVsSpy.PursueOponentPlan;
@@ -31,7 +30,7 @@ import java.util.List;
  *
  * @author Martin Cerny
  */
-public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRepresentation, ISimulableEnvironmentRepresentation<SpyVsSpy> {
+public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRepresentation {
     
     protected SpyVsSpy environment;
 
@@ -127,14 +126,6 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
     @Override
     public boolean lastActionFailed(AgentBody body) {
         return environment.lastActionFailed(body);
-    }
-
-    @Override
-    public void setEnvironment(SpyVsSpy env) {
-        if (env.defs != this.environment.defs) {
-            throw new IllegalArgumentException("Environment could only be set to a copy of the original env.");
-        }
-        this.environment = env;
     }
 
     protected CompoundReactivePlan<SpyVsSpyAction> getFollowAndAttackReactivePlan(AgentBody body, int targetOponent) {
