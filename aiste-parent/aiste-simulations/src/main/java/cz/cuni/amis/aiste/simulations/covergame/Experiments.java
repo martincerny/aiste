@@ -90,10 +90,11 @@ public class Experiments {
 
 
         List<Long> stepDelays = Arrays.asList(new Long[]{100L, 500L, 1000L});        
+        int maxSteps = 500;
         
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("CoverGameComplexPreliminary", environments, controllers, stepDelays, 1000);
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("CoverGameComplexPreliminary", environments, controllers, stepDelays, maxSteps, 5 /* Five repetitions */);
 
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(), maxSteps);
         experimentRunner.setRandomSeed(554853636L);        
         ExperimentUtils.runSuiteSingleThreaded(suite, experimentRunner);
         

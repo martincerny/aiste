@@ -1,3 +1,4 @@
+Irregular
 22
 20
 s.......#s..o.o.....o.
@@ -23,6 +24,7 @@ H..H.....H............
 s....#.....H#H.......s
 
 Format:
+name
 width
 heigth
 map specs - a line for each row and a char for each square in level

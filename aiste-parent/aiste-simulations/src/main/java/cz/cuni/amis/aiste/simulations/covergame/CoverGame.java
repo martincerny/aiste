@@ -22,7 +22,11 @@ import cz.cuni.amis.aiste.environment.*;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.simulations.utils.RandomUtils;
+import cz.cuni.amis.experiments.ILoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeaders;
+import cz.cuni.amis.experiments.impl.LoggingHeadersConcatenation;
 import cz.cuni.amis.pathfinding.map.IPFKnownMap;
+import cz.cuni.amis.utils.collections.ListConcatenation;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.log4j.Logger;
@@ -117,6 +121,18 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         //registerRepresentation(new CGJSHOPRepresentation(this));        
     }      
 
+    @Override
+    public ILoggingHeaders getEnvironmentParametersHeaders() {
+        return LoggingHeadersConcatenation.concatenate(super.getEnvironmentParametersHeaders(), new LoggingHeaders("LevelName")); 
+    }
+
+    @Override
+    public List<Object> getEnvironmentParametersValues() {
+        return ListConcatenation.concatenate(super.getEnvironmentParametersValues(), Arrays.asList(new Object[] {defs.levelName}));         
+    }
+
+    
+    
     @Override
     public void init() {
         super.init();
@@ -790,6 +806,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     }
     
     public static class StaticDefs {
+        String levelName;
+        
         int levelWidth;
         int levelHeight;
         

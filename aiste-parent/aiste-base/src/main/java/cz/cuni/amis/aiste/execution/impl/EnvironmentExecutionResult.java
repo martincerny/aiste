@@ -19,6 +19,7 @@ package cz.cuni.amis.aiste.execution.impl;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.experiments.EExperimentRunResult;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +29,13 @@ import java.util.Map;
  * @author Martin Cerny
  */
 public class EnvironmentExecutionResult implements IEnvironmentExecutionResult {
+    private EExperimentRunResult overallResult;
     List<IAgentExecutionResult> agentResults;
     Map<IAgentController, IAgentExecutionResult> perAgentResults;
     long numberOfStepsElapsed;
 
-    public EnvironmentExecutionResult(List<IAgentExecutionResult> agentResults, long numberOfStepsElapsed) {
+    public EnvironmentExecutionResult(EExperimentRunResult overallResult, List<IAgentExecutionResult> agentResults, long numberOfStepsElapsed) {
+        this.overallResult = overallResult;
         this.agentResults = agentResults;
         this.numberOfStepsElapsed = numberOfStepsElapsed;
         perAgentResults = new HashMap<IAgentController, IAgentExecutionResult>(agentResults.size());
@@ -55,6 +58,12 @@ public class EnvironmentExecutionResult implements IEnvironmentExecutionResult {
     public Map<IAgentController, IAgentExecutionResult> getPerAgentResults() {
         return perAgentResults;
     }
+
+    @Override
+    public EExperimentRunResult getOverallResult() {
+        return overallResult;
+    }
+    
     
     
 }

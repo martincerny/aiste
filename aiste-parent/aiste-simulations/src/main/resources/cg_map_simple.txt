@@ -1,3 +1,4 @@
+Simple
 10
 10
 s..o.o..#s
@@ -12,6 +13,7 @@ o..s.....o
 s#..o.o..s
 
 Format:
+name
 width
 heigth
 map specs - a line for each row and a char for each square in level

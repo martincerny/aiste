@@ -1,3 +1,4 @@
+Security
 27
 37
 ####################s.#####
@@ -43,6 +44,7 @@ This map is inspired by Gears Of War II - security
 http://gearsofwar.wikia.com/wiki/Security?file=Security_map.jpg
 
 Format:
+name
 width
 heigth
 map specs - a line for each row and a char for each square in level
