@@ -89,13 +89,20 @@ public class CGPairRolePlan extends AbstractReactivePlan<CGPairAction> {
 
     @Override
     public ReactivePlanStatus getStatus() {
+        ReactivePlanStatus status0 = null, status1 = null;
+        if(!plansBody0.isEmpty()){
+            status0 = plansBody0.peek().getStatus();
+        }
+        if(!plansBody1.isEmpty()){
+            status1 = plansBody1.peek().getStatus();
+        }
         //logger.trace("Plan statuses :" + plansBody0.peek().getStatus() + ", " + plansBody1.peek().getStatus());        
-        if((plansBody0.isEmpty() || (plansBody0.size() == 1 && plansBody0.peek().getStatus() == ReactivePlanStatus.COMPLETED)) 
-                && (plansBody1.isEmpty() || (plansBody1.size() == 1 && plansBody1.peek().getStatus() == ReactivePlanStatus.COMPLETED)) ){
+        if((status0 == null || (plansBody0.size() == 1 && status0 == ReactivePlanStatus.COMPLETED)) 
+                && (status1 == null || (plansBody1.size() == 1 && status1 == ReactivePlanStatus.COMPLETED)) ){
             return ReactivePlanStatus.COMPLETED;
         }
-        else if((!plansBody0.isEmpty() && plansBody0.peek().getStatus() == ReactivePlanStatus.FAILED) 
-                || (!plansBody1.isEmpty() && plansBody1.peek().getStatus() == ReactivePlanStatus.FAILED)){
+        else if((status0 == ReactivePlanStatus.FAILED) 
+                || (status1 == ReactivePlanStatus.FAILED)){
             return ReactivePlanStatus.FAILED;
         } else {
             return ReactivePlanStatus.EXECUTING;

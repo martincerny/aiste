@@ -42,4 +42,15 @@
                 <jpda.listen>true</jpda.listen>
             </properties>
         </action>
+        <action>
+            <actionName>profile</actionName>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.defaultArgs>-agentpath:"C:/Program Files/NetBeans 7.3.1/profiler/lib/deployed/jdk16/windows/profilerinterface.dll"="C:\Program Files\NetBeans 7.3.1\profiler\lib",5140,10 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath="C:\Users\Martin Cerny\AppData\Local\NetBeans\Cache\7.3.1\mavencachedirs\1011640056\org-netbeans-modules-profiler" -classpath %classpath ${packageClassName}</exec.defaultArgs>
+                <exec.executable>java</exec.executable>
+            </properties>
+        </action>
     </actions>

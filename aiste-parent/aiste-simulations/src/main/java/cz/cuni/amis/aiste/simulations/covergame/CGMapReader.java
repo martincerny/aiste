@@ -25,12 +25,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author Martin Cerny
  */
 public class CGMapReader {
+    
+    private static final Logger logger = Logger.getLogger(CGMapReader.class);
+    
     public static CoverGame.StaticDefs readMap(InputStream is) throws IOException {
         CoverGame.StaticDefs defs = new CoverGame.StaticDefs();
         
@@ -46,6 +50,7 @@ public class CGMapReader {
         
         Set<Loc> navPoints = new HashSet<Loc>();
         
+        logger.info("Reading map");
         //----- Read the map ----
         for(int y = 0; y < defs.levelHeight; y++){
             String line = sc.nextLine();
@@ -96,6 +101,7 @@ public class CGMapReader {
             }
         }
         
+        logger.info("Generating navpoints for cover spots");
         //find navpoints close to covers
         for(int x = 0; x < defs.levelWidth; x++){
             for(int y = 0; y < defs.levelHeight; y++){
@@ -117,7 +123,25 @@ public class CGMapReader {
                 }
             }
         }
+
+        logger.info("Calculating visibility matrix");
+        defs.visibilityMatrix = new boolean[defs.levelWidth][defs.levelHeight][defs.levelWidth][defs.levelHeight];
+        //compute visibility matrix
+        for(int fromX = 0; fromX < defs.levelWidth; fromX++){
+            for(int fromY = 0; fromY < defs.levelHeight; fromY++){
+                for(int toX = 0; toX < defs.levelWidth; toX++){
+                    for(int toY = 0; toY < defs.levelHeight;toY++){
+                        if(defs.squares[fromX][fromY].passable && defs.squares[toX][toY].passable){
+                            defs.visibilityMatrix[fromX][fromY][toX][toY] = CGUtils.isVisible(new Loc(fromX,fromY), new Loc(toX,toY), defs);
+                        } else {
+                            defs.visibilityMatrix[fromX][fromY][toX][toY] = false;
+                        }
+                    }
+                }
+            }
+        }        
         
+        logger.info("Generating navigation graph");
         //generate nav graph - which pairs are reachable by single movement
         for(Loc np1 : navPoints){
             //Some navpoints were added - mark them as nav points
@@ -125,12 +149,14 @@ public class CGMapReader {
             
             List<Loc> neighbours = new ArrayList<Loc>();
             for(Loc np2: navPoints){
-                if(!np1.equals(np2) && CGUtils.distance(np1, np2) <= defs.maxDistancePerTurn && CGUtils.isVisible(np1, np2, defs)){
+                if(!np1.equals(np2) && CGUtils.distance(np1, np2) <= defs.maxDistancePerTurn && defs.visibilityMatrix[np1.x][np1.y][np2.x][np2.y]){
                     neighbours.add(np2);
                 }
             }
             defs.navGraph.put(np1, neighbours);
         }
+        
+        logger.info("Map succesfully read.");
                 
         return defs;
     }

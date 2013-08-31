@@ -30,6 +30,7 @@ import cz.cuni.amis.utils.future.FutureWithListeners;
 import cz.cuni.amis.utils.future.IFutureListener;
 import cz.cuni.amis.utils.future.IFutureWithListeners;
 import java.util.*;
+import java.util.logging.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -57,6 +58,15 @@ implements IFutureListener<PLANNING_RESULT>
 
     protected int numFailuresSinceLastImportantEnvChange = 0;
 
+    /**
+     * Controls that only one thread does deliberation. 
+     * Deliberation now possibly runs in two threads: a) The regular deliberation thread that invokes {@link #onSimulationStep(double) }
+     * and b) when asynchronously processing the planning result in {@link #futureEvent(cz.cuni.amis.utils.future.FutureWithListeners, cz.cuni.amis.utils.future.FutureStatus, cz.cuni.amis.utils.future.FutureStatus) }
+     * This mutex along with {@link #deliberationInProgress} controls that those two executions do not interfere.
+     */
+    private final Object deliberationMutex = new Object();
+    private boolean deliberationInProgress = false;
+    
     protected void cancelPlanFutureIfRunning() {
         IFutureWithListeners<PLANNING_RESULT> planFutureCopy = planFuture;
         if (planFutureCopy != null){
@@ -74,7 +84,7 @@ implements IFutureListener<PLANNING_RESULT>
         activePlannerActionReactivePlan = representation.translateAction(currentPlan, body);
         timeSpentTranslating.taskFinished();
     }
-    
+
 
 
     
@@ -179,6 +189,56 @@ implements IFutureListener<PLANNING_RESULT>
         
     }
 
+    /**
+     * Waits until any executing deliberation process releases the lock acquires it.
+     * This method is blocking and always succeeds in acquiring the lock.
+     */
+    protected void acquireDeliberationLock(){
+        synchronized(deliberationMutex){
+            while(deliberationInProgress){
+                try {
+                    deliberationMutex.wait();
+                } catch (InterruptedException ex) {
+                    logger.warn("Waiting for deliberation mutex interrupted.");
+                    break;
+                }
+            }
+            deliberationInProgress = true;
+        }
+    }
+    
+    /**
+     * Tries to acquire deliberation lock, but blocks for at most maxDelay miliseconds if the lock is unavailable.
+     * @return whether the lock was acquired.
+     */
+    protected boolean tryToAcquireDeliberationLock(long maxDelay){
+        synchronized(deliberationMutex){
+            if(deliberationInProgress){
+                try {
+                    deliberationMutex.wait(maxDelay);
+                } catch (InterruptedException ex) {
+                    //We don't care
+                }
+            }
+            
+            if(!deliberationInProgress){
+                deliberationInProgress = true;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    
+    /**
+     * Releases deliberation lock.
+     */
+    protected void releaseDeliberationLock(){
+        synchronized(deliberationMutex){
+            deliberationInProgress = false;
+            deliberationMutex.notify();
+        }
+    }
     
     protected abstract boolean isPlanningResultSucces(PLANNING_RESULT result);
 
@@ -236,170 +296,238 @@ implements IFutureListener<PLANNING_RESULT>
     public void onSimulationStep(double reward) {
         super.onSimulationStep(reward);
         
-        if (logger.isTraceEnabled()) {
-            StringBuilder planSB = new StringBuilder(body.getId() + ": Current plan: ");
-            getDebugRepresentationOfPlannerActions(currentPlan, planSB);
-            logger.trace(planSB.toString());
+        long maxLockWait = stepDelay / 2;        
+        if(!tryToAcquireDeliberationLock(maxLockWait)){
+            /* 
+             * The deliberation is already running - this means that planning future is being processed.
+             * Since after the future is processed, actions are issued, we do not wait for the lock to be released
+             * but return instead so that logic does not block too long.
+             * */
+            logger.debug(body.getId() + ": Could not acquire deliberation lock in onSimulationStep for " + maxLockWait + "ms");
+            return;
         }
-        
-        boolean startedPlanningThisStep = false;
-        
-        if(representation instanceof IActionFailureRepresentation){
-            if(((IActionFailureRepresentation)representation).lastActionFailed(body)){
-                logger.info(body.getId() + ": Action failed, ivalidating plan.");
-                clearPlan();
-                startPlanning();;
+        try {
+            if (logger.isTraceEnabled()) {
+                StringBuilder planSB = new StringBuilder(body.getId() + ": Current plan: ");
+                getDebugRepresentationOfPlannerActions(currentPlan, planSB);
+                logger.trace(planSB.toString());
+            }
+
+            boolean startedPlanningThisStep = false;
+
+            if(representation instanceof IActionFailureRepresentation){
+                if(((IActionFailureRepresentation)representation).lastActionFailed(body)){
+                    logger.info(body.getId() + ": Action failed, ivalidating plan.");
+                    clearPlan();
+                    startPlanning();;
+                    startedPlanningThisStep = true;
+                }            
+            }
+
+
+            //The current goal was invalidated by a new one. Lets go for it.
+            IPlanningGoal newGoal = selectGoal();
+            if(!newGoal.equals(goalForPlanning)){
+                goalForPlanning = newGoal;
+                if(!startedPlanningThisStep){
+                    startPlanning();
+                }
                 startedPlanningThisStep = true;
-            }            
-        }
-        
-        
-        //The current goal was invalidated by a new one. Lets go for it.
-        IPlanningGoal newGoal = selectGoal();
-        if(!newGoal.equals(goalForPlanning)){
-            goalForPlanning = newGoal;
-            if(!startedPlanningThisStep){
-                startPlanning();
             }
-            startedPlanningThisStep = true;
-        }
-                
-        
-        if (planFuture != null && planFuture.getStatus() == FutureStatus.FUTURE_IS_BEING_COMPUTED) {
-                    if(representation.environmentChangedConsiderablySinceLastMarker(body)){
-                        //the plan currently computed is probably useless. Restart the planning process.
-                        if(!startedPlanningThisStep){
-                            startPlanning();
-                        }
-                        startedPlanningThisStep = true;
-                    }
- 
-            
-        }
-        
-        /**
-         * Evaluate the reactive layer
-         */
-        boolean reactiveLayerActive = false;
 
-        
-        if(activeReactiveLayerPlan != null){
-            switch(activeReactiveLayerPlan.getStatus()){
-                case COMPLETED : {
-                    activeReactiveLayerPlan = null;
-                    break;
-                }
-                case FAILED : {
-                    logger.info(body.getId() + ": Reactive layer plan failed.");
-                    activeReactiveLayerPlan = null;
-                    break;
-                }
-            }
-        }
-        
-        if(activeReactiveLayerPlan == null){
-            activeReactiveLayerPlan = representation.evaluateReactiveLayer(body);
-        }
-        
-        if(activeReactiveLayerPlan != null && !activeReactiveLayerPlan.getStatus().isFinished()){
-            reactiveLayerActive = true;
-        }
-                
 
-        /**
-         * Evaluate actions from plan
-         */
-        if(logger.isDebugEnabled()){
-            logger.debug(body.getId() + ": Reactive plan for planner status:" + activePlannerActionReactivePlan.getStatus());
-        }
-        findNextAction: do {
-            switch (activePlannerActionReactivePlan.getStatus()) {
-                case COMPLETED: {
-                    if (currentPlan.isEmpty()) {
-                        if (planFuture == null || planFuture.isCancelled()) {
+            if (planFuture != null && planFuture.getStatus() == FutureStatus.FUTURE_IS_BEING_COMPUTED) {
+                        if(representation.environmentChangedConsiderablySinceLastMarker(body)){
+                            //the plan currently computed is probably useless. Restart the planning process.
                             if(!startedPlanningThisStep){
                                 startPlanning();
                             }
                             startedPlanningThisStep = true;
-                        }                        
-                    } else {
-                        if(!planValidatedForThisStep){
-                            timeSpentValidating.taskStarted();
-                            boolean planValid = validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal);
-                            timeSpentValidating.taskFinished();
-                            planValidatedForThisStep = true;
-                            if (!planValid) {
-                                logger.info(body.getId() + ": Plan invalidated. Clearing plan.");
-                                clearPlan();
-                                continue;
-                            }
                         }
-                        getNextReactivePlanFromCurrentPlan();
+
+
+            }
+
+            /**
+             * Evaluate the reactive layer
+             */
+            boolean reactiveLayerActive = false;
+
+
+            if(activeReactiveLayerPlan != null){
+                switch(activeReactiveLayerPlan.getStatus()){
+                    case COMPLETED : {
+                        activeReactiveLayerPlan = null;
+                        break;
                     }
-                    break;
-                }
-                case FAILED : {
-                    logger.info(body.getId() + ": Reactive plan failed. Clearing plan.");
-                    clearPlan();
-                    break;
-                }
-                case EXECUTING : {
-                    break findNextAction;
+                    case FAILED : {
+                        logger.info(body.getId() + ": Reactive layer plan failed.");
+                        activeReactiveLayerPlan = null;
+                        break;
+                    }
                 }
             }
-        } while (!currentPlan.isEmpty());        
-        
-        IAction nextAction = null;
-        if(reactiveLayerActive){
-            nextAction = activeReactiveLayerPlan.nextAction();
-            reactiveActionIssuedThisStep = true;
-            logger.info(body.getId() + ": Reactive layer in cotrol, action: " + nextAction.getLoggableRepresentation());            
-            if(!activePlannerActionReactivePlan.getStatus().isFinished() && nextAction.equals(activePlannerActionReactivePlan.peek())){
-                //if the action is the same as in the original plan, we should advance both reactive plans
-                activePlannerActionReactivePlan.nextAction();
+
+            if(activeReactiveLayerPlan == null){
+                activeReactiveLayerPlan = representation.evaluateReactiveLayer(body);
             }
-        }
-        else if(!activePlannerActionReactivePlan.getStatus().isFinished()){
-            nextAction = activePlannerActionReactivePlan.nextAction();            
-            reactiveActionIssuedThisStep = false;
-        } else {
-            numStepsIdle.increment();
-            IReactivePlan defaultPlan = representation.getDefaultReactivePlan(body);
-            if(defaultPlan != null && defaultPlan.getStatus() == ReactivePlanStatus.EXECUTING){
-                nextAction = defaultPlan.nextAction();
+
+            if(activeReactiveLayerPlan != null && !activeReactiveLayerPlan.getStatus().isFinished()){
+                reactiveLayerActive = true;
             }
-            reactiveActionIssuedThisStep = false;
+
+
+            /**
+             * Evaluate actions from plan
+             */
+            if(logger.isDebugEnabled()){
+                logger.debug(body.getId() + ": Reactive plan for planner status:" + activePlannerActionReactivePlan.getStatus());
+            }
+            findNextAction: do {
+                switch (activePlannerActionReactivePlan.getStatus()) {
+                    case COMPLETED: {
+                        if (currentPlan.isEmpty()) {
+                            if (planFuture == null || planFuture.isCancelled()) {
+                                if(!startedPlanningThisStep){
+                                    startPlanning();
+                                }
+                                startedPlanningThisStep = true;
+                            }                        
+                        } else {
+                            if(!planValidatedForThisStep){
+                                timeSpentValidating.taskStarted();
+                                boolean planValid = validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal);
+                                timeSpentValidating.taskFinished();
+                                planValidatedForThisStep = true;
+                                if (!planValid) {
+                                    logger.info(body.getId() + ": Plan invalidated. Clearing plan.");
+                                    clearPlan();
+                                    continue;
+                                }
+                            }
+                            getNextReactivePlanFromCurrentPlan();
+                        }
+                        break;
+                    }
+                    case FAILED : {
+                        logger.info(body.getId() + ": Reactive plan failed. Clearing plan.");
+                        clearPlan();
+                        break;
+                    }
+                    case EXECUTING : {
+                        break findNextAction;
+                    }
+                }
+            } while (!currentPlan.isEmpty());        
+
+            IAction nextAction = null;
+            if(reactiveLayerActive){
+                nextAction = activeReactiveLayerPlan.nextAction();
+                reactiveActionIssuedThisStep = true;
+                logger.info(body.getId() + ": Reactive layer in cotrol, action: " + nextAction.getLoggableRepresentation());            
+                if(!activePlannerActionReactivePlan.getStatus().isFinished() && nextAction.equals(activePlannerActionReactivePlan.peek())){
+                    //if the action is the same as in the original plan, we should advance both reactive plans
+                    activePlannerActionReactivePlan.nextAction();
+                }
+            }
+            else if(!activePlannerActionReactivePlan.getStatus().isFinished()){
+                nextAction = activePlannerActionReactivePlan.nextAction();            
+                reactiveActionIssuedThisStep = false;
+            } else {
+                numStepsIdle.increment();
+                IReactivePlan defaultPlan = representation.getDefaultReactivePlan(body);
+                if(defaultPlan != null && defaultPlan.getStatus() == ReactivePlanStatus.EXECUTING){
+                    nextAction = defaultPlan.nextAction();
+                }
+                reactiveActionIssuedThisStep = false;
+            }
+
+            if(logger.isDebugEnabled()) {
+                logger.debug(body.getId() + ": Current reactive plan: " + activePlannerActionReactivePlan);
+            }
+
+            if(nextAction != null){
+                getEnvironment().act(getBody(), nextAction);                        
+            } 
+
+            if(reactiveLayerActive){
+                logRuntime("REACTIVE_LAYER", nextAction);
+            }
+            else if(planFuture == null){
+                logRuntime("PERFORMING_PLAN", nextAction);
+            } else {
+                logRuntime(planFuture.getStatus(), nextAction);            
+            }
+
+            /**
+             * There are several places where current plan may get validated:
+             * After it was received from planner, or before executing next action.
+             * This flag prevents the plan from being validated twice.
+             */
+            planValidatedForThisStep = false;
         }
-        
-        if(logger.isDebugEnabled()) {
-            logger.debug(body.getId() + ": Current reactive plan: " + activePlannerActionReactivePlan);
+        finally {
+            releaseDeliberationLock();
         }
-        
-        if(nextAction != null){
-            getEnvironment().act(getBody(), nextAction);                        
-        } 
-        
-        if(reactiveLayerActive){
-            logRuntime("REACTIVE_LAYER", nextAction);
-        }
-        else if(planFuture == null){
-            logRuntime("PERFORMING_PLAN", nextAction);
-        } else {
-            logRuntime(planFuture.getStatus(), nextAction);            
-        }
-        
-        /**
-         * There are several places where current plan may get validated:
-         * After it was received from planner, or before executing next action.
-         * This flag prevents the plan from being validated twice.
-         */
-        planValidatedForThisStep = false;
-        
-        
     }
 
     protected boolean validateWithExternalValidator(Queue<PLANNER_ACTION> planToValidate, IReactivePlan unexecutedReactivePlan, IPlanningGoal goal){
         throw new UnsupportedOperationException("Planning controller class " + getClass() + " does not support external validation");
+    }
+    
+    protected boolean validateBySimulation(Queue<PLANNER_ACTION> planToValidate, IReactivePlan unexecutedReactivePlan, IPlanningGoal goal) throws AisteException {
+        
+        int numValidationSteps = 0;
+        long validationStart = System.currentTimeMillis();
+        try {
+            //those casts are safe, beacause types are enforced in constructor if validation is set to environment simulation
+            ISimulableEnvironment environmentCopy = ((ISimulableEnvironment)environment).cloneForSimulation();
+            if(environment.isFinished()){
+                //the environment has been finished while we have been busy, lets stop the validation
+                //the check has to be AFTER cloning the environment, otherwise a race condition is possible
+                return false;
+            }
+            ISimulablePlanningRepresentation simulableRepresentaion = (ISimulablePlanningRepresentation)representation;
+
+
+            IReactivePlan currentReactivePlan;
+            try {
+                currentReactivePlan = unexecutedReactivePlan.cloneForSimulation(environmentCopy);
+            } catch (UnsupportedOperationException ex){
+                throw new AisteException(body.getId() + ": Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
+            }
+
+            Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(planToValidate);
+            do {
+                while (!currentReactivePlan.getStatus().isFinished()){
+                    IAction nextAction = currentReactivePlan.nextAction();
+                    environmentCopy.simulateOneStep(Collections.singletonMap(body, nextAction));
+                    numValidationSteps++;
+                    if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
+                        return false;
+                    }                        
+                }
+                if(currentReactivePlan.getStatus() == ReactivePlanStatus.FAILED){
+                    return false;
+                }
+
+                if(!currentPlanCopy.isEmpty()){
+                    currentReactivePlan = simulableRepresentaion.translateActionForSimulation(environmentCopy, currentPlanCopy, body);
+                }
+            } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
+            return simulableRepresentaion.isGoalState(body, goal);
+        } finally {
+            if(logger.isDebugEnabled()){
+                long validationTime = System.currentTimeMillis() - validationStart;
+                long timePerStep;
+                if(numValidationSteps > 0) {
+                    timePerStep =  validationTime / numValidationSteps;
+                } else {
+                    timePerStep = 0;
+                }
+                logger.debug(body.getId() + ": Validation required " + numValidationSteps + " steps, taking " + validationTime + "ms, that is " + timePerStep + "ms per step.");
+            }            
+        }
     }
     
     /**
@@ -422,42 +550,8 @@ implements IFutureListener<PLANNING_RESULT>
                 throw new UnsupportedOperationException("One-step validation is not supported yet.");
             }
             case ENVIRONMENT_SIMULATION_WHOLE_PLAN : {
-                
-                //those casts are safe, beacause types are enforced in constructor if validation is set to environment simulation
-                ISimulableEnvironment environmentCopy = ((ISimulableEnvironment)environment).cloneForSimulation();
-                if(environment.isFinished()){
-                    //the environment has been finished while we have been busy, lets stop the validation
-                    //the check has to be AFTER cloning the environment, otherwise a race condition is possible
-                    return false;
-                }
-                ISimulablePlanningRepresentation simulableRepresentaion = (ISimulablePlanningRepresentation)representation;
-                
-                
-                IReactivePlan currentReactivePlan;
-                try {
-                    currentReactivePlan = unexecutedReactivePlan.cloneForSimulation(environmentCopy);
-                } catch (UnsupportedOperationException ex){
-                    throw new AisteException(body.getId() + ": Cannot validate plan, because current reactive plan does not support clonning for simulation", ex);
-                }
-
-                Queue<PLANNER_ACTION> currentPlanCopy = new ArrayDeque<PLANNER_ACTION>(planToValidate);
-                do {
-                    while (!currentReactivePlan.getStatus().isFinished()){
-                        IAction nextAction = currentReactivePlan.nextAction();
-                        environmentCopy.simulateOneStep(Collections.singletonMap(body, nextAction));
-                        if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
-                            return false;
-                        }                        
-                    }
-                    if(currentReactivePlan.getStatus() == ReactivePlanStatus.FAILED){
-                        return false;
-                    }
-
-                    if(!currentPlanCopy.isEmpty()){
-                        currentReactivePlan = simulableRepresentaion.translateActionForSimulation(environmentCopy, currentPlanCopy, body);
-                    }
-                } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
-                return simulableRepresentaion.isGoalState(body, goal);
+                boolean result = validateBySimulation(planToValidate, unexecutedReactivePlan, goal);
+                return result;
             }
         }
         
@@ -468,13 +562,19 @@ implements IFutureListener<PLANNING_RESULT>
     @Override
     public void start() {
         super.start();
-        goalForPlanning = selectGoal();
-        startPlanning();
+        acquireDeliberationLock();
+        
+        try {
+            goalForPlanning = selectGoal();
+            startPlanning();
+        } finally {
+            releaseDeliberationLock();
+        }
     }
 
     protected abstract IFutureWithListeners<PLANNING_RESULT> startPlanningProcess();
 
-    protected synchronized final void startPlanning() {
+    protected final void startPlanning() {
         cancelPlanFutureIfRunning();
         representation.setMarker(body);
         lastPlanningStartTime = System.currentTimeMillis();
@@ -488,142 +588,151 @@ implements IFutureListener<PLANNING_RESULT>
         if(planFuture != null){
             planFuture.removeFutureListener(this);
         }
-        synchronized(this){
-            planFuture = startPlanningProcess();
-            
-            //for the unlikely event that the future completes before startPlanningProcess() returns 
-            if(!planFuture.isDone()){
-                planFuture.addFutureListener(this);
-            } else {
-                futureEvent((FutureWithListeners<PLANNING_RESULT>)planFuture, FutureStatus.FUTURE_IS_BEING_COMPUTED, planFuture.getStatus());
-            }
+        
+        planFuture = startPlanningProcess();
+
+        //for the unlikely event that the future completes before startPlanningProcess() returns 
+        if(!planFuture.isDone()){
+            planFuture.addFutureListener(this);
+        } else {
+            futureEvent((FutureWithListeners<PLANNING_RESULT>)planFuture, FutureStatus.FUTURE_IS_BEING_COMPUTED, planFuture.getStatus());
         }
     }
 
     @Override
-    public synchronized void futureEvent(FutureWithListeners<PLANNING_RESULT> fwl, FutureStatus fs, FutureStatus fs1) {
+    public void futureEvent(FutureWithListeners<PLANNING_RESULT> fwl, FutureStatus fs, FutureStatus fs1) {
         if(fwl != planFuture){
             //The plan future was changed by a different thread
             fwl.removeFutureListener(this);
             fwl.cancel(true);
             return;
         }        
-        //to avoid concurrency issues, all actions are executed on method parameter and not on the class field copy of plan future
-        switch (fwl.getStatus()) {
-            case FUTURE_IS_BEING_COMPUTED: {
-                //Do nothing and wait
-                break;
-            }
-            case CANCELED: {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(body.getId() + ": Plan calculation cancelled.");
-                }
-                break;
-            }
-            case COMPUTATION_EXCEPTION: {
-                logger.info(body.getId() + ": Exception during planning:", fwl.getException());
-                numPlanningExceptions.increment();
-                processPlanningFailure();
-                break;
-            }
-            case FUTURE_IS_READY: {
-                PLANNING_RESULT planningResult = fwl.get();
-                long planningTime = System.currentTimeMillis() - lastPlanningStartTime;
-                if (isPlanningResultSucces(planningResult)) {
-                    List<PLANNER_ACTION> plannerActions = getActionsFromPlanningResult(planningResult);
-                    if (logger.isDebugEnabled()) {
-                        StringBuilder planSB = new StringBuilder(body.getId() + ": Plan before conversion: ");
-                        getDebugRepresentationOfPlannerActions(plannerActions, planSB);
-                        logger.debug(planSB.toString());
-                    }
-
-                    numSuccesfulPlanning.increment();
-                    averageTimePerSuccesfulPlanning.addSample(planningTime);
-                    averagePlanLength.addSample(plannerActions.size());
-
-                    timeSpentValidating.taskStarted();
-                    ArrayDeque<PLANNER_ACTION> newPlanDeque = new ArrayDeque<PLANNER_ACTION>(plannerActions);
-                    boolean planValid = validatePlan(newPlanDeque, EmptyReactivePlan.EMPTY_PLAN, goalForPlanning);
-                    timeSpentValidating.taskFinished();
-
-                    if (planValid) {
-                        boolean overwriteCurrentPlan = false;
-                        if (currentPlan.isEmpty() && activePlannerActionReactivePlan.getStatus().isFinished()) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug(body.getId() + ": No current plan, using new plan.");
-                            }
-                            overwriteCurrentPlan = true;
-                        } else if (goalForPlanning.getPriority() > executedGoal.getPriority()) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug(body.getId() + ": New plan achieves higher priority goal, using new plan.");
-                            }
-                            overwriteCurrentPlan = true;
-                        } else if (getPlanCost(currentPlan) > getPlanCost(newPlanDeque)) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug(body.getId() + ": New plan has lower cost, using new plan.");
-                            }                            
-                            overwriteCurrentPlan = true;
-                        } else if (!validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal)) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug(body.getId() + ": Current plan is no longer valid, using new plan.");
-                            }
-                            overwriteCurrentPlan = true;
-                        } else {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug(body.getId() + ": New plan is no better than old plan. Keeping old plan.");
-                            }
-                            //I have just validated the current plan
-                            planValidatedForThisStep = true;
-                        }
-
-                        if (overwriteCurrentPlan) {
-                            currentPlan.clear();
-                            currentPlan.addAll(plannerActions);
-                            executedGoal = goalForPlanning;
-
-                            //found plan, reset failure count
-                            numFailuresSinceLastImportantEnvChange = 0;
-
-                            //current plan was overwritten with new plan, which was validated
-                            planValidatedForThisStep = true;
-                            
-                            if(!reactiveActionIssuedThisStep){
-                                if (logger.isDebugEnabled()) {
-                                    logger.debug(body.getId() + ": Overwriting previous non-reactive action.");
-                                }
-                                //I have finished planning and no action was issued yet in this step -> lets do the first action of our plan
-                                getNextReactivePlanFromCurrentPlan();
-                                if(!activePlannerActionReactivePlan.getStatus().isFinished()){
-                                    environment.act(body, activePlannerActionReactivePlan.nextAction());
-                                }                                
-                            }
-                        }
-                    } else {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(body.getId() + ": Freshly received plan is not valid.");
-                        }
-                    }
-                            
-
-                } else {
-                    numUnsuccesfulPlanning.increment();
-                    averageTimePerUnsuccesfulPlanning.addSample(planningTime);
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(body.getId() + ": No plan found.");
-                    }
-                    processPlanningFailure();
-                }
-
-            }
-                
+        
+        if(fwl.getStatus() == FutureStatus.FUTURE_IS_BEING_COMPUTED){
+            return;
         }
         
-        if (fwl.isDone()) {
-            timeSpentPlanning.taskFinished();
-            fwl.removeFutureListener(this);                
-            planFuture = null;
-        }
+        acquireDeliberationLock();
+        try {
+            //to avoid concurrency issues, all actions are executed on method parameter and not on the class field copy of plan future
+            switch (fwl.getStatus()) {
+                case FUTURE_IS_BEING_COMPUTED: {
+                    //Do nothing and wait
+                    break;
+                }
+                case CANCELED: {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(body.getId() + ": Plan calculation cancelled.");
+                    }
+                    break;
+                }
+                case COMPUTATION_EXCEPTION: {
+                    logger.info(body.getId() + ": Exception during planning:", fwl.getException());
+                    numPlanningExceptions.increment();
+                    processPlanningFailure();
+                    break;
+                }
+                case FUTURE_IS_READY: {
+                    PLANNING_RESULT planningResult = fwl.get();
+                    long planningTime = System.currentTimeMillis() - lastPlanningStartTime;
+                    if (isPlanningResultSucces(planningResult)) {
+                        List<PLANNER_ACTION> plannerActions = getActionsFromPlanningResult(planningResult);
+                        if (logger.isDebugEnabled()) {
+                            StringBuilder planSB = new StringBuilder(body.getId() + ": Plan before conversion: ");
+                            getDebugRepresentationOfPlannerActions(plannerActions, planSB);
+                            logger.debug(planSB.toString());
+                        }
 
+                        numSuccesfulPlanning.increment();
+                        averageTimePerSuccesfulPlanning.addSample(planningTime);
+                        averagePlanLength.addSample(plannerActions.size());
+
+                        timeSpentValidating.taskStarted();
+                        ArrayDeque<PLANNER_ACTION> newPlanDeque = new ArrayDeque<PLANNER_ACTION>(plannerActions);
+                        boolean planValid = validatePlan(newPlanDeque, EmptyReactivePlan.EMPTY_PLAN, goalForPlanning);
+                        timeSpentValidating.taskFinished();
+
+                        if (planValid) {
+                            boolean overwriteCurrentPlan = false;
+                            if (currentPlan.isEmpty() && activePlannerActionReactivePlan.getStatus().isFinished()) {
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(body.getId() + ": No current plan, using new plan.");
+                                }
+                                overwriteCurrentPlan = true;
+                            } else if (goalForPlanning.getPriority() > executedGoal.getPriority()) {
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(body.getId() + ": New plan achieves higher priority goal, using new plan.");
+                                }
+                                overwriteCurrentPlan = true;
+                            } else if (getPlanCost(currentPlan) > getPlanCost(newPlanDeque)) {
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(body.getId() + ": New plan has lower cost, using new plan.");
+                                }
+                                overwriteCurrentPlan = true;
+                            } else if (!validatePlan(currentPlan, activePlannerActionReactivePlan, executedGoal)) {
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(body.getId() + ": Current plan is no longer valid, using new plan.");
+                                }
+                                overwriteCurrentPlan = true;
+                            } else {
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(body.getId() + ": New plan is no better than old plan. Keeping old plan.");
+                                }
+                                //I have just validated the current plan
+                                planValidatedForThisStep = true;
+                            }
+
+                            if (overwriteCurrentPlan) {
+                                currentPlan.clear();
+                                currentPlan.addAll(plannerActions);
+                                executedGoal = goalForPlanning;
+
+                                //found plan, reset failure count
+                                numFailuresSinceLastImportantEnvChange = 0;
+
+                                //current plan was overwritten with new plan, which was validated
+                                planValidatedForThisStep = true;
+
+                                if (!reactiveActionIssuedThisStep) {
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug(body.getId() + ": Overwriting previous non-reactive action.");
+                                    }
+                                    //I have finished planning and no action was issued yet in this step -> lets do the first action of our plan
+                                    getNextReactivePlanFromCurrentPlan();
+                                    if (!activePlannerActionReactivePlan.getStatus().isFinished()) {
+                                        environment.act(body, activePlannerActionReactivePlan.nextAction());
+                                    }
+                                }
+                            }
+                        } else {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(body.getId() + ": Freshly received plan is not valid.");
+                            }
+                        }
+
+
+                    } else {
+                        numUnsuccesfulPlanning.increment();
+                        averageTimePerUnsuccesfulPlanning.addSample(planningTime);
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(body.getId() + ": No plan found.");
+                        }
+                        processPlanningFailure();
+                    }
+
+                }
+
+            }
+
+            if (fwl.isDone()) {
+                timeSpentPlanning.taskFinished();
+                fwl.removeFutureListener(this);
+                planFuture = null;
+            }
+        }
+        finally {
+            releaseDeliberationLock();
+        }
     }
 
     

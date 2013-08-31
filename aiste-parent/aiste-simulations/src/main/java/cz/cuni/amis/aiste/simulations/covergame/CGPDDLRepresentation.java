@@ -255,26 +255,25 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     }
 
     @Override
-    public IReactivePlan<? extends CGPairAction> translateActionForSimulation(CoverGame environment, Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
-        //In this representation, action translation is not connected to particular environment instance
-        return translateAction(actionsFromPlanner, body);
+    public IReactivePlan<? extends CGPairAction> translateAction(Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
+        return translateActionForSimulation(env, actionsFromPlanner, body);
     }
 
     
     
     @Override
-    public IReactivePlan<? extends CGPairAction> translateAction(Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
+    public IReactivePlan<? extends CGPairAction> translateActionForSimulation(CoverGame simulationEnv, Queue<ActionDescription> actionsFromPlanner, AgentBody body) {
         ActionDescription nextAction = actionsFromPlanner.peek();
 
-        CGBodyPair bodypair = env.bodyPairs.get(body.getId());
+        CGBodyPair bodypair = simulationEnv.bodyPairs.get(body.getId());
         //Check for joint actions
         if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(holdPositionAction.getName()))){
             actionsFromPlanner.poll();
-            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(env, bodypair.bodyInfo0.id)), Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(env, bodypair.bodyInfo1.id)));
+            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(simulationEnv, bodypair.bodyInfo0.id)), Collections.<CGRolePlan>singletonList(new CGRoleOverWatch(simulationEnv, bodypair.bodyInfo1.id)));
         } else if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(attackCrossfireAction.getName()))){
             actionsFromPlanner.poll();
             int targetIndex = getBodyIndexFromOpponentInstanceName(body, nextAction.getParameters().get(0));
-            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo0.id, targetIndex)), Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo1.id, targetIndex)));
+            return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleAggressive(simulationEnv, bodypair.bodyInfo0.id, targetIndex)), Collections.<CGRolePlan>singletonList(new CGRoleAggressive(simulationEnv, bodypair.bodyInfo1.id, targetIndex)));
         }
         
         //body-related joint actions
@@ -282,7 +281,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
             if(nextAction.getName().equals(Planning4JUtils.normalizeIdentifier(bodyPDDLs[bodyIndex].attackSingleAction.getName()))){
                 actionsFromPlanner.poll();
                 int targetIndex = getBodyIndexFromOpponentInstanceName(body, nextAction.getParameters().get(0));
-                return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo0.id, targetIndex)), Collections.<CGRolePlan>singletonList(new CGRoleAggressive(env, bodypair.bodyInfo1.id, targetIndex)));
+                return new CGPairRolePlan(Collections.<CGRolePlan>singletonList(new CGRoleAggressive(simulationEnv, bodypair.bodyInfo0.id, targetIndex)), Collections.<CGRolePlan>singletonList(new CGRoleAggressive(simulationEnv, bodypair.bodyInfo1.id, targetIndex)));
             }
             
             CGAction mainAction = null;
@@ -334,7 +333,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
     protected CGAction translateSingleBodyAction(int bodyId, ActionDescription desc) {
         if (!desc.getName().startsWith(Planning4JUtils.normalizeIdentifier(bodyPDDLs[bodyId].bodyPrefix))) {
-            throw new IllegalArgumentException("Incorrect body");
+            throw new IllegalArgumentException("Incorrect body. Expected " + bodyId + " for identifier " + desc.getName());
         }
         String actionWithoutPrefix = desc.getName().substring(bodyPDDLs[bodyId].bodyPrefix.length());
         if (actionWithoutPrefix.equals("MOVE")) {

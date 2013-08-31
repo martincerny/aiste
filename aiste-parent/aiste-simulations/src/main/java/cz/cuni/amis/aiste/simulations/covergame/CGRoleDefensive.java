@@ -61,7 +61,7 @@ public class CGRoleDefensive extends CGRolePlan {
     
     
     @Override
-    public ReactivePlanStatus getStatus() {
+    protected ReactivePlanStatus getStatusInternal() {
         if(!isSafe()){
             if(hasPath()){
                 return ReactivePlanStatus.EXECUTING;

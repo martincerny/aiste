@@ -48,7 +48,7 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
 
     private boolean finished;
     private List<AgentBody> bodies;
-    private long timeStep;
+    protected long timeStep;
     private Map<AgentBody, Double> totalRewards;
     
     private final double failureReward;

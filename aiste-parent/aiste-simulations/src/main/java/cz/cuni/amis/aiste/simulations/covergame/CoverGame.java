@@ -344,13 +344,15 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
 
     
     /**
+     * Return cached visibility from visibility matrix.
      * Visibility is checked by Bresenham's algorithm, taken from http://tech-algorithm.com/articles/drawing-line-using-bresenham-algorithm/
      * @param from
      * @param to
      * @return 
      */
     public boolean isVisible(Loc from, Loc to){
-        return CGUtils.isVisible(from, to, defs);
+        return defs.visibilityMatrix[from.x][from.y][to.x][to.y];
+       // return CGUtils.isVisible(from, to, defs);
     }
     
     /**
@@ -622,9 +624,9 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             multiplier *= defs.supressedAimPenalty;
         }
         hitProbability *= multiplier;
-        if (logger.isTraceEnabled() && !isSimulation) {
-            logger.trace("Distance: " + distance + " Covered: " + covered + " Full cover: " + fullCover + " Supressed:" + supressed + ", hit probability: " + hitProbability);
-        }
+//        if (logger.isTraceEnabled() && !isSimulation) {
+//            logger.trace("Distance: " + distance + " Covered: " + covered + " Full cover: " + fullCover + " Supressed:" + supressed + ", hit probability: " + hitProbability);
+//        }
         return hitProbability;
     }
 
@@ -792,6 +794,11 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         int levelHeight;
         
         CGSquare[][] squares;
+        
+        /**
+         * Visibility matrix. Keys are (in this order): fromX, fromY, toX, toY
+         */
+        boolean [][][][] visibilityMatrix;
         
         List<Loc> playerSpawningLocations;
         

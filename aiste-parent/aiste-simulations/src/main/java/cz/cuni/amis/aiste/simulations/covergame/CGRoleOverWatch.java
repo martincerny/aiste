@@ -78,7 +78,7 @@ public class CGRoleOverWatch extends CGRolePlan {
     
     
     @Override
-    public ReactivePlanStatus getStatus() {
+    protected ReactivePlanStatus getStatusInternal() {
         CGBodyInfo bodyInfo = getBodyInfo();
         if(env.getNumThreats(bodyId, bodyInfo.loc) > 0){
             return ReactivePlanStatus.FAILED;
