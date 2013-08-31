@@ -151,7 +151,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, CGPairAction> actionsToPerform) {
         
         if(logger.isDebugEnabled() && !isSimulation){
-            logger.debug("==== Step " + getTimeStep() + " ======\n");
+            logger.debug("\n==== Step " + getTimeStep() + " ======");
         }
         
         agentsKilledLastRound.clear();
