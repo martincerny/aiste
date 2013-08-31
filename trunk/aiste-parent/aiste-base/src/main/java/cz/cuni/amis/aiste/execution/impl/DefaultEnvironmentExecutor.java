@@ -140,7 +140,28 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
         @Override
         public void run() {
             try {
+                if(logger.isTraceEnabled()){
+                    logger.trace("Starting simulation step");
+                    if (!Thread.holdsLock(getEnvironment())) {
+                        outer: 
+                        for (java.lang.management.ThreadInfo ti :
+                                java.lang.management.ManagementFactory.getThreadMXBean()
+                                .dumpAllThreads(true, false)) {
+                            for (java.lang.management.MonitorInfo mi : ti.getLockedMonitors()) {
+                                if (mi.getIdentityHashCode() == System.identityHashCode(getEnvironment())) {
+                                    logger.trace("Monitor held by: " + mi.getClassName() + ": " + mi.getLockedStackFrame().getLineNumber());
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+                
                 synchronized (getEnvironment()) {
+                    if(logger.isTraceEnabled()){
+                        logger.trace("Acquired environment monitor");
+                    }
                     if(lastExecutionTime > 0){
                         long delay = System.currentTimeMillis() - lastExecutionTime;
                         if (!isDebugMode() && delay > getStepDelay() * STEP_TOLERANCE_FACTOR) {
@@ -155,6 +176,9 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
                     performSimulationStep();
                     stepsPerformed++;
+                    if(logger.isTraceEnabled()){
+                        logger.trace("Simulation step done");
+                    }
                 }
             } catch (Exception ex) {
                 onException(ex);                
