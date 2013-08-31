@@ -86,11 +86,8 @@ public abstract class AbstractSynchronizedEnvironment<ACTION extends IAction> ex
      * @return 
      */
     protected Map<AgentBody, Double> nextStepWithGivenActions(Map<AgentBody, ACTION> actions){
-        synchronized(actionsMutex){
-            actionsForNextStep.clear();
-            actionsForNextStep.putAll(actions);
-            return nextStep();
-        }
+        timeStep++;
+        return nextStepInternal(actions);
     }
 
     @Override

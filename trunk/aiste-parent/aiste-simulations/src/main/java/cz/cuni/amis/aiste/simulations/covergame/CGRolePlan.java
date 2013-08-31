@@ -33,6 +33,8 @@ public abstract class CGRolePlan extends AbstractReactivePlan<CGAction> {
 
     private List<Loc> path;
     private long lastPathRefresh = -1;
+    private ReactivePlanStatus status;
+    private long lastStatusRefresh = -1;
     
     protected AStar<Loc> astar;
 
@@ -66,7 +68,17 @@ public abstract class CGRolePlan extends AbstractReactivePlan<CGAction> {
     public boolean hasActions() {
         return true; //role plans always have actions
     }
+
+    @Override
+    public final ReactivePlanStatus getStatus() {
+        if(env.getTimeStep() > lastStatusRefresh){
+            status = getStatusInternal();
+            lastStatusRefresh = env.getTimeStep();
+        }
+        return status;
+    }
     
+    protected abstract ReactivePlanStatus getStatusInternal();
     
     
     

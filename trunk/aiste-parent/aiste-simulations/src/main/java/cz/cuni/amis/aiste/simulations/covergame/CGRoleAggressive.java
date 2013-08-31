@@ -67,7 +67,7 @@ public class CGRoleAggressive extends CGRolePlan {
     
     
     @Override
-    public ReactivePlanStatus getStatus() {
+    protected ReactivePlanStatus getStatusInternal() {
         CGBodyInfo bodyInfo = getBodyInfo();        
         
         boolean enemyKilledLastRound = false;

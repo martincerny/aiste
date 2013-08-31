@@ -63,7 +63,7 @@ public class CGRoleMove extends CGRolePlan {
     
     
     @Override
-    public ReactivePlanStatus getStatus() {
+    protected ReactivePlanStatus getStatusInternal() {
         CGBodyInfo bodyInfo = getBodyInfo();
         if(getPath() == null){
             return ReactivePlanStatus.FAILED;
