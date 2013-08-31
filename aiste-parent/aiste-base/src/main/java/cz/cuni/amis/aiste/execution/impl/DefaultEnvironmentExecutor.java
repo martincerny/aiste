@@ -108,8 +108,8 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
                         }
                         if (lastExecutionTime > 0) {
                             long delay = System.currentTimeMillis() - lastExecutionTime;
-                            if (!isDebugMode() && delay > getStepDelay() * STEP_TOLERANCE_FACTOR) {
-                                throw new SimulationException("Two succesive simulation steps were run after " + delay + " ms, but should be " + getStepDelay() + " ms");
+                            if (delay > getStepDelay() * STEP_TOLERANCE_FACTOR) {
+                                logger.warn("Two succesive simulation steps were run after " + delay + " ms, but should be " + getStepDelay() + " ms");
                             }
                         }
                         lastExecutionTime = System.currentTimeMillis();
