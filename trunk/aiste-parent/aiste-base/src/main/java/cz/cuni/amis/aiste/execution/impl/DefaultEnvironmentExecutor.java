@@ -19,6 +19,7 @@ package cz.cuni.amis.aiste.execution.impl;
 import cz.cuni.amis.aiste.SimulationException;
 import cz.cuni.amis.aiste.environment.IAgentController;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
+import cz.cuni.amis.experiments.EExperimentRunResult;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -77,6 +78,8 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
         simulationStoppedLatch = new CountDownLatch(1);
         
         Thread.currentThread().setPriority(Thread.MAX_PRIORITY);        
+        
+        overallResultSoFar = EExperimentRunResult.SUCCESS;
         
         try {
             while (!getEnvironment().isFinished() && !cancelled) {
