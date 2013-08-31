@@ -87,7 +87,7 @@ public class Experiments {
         environments.add(new CoverGame(CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map_security.txt"))));
 
 
-        List<Long> stepDelays = Arrays.asList(new Long[]{100L, 500L, 1000L});        
+        List<Long> stepDelays = Arrays.asList(new Long[]{50L, 100L, 500L, 1000L});        
         int maxSteps = 500;
         
         IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("CoverGameComplexPreliminary", environments, controllers, stepDelays, maxSteps, 5 /* Five repetitions */);

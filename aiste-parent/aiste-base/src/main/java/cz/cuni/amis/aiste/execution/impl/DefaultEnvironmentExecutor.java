@@ -26,6 +26,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -36,10 +37,6 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     private final Logger logger = Logger.getLogger(DefaultEnvironmentExecutor.class);
 
-    private CountDownLatch environmentStoppedLatch;
-
-    private Timer environmentStepTimer;
-
     private RunningStepNotificationsMonitor stepNotificationsMonitor = new RunningStepNotificationsMonitor();
 
     private final ExecutorService agentStepNotificationExecutorService;
@@ -48,8 +45,12 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     private boolean debugMode;
     
+    CountDownLatch simulationStoppedLatch;
+    
+    boolean cancelled = false;
+    
     /**
-     * If actual execution delay between succesive environment steps is greater by a factor larger
+     * If actual execution delay between successive environment steps is greater by a factor larger
      * than this, it is assumed, that the environment does not react fast enough
      * for current stepDelay and an exception is thrown.
      */
@@ -58,7 +59,6 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
     public DefaultEnvironmentExecutor(long stepDelay, int maxNotificationInstancesPerController) {
         super(stepDelay);
         this.maxNotificationInstancesPerController = maxNotificationInstancesPerController;
-        environmentStepTimer = new Timer("Environment execution");
         agentStepNotificationExecutorService = Executors.newCachedThreadPool();
     }
 
@@ -68,19 +68,73 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     @Override
     public IEnvironmentExecutionResult executeEnvironment(long maxSteps) {
-        environmentStoppedLatch = new CountDownLatch(1);
-        startSimulation();
-        if(environmentStoppedLatch.getCount() <= 0){
-            return gatherExecutionResult();
-        }
-        environmentStepTimer.scheduleAtFixedRate(new EnvironmentStepTask(maxSteps), 0, getStepDelay());
+
+        long stepsPerformed = 0;
+        long lastExecutionTime = -1;
+        long startTime = System.currentTimeMillis();
+        
+        cancelled = false;
+        simulationStoppedLatch = new CountDownLatch(1);
+        
+        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);        
+        
         try {
-            environmentStoppedLatch.await();
-        } catch (InterruptedException ex) {
-            throw new SimulationException("Waiting for simulation to finish interrupted", ex);
-        } finally {
-            stopSimulation();
-        }        
+            while (!getEnvironment().isFinished() && !cancelled) {
+                if((System.currentTimeMillis() - startTime) / getStepDelay() > stepsPerformed){
+                    //time for next step
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("Starting simulation step");
+                        /*                if (!Thread.holdsLock(getEnvironment())) {
+                         outer: 
+                         for (java.lang.management.ThreadInfo ti :
+                         java.lang.management.ManagementFactory.getThreadMXBean()
+                         .dumpAllThreads(true, false)) {
+                         for (java.lang.management.MonitorInfo mi : ti.getLockedMonitors()) {
+                         if (mi.getIdentityHashCode() == System.identityHashCode(getEnvironment())) {
+                         logger.trace("Monitor held by: " + mi.getClassName() + ": " + mi.getLockedStackFrame().getLineNumber());
+                         break outer;
+                         }
+                         }
+                         }
+                         }*/
+
+                    }
+
+
+
+                    synchronized (getEnvironment()) {
+                        if (logger.isTraceEnabled()) {
+                            logger.trace("Acquired environment monitor");
+                        }
+                        if (lastExecutionTime > 0) {
+                            long delay = System.currentTimeMillis() - lastExecutionTime;
+                            if (!isDebugMode() && delay > getStepDelay() * STEP_TOLERANCE_FACTOR) {
+                                throw new SimulationException("Two succesive simulation steps were run after " + delay + " ms, but should be " + getStepDelay() + " ms");
+                            }
+                        }
+                        lastExecutionTime = System.currentTimeMillis();
+                        if (getEnvironment().isFinished() || (maxSteps != 0 && stepsPerformed >= maxSteps)) {
+                            break;
+                        }
+
+                        performSimulationStep();
+                        stepsPerformed++;
+                    }
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("Simulation step done");
+                    }
+                } else {
+                    //busy wait
+                    try {
+                        Thread.sleep(1);                    
+                    } catch(InterruptedException ex){} //I don't care
+                }
+            }
+                
+        } catch (Exception ex) {
+            onException(ex);
+            logger.error("Exception during environment execution. ", ex);
+        }
         
         /**
          * Wait for two simulation steps to avoid most of terrible concurrency issues when
@@ -89,8 +143,10 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
         try {
             Thread.sleep(getStepDelay() * 2);
         } catch(InterruptedException ex){
-            logger.warn("Waiting at the end of experiment interrupted.");
+            logger.warn("Waiting at the end of experiment interrupted.", ex);
         }
+        
+        simulationStoppedLatch.countDown();
         
         return gatherExecutionResult();
     }
@@ -104,14 +160,15 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     @Override
     protected void stopSimulation() {
+        cancelled = true;
         super.stopSimulation();
         synchronized(agentStepNotificationExecutorService) {
             agentStepNotificationExecutorService.shutdownNow();
         }
-        environmentStepTimer.cancel();
-        if(environmentStoppedLatch != null){
-            //the latch might not have been initialized
-            environmentStoppedLatch.countDown();
+        try {
+            simulationStoppedLatch.await();
+        } catch (InterruptedException ex) {
+            logger.warn("Waiting for simulation stop interrupted.", ex);            
         }
     }
 
@@ -122,77 +179,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
     }
-    
-    
-
-    private class EnvironmentStepTask extends TimerTask {
-
-        private final long maxSteps;
-
-        private long stepsPerformed = 0;
-
-        private long lastExecutionTime = 0;
-
-        public EnvironmentStepTask(long maxSteps) {
-            this.maxSteps = maxSteps;
-        }
-
-        @Override
-        public void run() {
-            try {
-                if(logger.isTraceEnabled()){
-                    logger.trace("Starting simulation step");
-                    if (!Thread.holdsLock(getEnvironment())) {
-                        outer: 
-                        for (java.lang.management.ThreadInfo ti :
-                                java.lang.management.ManagementFactory.getThreadMXBean()
-                                .dumpAllThreads(true, false)) {
-                            for (java.lang.management.MonitorInfo mi : ti.getLockedMonitors()) {
-                                if (mi.getIdentityHashCode() == System.identityHashCode(getEnvironment())) {
-                                    logger.trace("Monitor held by: " + mi.getClassName() + ": " + mi.getLockedStackFrame().getLineNumber());
-                                    break outer;
-                                }
-                            }
-                        }
-                    }
-                    
-                }
-                
-                synchronized (getEnvironment()) {
-                    if(logger.isTraceEnabled()){
-                        logger.trace("Acquired environment monitor");
-                    }
-                    if(lastExecutionTime > 0){
-                        long delay = System.currentTimeMillis() - lastExecutionTime;
-                        if (!isDebugMode() && delay > getStepDelay() * STEP_TOLERANCE_FACTOR) {
-                            throw new SimulationException("Two succesive simulation steps were run after " + delay + " ms, but should be " + getStepDelay() + " ms");
-                        }
-                    }
-                    lastExecutionTime = System.currentTimeMillis();
-                    if (getEnvironment().isFinished() || (maxSteps != 0 && stepsPerformed >= maxSteps)) {
-                        stopExecution();
-                        return;
-                    }
-
-                    performSimulationStep();
-                    stepsPerformed++;
-                    if(logger.isTraceEnabled()){
-                        logger.trace("Simulation step done");
-                    }
-                }
-            } catch (Exception ex) {
-                onException(ex);                
-                stopExecution();
-                logger.error("Exception during environment execution. ", ex);
-            } 
-        }
-
-        protected void stopExecution() {
-            environmentStepTimer.cancel();               
-            stopSimulation();
-            environmentStoppedLatch.countDown();
-        }
-    }
+       
 
     private class NotifyControllerOfSimulationStepTask implements Runnable {
 

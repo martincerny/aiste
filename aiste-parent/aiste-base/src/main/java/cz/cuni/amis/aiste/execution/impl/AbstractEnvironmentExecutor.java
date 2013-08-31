@@ -138,12 +138,18 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
      */
     protected void performSimulationStep(){
         Map<AgentBody, Double> stepResult = environment.nextStep();
+        if(logger.isTraceEnabled()){
+            logger.trace("Environment state updated");
+        }
         for(IAgentController controller : activeControllers){
             Double reward = stepResult.get(controller.getBody());
             if(reward == null){
                 throw new SimulationException("The environment has not produced a reward for body " + controller.getBody() + " (controller: " + controller + ")");
             }
             notifyControllerOfSimulationStep(controller, reward);
+            if(logger.isTraceEnabled()){
+                logger.trace("Notified controller " + controller.getLoggableRepresentation() + " of simulation step.");
+            }            
         }
     }
 
