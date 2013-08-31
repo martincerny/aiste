@@ -58,13 +58,11 @@ public class Experiments {
         if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
              infos = new ItSimplePlannerInformation[] {
                     PlannersPackUtils.getSGPlan6(),
-                    PlannersPackUtils.getBlackBox(),
                     PlannersPackUtils.getMetricFF(),
                 };
         } else {
              infos = new ItSimplePlannerInformation[] {
                 PlannersPackUtils.getMetricFF(),
-                PlannersPackUtils.getBlackBox()
              };
         }
 

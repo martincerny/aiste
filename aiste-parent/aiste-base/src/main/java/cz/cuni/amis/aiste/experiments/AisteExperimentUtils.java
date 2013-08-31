@@ -68,7 +68,7 @@ public class AisteExperimentUtils {
                                             new AgentExecutionDescriptor(agentType, controller1, (IEnvironmentRepresentation) representation1),});
 
                                         for (long stepDelay : stepDelays) {
-                                            long timeout = (stepsToTimeout) * stepDelay + 1000/* Just a little reserve for startup*/;
+                                            long timeout = (stepsToTimeout + 3) * stepDelay + 1000/* Just a little reserve for startup*/;
                                             experiments.add(new AisteExperiment(env, descriptors, stepDelay, timeout));
                                             experiments.add(new AisteExperiment(env, descriptors2, stepDelay, timeout));
                                         }
