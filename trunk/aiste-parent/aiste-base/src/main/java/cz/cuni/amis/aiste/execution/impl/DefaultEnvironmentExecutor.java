@@ -157,6 +157,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
                     stepsPerformed++;
                 }
             } catch (Exception ex) {
+                onException(ex);                
                 stopExecution();
                 logger.error("Exception during environment execution. ", ex);
             } 

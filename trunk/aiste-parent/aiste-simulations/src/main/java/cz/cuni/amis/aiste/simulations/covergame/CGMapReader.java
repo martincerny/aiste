@@ -39,6 +39,7 @@ public class CGMapReader {
         CoverGame.StaticDefs defs = new CoverGame.StaticDefs();
         
         Scanner sc = new Scanner(is);
+        defs.levelName = sc.nextLine();
         defs.levelWidth = sc.nextInt();
         defs.levelHeight = sc.nextInt();
         sc.nextLine();

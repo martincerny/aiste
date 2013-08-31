@@ -29,6 +29,7 @@ import cz.cuni.amis.aiste.execution.IAgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.IAgentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutor;
+import cz.cuni.amis.experiments.EExperimentRunResult;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,8 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     private long stepDelay;
 
     protected Random rand = new Random();
+    
+    EExperimentRunResult overallResultSoFar;
     
     public AbstractEnvironmentExecutor(long stepDelay) {
         this.stepDelay = stepDelay;
@@ -115,6 +118,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
      * Descendants may call this method to start all controllers.
      */
     protected void startSimulation(){
+        overallResultSoFar = EExperimentRunResult.SUCCESS;
         for(IAgentController controller :   activeControllers){
             try {
                 if(controller instanceof IRandomizable){
@@ -144,6 +148,27 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     }
 
     /**
+     * Exception has happened, this should be included in the experiment result.
+     * @param ex 
+     */
+    protected void onException(Exception ex){
+        if(overallResultSoFar == EExperimentRunResult.SUCCESS){
+            overallResultSoFar = EExperimentRunResult.EXCEPTION;
+        }        
+    }
+    
+    /**
+     * Exception has failed, this should be included in the experiment result.
+     */
+    protected void onFailure(){
+        if(overallResultSoFar == EExperimentRunResult.SUCCESS){
+            overallResultSoFar = EExperimentRunResult.FAILURE;
+        }        
+    }
+    
+    
+    
+    /**
      * Called by {@link #performSimulationStep() } to notify an individual controller that
      * a simulation step has happened.
      * @param controller
@@ -152,6 +177,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
     protected abstract void notifyControllerOfSimulationStep(IAgentController controller, double reward);
     
     protected void controllerFailed(IAgentController controller){
+        onFailure();
         getEnvironment().removeAgentBody(controller.getBody());        
         activeControllers.remove(controller);        
         try {
@@ -197,7 +223,7 @@ public abstract class AbstractEnvironmentExecutor implements IEnvironmentExecuto
         for(IAgentController controller : controllers){
             agentResults.add(new AgentExecutionResult(controller.getBody().getType(), controller, environment.getTotalReward(controller.getBody())));
         }
-        EnvironmentExecutionResult result = new EnvironmentExecutionResult(agentResults, environment.getTimeStep());
+        EnvironmentExecutionResult result = new EnvironmentExecutionResult(overallResultSoFar, agentResults, environment.getTimeStep());
         return result;
     }
     

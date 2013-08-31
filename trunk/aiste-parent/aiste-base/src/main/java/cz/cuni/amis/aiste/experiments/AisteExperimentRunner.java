@@ -99,7 +99,7 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         try {
             lastExecutionResult = environmentExecutor.executeEnvironment(maxSteps);
             rankLoggingProviders.get(experiment.environment.getClass()).logExperimentResults(lastExecutionResult);  
-            return EExperimentRunResult.SUCCESS;
+            return lastExecutionResult.getOverallResult();
         } finally {
             for(AgentBody body : (List<AgentBody>)experiment.environment.getAllBodies()){
                 logger.info("Total reward for " + body.getId() + " :" + experiment.environment.getTotalReward(body));

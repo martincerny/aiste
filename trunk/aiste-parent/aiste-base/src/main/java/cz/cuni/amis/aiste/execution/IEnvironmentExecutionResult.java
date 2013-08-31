@@ -17,6 +17,7 @@
 package cz.cuni.amis.aiste.execution;
 
 import cz.cuni.amis.aiste.environment.IAgentController;
+import cz.cuni.amis.experiments.EExperimentRunResult;
 import java.util.List;
 import java.util.Map;
 
@@ -28,4 +29,5 @@ public interface IEnvironmentExecutionResult {
     List<IAgentExecutionResult> getAgentResults();
     Map<IAgentController, IAgentExecutionResult> getPerAgentResults();
     long getNumberOfStepsElapsed();
+    EExperimentRunResult getOverallResult();
 }
