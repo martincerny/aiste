@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -74,12 +75,21 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     PDDLSimpleAction attackCrossfireAction;
     PDDLSimpleAction holdPositionAction;
     
+    List<PDDLSimpleAction> globalJointActions;
+    
     //tuning parameters for joint actions
     double holdPositionCost = 10;
     double attackSingleCost = 5;
+    
+    /**
+     * Whether the domain forces bodies to interleave actions using the body_0_turn predicate.
+     */
+    private boolean forceBodyAlternation;
 
-    public CGPDDLRepresentation(CoverGame env) {
+    public CGPDDLRepresentation(CoverGame env, boolean forceBodyAlternation) {
         super(env);
+        
+        this.forceBodyAlternation = forceBodyAlternation;
 
         navPointType = new PDDLType("nav_point");
         opponentType = new PDDLType("opponent");
@@ -117,9 +127,10 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         bodyPDDLs[1].createJointActions(bodyPDDLs[0]);
 
         /* Joint actions */
+        globalJointActions = new ArrayList<PDDLSimpleAction>();
+        
         holdPositionAction = new PDDLSimpleAction("hold_position", new PDDLParameter("loc0", navPointType), new PDDLParameter("loc1", navPointType), new PDDLParameter("op0", opponentType), new PDDLParameter("op1", opponentType));
-        holdPositionAction.setPreconditionList(
-                body_0_turn.stringAfterSubstitution(),
+        holdPositionAction.setPreconditionList(                
                 bodyPDDLs[0].partialCoverPredicate.stringAfterSubstitution(), 
                 bodyPDDLs[1].partialCoverPredicate.stringAfterSubstitution(),
                 bodyPDDLs[0].bodyAtPredicate.stringAfterSubstitution("?loc0"),
@@ -127,13 +138,16 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                 visibleByOpponentPredicate.stringAfterSubstitution("?op0", "?loc0"),
                 visibleByOpponentPredicate.stringAfterSubstitution("?op1", "?loc1")
                 );
+        if(forceBodyAlternation){
+            holdPositionAction.addPrecondition(body_0_turn.stringAfterSubstitution());
+        }
         holdPositionAction.setPositiveEffects(winPredicate.stringAfterSubstitution(),
                 "increase (total-cost) " + Double.toString(holdPositionCost));
+        globalJointActions.add(holdPositionAction);
 
         
         attackCrossfireAction = new PDDLSimpleAction("attackCrossfire", new PDDLParameter("target", opponentType), new PDDLParameter("loc0", navPointType), new PDDLParameter("loc1", navPointType));
         attackCrossfireAction.setPreconditionList(
-                body_0_turn.stringAfterSubstitution(),
                 bodyPDDLs[0].partialCoverPredicate.stringAfterSubstitution(), 
                 bodyPDDLs[1].partialCoverPredicate.stringAfterSubstitution(),
                 bodyPDDLs[0].bodyAtPredicate.stringAfterSubstitution("?loc0"),
@@ -141,7 +155,11 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                 vantagePointPredicate.stringAfterSubstitution("?target", "?loc0"),
                 vantagePointPredicate.stringAfterSubstitution("?target", "?loc1")
         );
+        if(forceBodyAlternation){
+            attackCrossfireAction.addPrecondition(body_0_turn.stringAfterSubstitution());
+        }
         attackCrossfireAction.setPositiveEffects(winPredicate.stringAfterSubstitution());        
+        globalJointActions.add(attackCrossfireAction);
         //crossfire has zero cost, as it is the most desired situation    
     }
 
@@ -152,7 +170,11 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         domain.addType(opponentType);
         
         domain.addPredicate(adjacentPredicate);
-        domain.addPredicate(body_0_turn);
+        
+        if(forceBodyAlternation){
+            domain.addPredicate(body_0_turn);
+        }
+        
         domain.addPredicate(uncoveredByOpponentPredicate);        
         domain.addPredicate(opponentAtPredicate);
         domain.addPredicate(visibleByOpponentPredicate);        
@@ -210,7 +232,9 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
             }
         }
 
-        initialState.add(body_0_turn.stringAfterSubstitution());
+        if(forceBodyAlternation){
+            initialState.add(body_0_turn.stringAfterSubstitution());
+        }
 
         /* Opponent - related state*/
         for(int i = 0; i < 2; i++){
@@ -321,14 +345,68 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         }
         
         //I believe that actions are alternating (they definitely should be :-)
-        CGAction action0 = translateSingleBodyAction(0, actionsFromPlanner.poll());
-        CGAction action1 = CGAction.NO_OP_ACTION;
-        if (!actionsFromPlanner.isEmpty()) {
-            action1 = translateSingleBodyAction(1, actionsFromPlanner.poll());
+        CGAction[] actions = new CGAction[] {CGAction.NO_OP_ACTION, CGAction.NO_OP_ACTION};
+
+        if(forceBodyAlternation){
+            actions[0] = translateSingleBodyAction(0, actionsFromPlanner.poll());
+            if (!actionsFromPlanner.isEmpty()) {
+                actions[1] = translateSingleBodyAction(1, actionsFromPlanner.poll());
+            }
+        } else {
+            
+            /*
+             * If alternation is not forced, I execute first available action for both bodies. But I never
+             * search behind any joint action
+             * */
+            
+            ActionDescription firstActionDescription = actionsFromPlanner.poll();
+            int firstActionBodyIndex;
+            if(firstActionDescription.getName().startsWith(Planning4JUtils.normalizeIdentifier(bodyPDDLs[0].bodyPrefix))){
+                firstActionBodyIndex = 0;
+            } else if (firstActionDescription.getName().startsWith(Planning4JUtils.normalizeIdentifier(bodyPDDLs[1].bodyPrefix))){
+                firstActionBodyIndex = 1;
+            } else {
+                throw new IllegalArgumentException("Could not relate action to a body for identifier: " + firstActionDescription.getName());
+            }
+            
+            int otherBodyIndex = 1 - firstActionBodyIndex;
+            actions[firstActionBodyIndex] = translateSingleBodyAction(firstActionBodyIndex, firstActionDescription);
+                        
+            Iterator<ActionDescription> it = actionsFromPlanner.iterator();
+            while(it.hasNext()){
+                ActionDescription desc = it.next();
+                
+                if(isJointAction(desc)){
+                    break;
+                }
+                
+                if(desc.getName().startsWith(Planning4JUtils.normalizeIdentifier(bodyPDDLs[otherBodyIndex].bodyPrefix))){
+                    actions[otherBodyIndex] = translateSingleBodyAction(otherBodyIndex, desc);
+                    it.remove();
+                    break;
+                }
+            }
         }
-        CGPairAction pairAction = new CGPairAction(action0, action1);
+        CGPairAction pairAction = new CGPairAction(actions[0], actions[1]);
         return new SequencePlan<CGPairAction>(pairAction);
 
+    }
+    
+    protected boolean isJointAction(ActionDescription desc){
+        for(PDDLSimpleAction gja : globalJointActions){
+            if(desc.getName().equals(Planning4JUtils.normalizeIdentifier(gja.getName()))){
+                return true;
+            }
+        }
+        for(int bodyId = 0; bodyId < 2; bodyId ++){
+            for(PDDLSimpleAction ja : bodyPDDLs[bodyId].jointActions){
+                if(desc.getName().equals(Planning4JUtils.normalizeIdentifier(ja.getName()))){
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 
     protected CGAction translateSingleBodyAction(int bodyId, ActionDescription desc) {
@@ -454,12 +532,14 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                 
                 //all actions allow me to supress next turn
                 action.addPositiveEffect(canSupressPredicate.stringAfterSubstitution());
-                if (bodyId == 0) {
-                    action.addPrecondition(body_0_turn.stringAfterSubstitution());
-                    action.addNegativeEffect(body_0_turn.stringAfterSubstitution());
-                } else {
-                    action.addPrecondition(PDDLOperators.makeNot(body_0_turn.stringAfterSubstitution()));
-                    action.addPositiveEffect(body_0_turn.stringAfterSubstitution());
+                if(forceBodyAlternation){
+                    if (bodyId == 0) {
+                        action.addPrecondition(body_0_turn.stringAfterSubstitution());
+                        action.addNegativeEffect(body_0_turn.stringAfterSubstitution());
+                    } else {
+                        action.addPrecondition(PDDLOperators.makeNot(body_0_turn.stringAfterSubstitution()));
+                        action.addPositiveEffect(body_0_turn.stringAfterSubstitution());
+                    }
                 }
             }
             
@@ -483,7 +563,6 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
             
             attackSingleAction = new PDDLSimpleAction(bodyPrefix + "attackSingle", new PDDLParameter("target", opponentType), new PDDLParameter("loc0", navPointType), new PDDLParameter("loc1", navPointType));
             attackSingleAction.setPreconditionList(
-                    body_0_turn.stringAfterSubstitution(),
                     partialCoverPredicate.stringAfterSubstitution(), 
                     otherBody.partialCoverPredicate.stringAfterSubstitution(),
                     bodyAtPredicate.stringAfterSubstitution("?loc0"),
@@ -494,9 +573,12 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                     "increase (total-cost) " + Double.toString(attackSingleCost));        
             jointActions.add(attackSingleAction);
             
-            for(PDDLSimpleAction jointAction : jointActions){
-                jointAction.addPrecondition(body_0_turn.stringAfterSubstitution());                
-            }            
+
+            if(forceBodyAlternation){
+                for(PDDLSimpleAction jointAction : jointActions){
+                    jointAction.addPrecondition(body_0_turn.stringAfterSubstitution());                
+                }            
+            }
         }
         
         private PDDLSimpleAction createAttackWithSupportAction(OneBodyPDDL otherBody, PDDLObjectInstance supressedOpponent, PDDLObjectInstance otherOpponent){

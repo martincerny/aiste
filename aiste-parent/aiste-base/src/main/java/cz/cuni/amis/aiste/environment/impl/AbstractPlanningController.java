@@ -70,7 +70,10 @@ implements IFutureListener<PLANNING_RESULT>
     protected void cancelPlanFutureIfRunning() {
         IFutureWithListeners<PLANNING_RESULT> planFutureCopy = planFuture;
         if (planFutureCopy != null){
-            planFutureCopy.removeFutureListener(this);            
+            planFutureCopy.removeFutureListener(this);  
+            numCancelledPlanning.increment();
+            long planningTime = System.currentTimeMillis() - lastPlanningStartTime;
+            averageTimePerCancelledPlanning.addSample(planningTime);            
             synchronized(planFutureCopy){//synchronized so that setResult cannot be called from within planning process
                  if(!planFutureCopy.isDone()) {
                     planFutureCopy.cancel(true);
@@ -101,11 +104,15 @@ implements IFutureListener<PLANNING_RESULT>
     protected IncrementalMetric numSuccesfulPlanning;
     protected IncrementalMetric numUnsuccesfulPlanning;
     protected IncrementalMetric numPlanningExceptions;
+    protected IncrementalMetric numCancelledPlanning;
+    protected IncrementalMetric numPlanningResultInapplicable;
+    protected IncrementalMetric numAdoptedPlansIvalidated;
     protected IncrementalMetric numStepsIdle;
     
     protected IntegerAverageMetric averagePlanLength;
     protected IntegerAverageMetric averageTimePerSuccesfulPlanning;
     protected IntegerAverageMetric averageTimePerUnsuccesfulPlanning;
+    protected IntegerAverageMetric averageTimePerCancelledPlanning;
     
     long lastPlanningStartTime = 0;
     
@@ -156,6 +163,12 @@ implements IFutureListener<PLANNING_RESULT>
         metrics.addMetric(numUnsuccesfulPlanning);
         numPlanningExceptions = new IncrementalMetric("numPlanningExceptions");
         metrics.addMetric(numPlanningExceptions);
+        numCancelledPlanning = new IncrementalMetric("numCancelledPlanning");
+        metrics.addMetric(numCancelledPlanning);
+        numPlanningResultInapplicable = new IncrementalMetric("numPlanningResultInapplicable");
+        metrics.addMetric(numPlanningResultInapplicable);
+        numAdoptedPlansIvalidated = new IncrementalMetric("numAdoptedPlansInvalidated");
+        metrics.addMetric(numAdoptedPlansIvalidated);
         numStepsIdle = new IncrementalMetric("numStepsIdle");
         metrics.addMetric(numStepsIdle);        
 
@@ -165,6 +178,8 @@ implements IFutureListener<PLANNING_RESULT>
         metrics.addMetric(averageTimePerSuccesfulPlanning);
         averageTimePerUnsuccesfulPlanning = new IntegerAverageMetric("avgUnsuccesfulPlanningTime");
         metrics.addMetric(averageTimePerUnsuccesfulPlanning);
+        averageTimePerCancelledPlanning = new IntegerAverageMetric("avgCancelledPlanningTime");
+        metrics.addMetric(averageTimePerUnsuccesfulPlanning);       
     }
 
     @Override
@@ -400,6 +415,7 @@ implements IFutureListener<PLANNING_RESULT>
                                 timeSpentValidating.taskFinished();
                                 planValidatedForThisStep = true;
                                 if (!planValid) {
+                                    numAdoptedPlansIvalidated.increment();
                                     logger.info(body.getId() + ": Plan invalidated. Clearing plan.");
                                     clearPlan();
                                     continue;
@@ -504,10 +520,12 @@ implements IFutureListener<PLANNING_RESULT>
                     environmentCopy.simulateOneStep(Collections.singletonMap(body, nextAction));
                     numValidationSteps++;
                     if(simulableRepresentaion instanceof IActionFailureRepresentation && ((IActionFailureRepresentation)simulableRepresentaion).lastActionFailed(body)){
+                        logger.debug("Plan invalid because action " + nextAction.getLoggableRepresentation() + " in step " + numValidationSteps + " failed.");
                         return false;
                     }                        
                 }
                 if(currentReactivePlan.getStatus() == ReactivePlanStatus.FAILED){
+                    logger.debug("Plan invalid because reactive plan " + currentReactivePlan + " in step " + numValidationSteps + " failed.");
                     return false;
                 }
 
@@ -515,7 +533,11 @@ implements IFutureListener<PLANNING_RESULT>
                     currentReactivePlan = simulableRepresentaion.translateActionForSimulation(environmentCopy, currentPlanCopy, body);
                 }
             } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
-            return simulableRepresentaion.isGoalState(body, goal);
+            boolean isGoalState = simulableRepresentaion.isGoalState(body, goal);
+            if(!isGoalState){
+                logger.debug("Plan invalid because the final state is not goal.");                
+            }
+            return isGoalState;
         } finally {
             if(logger.isDebugEnabled()){
                 long validationTime = System.currentTimeMillis() - validationStart;
@@ -677,6 +699,7 @@ implements IFutureListener<PLANNING_RESULT>
                             } else {
                                 if (logger.isDebugEnabled()) {
                                     logger.debug(body.getId() + ": New plan is no better than old plan. Keeping old plan.");
+                                    numPlanningResultInapplicable.increment();
                                 }
                                 //I have just validated the current plan
                                 planValidatedForThisStep = true;
@@ -708,6 +731,7 @@ implements IFutureListener<PLANNING_RESULT>
                             if (logger.isDebugEnabled()) {
                                 logger.debug(body.getId() + ": Freshly received plan is not valid.");
                             }
+                            numPlanningResultInapplicable.increment();                            
                         }
 
 
