@@ -208,7 +208,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
                 try {
                     controller.onSimulationStep(reward);
                 } catch (Exception ex) {
-                    logger.warn("Controller " + controller + " has raised exception during onSimulationStep(). It has been stopped.", ex);
+                    logger.error("Controller " + controller + " has raised exception during onSimulationStep(). It has been stopped.", ex);
                     controllerFailed(controller);
                 }
             } finally {
