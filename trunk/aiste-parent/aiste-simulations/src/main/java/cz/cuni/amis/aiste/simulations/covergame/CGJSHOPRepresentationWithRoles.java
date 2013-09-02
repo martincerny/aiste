@@ -258,10 +258,10 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                 }
                 
                 
-                if(logger.isDebugEnabled()){
-                    logger.debug(body.getId() + ": Body " + bodyId + " nearest vantage for opp " + opp + ": " + nearestVantage + " distance: " + nearestVantageDistance);
-                    logger.debug(body.getId() + ": Body " + bodyId + " nearest safe vantage for opp " + opp + ": " + nearestSafeVantage + " distance: " + nearestSafeVantageDistance);
-                    logger.debug(body.getId() + ": Body " + bodyId + " nearest attack point for opp " + opp + ": " + nearestAttackPoint + " distance: " + nearestAttackDistance);
+                if(logger.isTraceEnabled()){
+                    logger.trace(body.getId() + ": Body " + bodyId + " nearest vantage for opp " + opp + ": " + nearestVantage + " distance: " + nearestVantageDistance);
+                    logger.trace(body.getId() + ": Body " + bodyId + " nearest safe vantage for opp " + opp + ": " + nearestSafeVantage + " distance: " + nearestSafeVantageDistance);
+                    logger.trace(body.getId() + ": Body " + bodyId + " nearest attack point for opp " + opp + ": " + nearestAttackPoint + " distance: " + nearestAttackDistance);
                 }
             }
         }
