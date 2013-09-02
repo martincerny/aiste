@@ -42,6 +42,9 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
 
     private final ExecutorService agentStepNotificationExecutorService;
 
+    /**
+     * No more than given number of notifications are allowed to run at a single time. Further notifications are not issued.
+     */
     private final int maxNotificationInstancesPerController;
 
     private boolean debugMode;
@@ -64,7 +67,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
     }
 
     public DefaultEnvironmentExecutor(long stepDelay) {
-        this(stepDelay, 2 );
+        this(stepDelay, 1 );
     }
 
     @Override
@@ -199,8 +202,7 @@ public class DefaultEnvironmentExecutor extends AbstractEnvironmentExecutor {
         public void run() {
             try {
                 if (stepNotificationsMonitor.stepNotificationStarted(controller) > maxNotificationInstancesPerController) {
-                    logger.info("Controller " + controller + " has exceeded maximum allowed parallel logic instances (" + maxNotificationInstancesPerController + "). It has been stopped.");
-                    controllerFailed(controller);
+                    logger.error("Controller " + controller + " has exceeded maximum allowed parallel logic instances (" + maxNotificationInstancesPerController + "). Notification skipped.");
                     return;
                 }
                 try {

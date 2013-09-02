@@ -266,6 +266,16 @@ public abstract class AbstractEnvironment<ACTION extends IAction> implements IEn
     }
 
     @Override
+    public ILoggingHeaders getPerAgentAndExperimentLoggingHeaders() {
+        return LoggingHeaders.EMPTY_LOGGING_HEADERS;
+    }
+
+    @Override
+    public List<Object> getPerAgentAndExperimentLoggingData(AgentBody agentBody) {
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
     public ILogIdentifier getIdentifier() {
         return new ClassLogIdentifier(getClass());
     }

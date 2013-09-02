@@ -174,7 +174,9 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
 
         @Override
         public ILoggingHeaders getRuntimeLoggingHeaders() {            
-            return new LoggingHeadersConcatenation(environment.getPerExperimentLoggingHeaders(), new LoggingHeaders("controller", "oponentController", "reward", "rank"));            
+            return new LoggingHeadersConcatenation(environment.getPerExperimentLoggingHeaders(), 
+                    new LoggingHeaders("controller", "opponentController", "reward", "rank"), 
+                    environment.getPerAgentAndExperimentLoggingHeaders());            
         }
 
         public void logExperimentResults(IEnvironmentExecutionResult executionResult){
@@ -201,14 +203,18 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
                         result1.getController().getLoggableRepresentation(),
                         result0.getTotalReward(),
                         rank0
-            })));
+                    }),
+                    environment.getPerAgentAndExperimentLoggingData((AgentBody)environment.getAllBodies().get(0))
+                    ));
             runtimeLoggingOutput.logData(ListConcatenation.concatenate(environment.getPerExperimentLoggingData(), 
                     Arrays.asList(new Object[] { 
                         result1.getController().getLoggableRepresentation(),
                         result0.getController().getLoggableRepresentation(),
                         result1.getTotalReward(),
                         rank1
-            })));
+                    }),
+                    environment.getPerAgentAndExperimentLoggingData((AgentBody)environment.getAllBodies().get(1))
+                    ));
         }
         
     }

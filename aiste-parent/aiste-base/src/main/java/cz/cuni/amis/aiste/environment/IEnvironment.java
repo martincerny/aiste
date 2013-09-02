@@ -134,4 +134,17 @@ public interface IEnvironment<ACTION extends IAction> extends ILogDataProvider {
     ILoggingHeaders getEnvironmentParametersHeaders();
     
     List<Object> getEnvironmentParametersValues();
+    
+    /**
+     * Gets per-agent-and-experiment logging headers, e.g. total distance travelled.  
+     * @return 
+     */
+    ILoggingHeaders getPerAgentAndExperimentLoggingHeaders();
+    
+    /**
+     * Gets per-agent-and-experiment data to be logged, e.g. total distance travelled.  
+     * @return the logging data. 
+     */
+    List<Object> getPerAgentAndExperimentLoggingData(AgentBody agentBody);
+    
 }
