@@ -100,6 +100,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                     
             copyPair.bodyInfo0 = body0;
             copyPair.bodyInfo1 = body1;
+            copyPair.copyStatisticsFromOriginal(originalPair);            
             
             bodyPairs.add(copyPair);            
             lastOpponentTeamData.add(null);
@@ -131,6 +132,23 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         return ListConcatenation.concatenate(super.getEnvironmentParametersValues(), Arrays.asList(new Object[] {defs.levelName}));         
     }
 
+    @Override
+    public ILoggingHeaders getPerAgentAndExperimentLoggingHeaders() {
+        return LoggingHeadersConcatenation.concatenate(super.getPerAgentAndExperimentLoggingHeaders(), 
+                new LoggingHeaders("Kills", "Deaths", "NumShots", "NumShotsHit"));
+    }
+
+    @Override
+    public List<Object> getPerAgentAndExperimentLoggingData(AgentBody agentBody) {
+        CGBodyPair pair = bodyPairs.get(agentBody.getId());
+        return ListConcatenation.concatenate(super.getPerAgentAndExperimentLoggingData(agentBody), 
+                Arrays.asList(new Object[] {
+                    pair.kills, pair.deaths, pair.numShots, pair.numShotsHit
+                })
+                ); 
+    }
+
+    
     
     
     @Override
@@ -235,6 +253,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                     }
                     agentFailedAction(bodyInfo.team.body);                    
                 } else {
+                    bodyInfo.team.numShots++;
                     double hitProbability = getHitProbability(bodyInfo, targetInfo);
                     if (rand.nextDouble() <= hitProbability || isSimulation) {
                         //In simulation, I always hit
@@ -242,6 +261,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
                         targetInfo.health -= damage;
                         targetInfo.numTurnsNotHit = 0;
                         agentsNotHit.remove(targetInfo.id);                        
+                        bodyInfo.team.numShotsHit++;
                         if(logger.isDebugEnabled()  && !isSimulation){
                             logger.debug(bodyInfo.id + ": Succesful ranged attack on:" + targetInfo.id + " damage: " + damage);                            
                         }
@@ -264,8 +284,10 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             if(bodyInfo.health <= 0){
                 //assess -1 reward for getting killed
                 rewards[bodyInfo.team.body.getId()] -= 1; 
+                bodyInfo.team.deaths++;
                 //the +1 reward to the other team
                 rewards[1 - bodyInfo.team.body.getId()] += 1;
+                bodyPairs.get(1 - bodyInfo.team.body.getId()).kills++;
                 
                 //update markers
                 markerData.get(bodyInfo.getTeamId()).diedSinceMarker = true;
@@ -766,6 +788,14 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         CGBodyInfo bodyInfo0;
         CGBodyInfo bodyInfo1;
+        
+        /**
+         * Statistics for logging
+         */
+        int kills = 0;
+        int deaths = 0;
+        int numShots = 0;
+        int numShotsHit = 0;
 
         public CGBodyPair(AgentBody body) {
             this.body = body;
@@ -795,6 +825,13 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
             } else {
                 throw new IllegalStateException("Given body is not a member of this pair.");
             }
+        }
+        
+        void copyStatisticsFromOriginal(CGBodyPair original){
+            this.kills = original.kills;
+            this.deaths = original.deaths;
+            this.numShots = original.numShots;
+            this.numShotsHit = original.numShotsHit;
         }
 
         @Override
