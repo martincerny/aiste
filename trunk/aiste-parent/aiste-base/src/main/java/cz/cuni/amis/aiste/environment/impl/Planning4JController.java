@@ -96,6 +96,9 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
 
     @Override
     protected List<ActionDescription> getActionsFromPlanningResult(IPlanningResult result) {
+        if(logger.isTraceEnabled()){
+            logger.trace("Planning statistics:\n" + result.getPlanningStatistics().toString());
+        }
         return result.getPlan();
     }
 

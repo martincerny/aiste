@@ -117,14 +117,15 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         
         registerRepresentation(this);
-        registerRepresentation(new CGPDDLRepresentation(this));        
+        registerRepresentation(new CGPDDLRepresentation(this, true));        
+        registerRepresentation(new CGPDDLRepresentation(this, false));        
         registerRepresentation(new CGJSHOPRepresentationWithRoles(this));        
         //registerRepresentation(new CGJSHOPRepresentation(this));        
     }      
 
     @Override
     public ILoggingHeaders getEnvironmentParametersHeaders() {
-        return LoggingHeadersConcatenation.concatenate(super.getEnvironmentParametersHeaders(), new LoggingHeaders("LevelName")); 
+        return LoggingHeadersConcatenation.concatenate(super.getEnvironmentParametersHeaders(), new LoggingHeaders("levelName")); 
     }
 
     @Override
@@ -135,7 +136,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     @Override
     public ILoggingHeaders getPerAgentAndExperimentLoggingHeaders() {
         return LoggingHeadersConcatenation.concatenate(super.getPerAgentAndExperimentLoggingHeaders(), 
-                new LoggingHeaders("Kills", "Deaths", "NumShots", "NumShotsHit"));
+                new LoggingHeaders("kills", "deaths", "numShots", "numShotsHit"));
     }
 
     @Override

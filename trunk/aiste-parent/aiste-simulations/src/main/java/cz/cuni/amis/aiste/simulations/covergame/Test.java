@@ -50,8 +50,7 @@ public class Test {
 
     public static void main(String args[]) throws IOException {
 
-        Experiments.main(args);
-        
+       
         PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
 
         ItSimplePlannerInformation info;
@@ -84,16 +83,17 @@ public class Test {
         
         
         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(2)),
-//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController2, cgEnv.getRepresentations().get(2)),
-//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), reactiveController, cgEnv.getRepresentations().get(2)),
-                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(1)),
-//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController2, cgEnv.getRepresentations().get(1))
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), new DoNothingAgentController(), cgEnv.getRepresentations().get(2)),
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController, cgEnv.getRepresentations().get(3)),
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), jshopController2, cgEnv.getRepresentations().get(3)),
+//                    new AgentExecutionDescriptor(CGAgentType.getInstance(), reactiveController, cgEnv.getRepresentations().get(3)),
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController, cgEnv.getRepresentations().get(2)),
+                    new AgentExecutionDescriptor(CGAgentType.getInstance(), pddlController2, cgEnv.getRepresentations().get(1))
                 });
         AisteExperiment experiment = new AisteExperiment(cgEnv, descriptors,1000, 30000000);
 
-//        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
-        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
+        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new ManualAdvanceEnvironmentExecutorFactory());
+//        AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(548742L);
         
         ExperimentUtils.runExperimentsSingleThreaded(Collections.singletonList(experiment), experimentRunner);
