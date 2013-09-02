@@ -118,7 +118,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         registerRepresentation(this);
         registerRepresentation(new CGPDDLRepresentation(this, true));        
-        registerRepresentation(new CGPDDLRepresentation(this, false));        
+        //registerRepresentation(new CGPDDLRepresentation(this, false));        
         registerRepresentation(new CGJSHOPRepresentationWithRoles(this));        
         //registerRepresentation(new CGJSHOPRepresentation(this));        
     }      
