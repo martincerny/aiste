@@ -45,7 +45,9 @@ import cz.cuni.amis.planning4j.pddl.PDDLType;
 import cz.cuni.amis.planning4j.utils.Planning4JUtils;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -282,18 +284,13 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         
         domain.addFunction(new PDDLFunction("total-cost"));        
         
-/*
-
-        domain.addAction(aggressiveAction);
-        domain.addAction(aggressiveRecklessAction);*/
-        domain.addAction(moveSafeAction);
-        //domain.addAction(moveRecklessAction);
+        
+        //domain.addAction(moveSafeAction);
+        domain.addAction(moveRecklessAction);
         domain.addAction(winByDefense);
         domain.addAction(winByRecklessFireAction);
         domain.addAction(winBySafeDoubleFireAction);
         domain.addAction(winBySafeFireAction);
-        /*
-        domain.addAction(overwatchDefensiveAction);*/
         
         domain.addPredicate(atPredicate);
         domain.addPredicate(uncoveredByOpponentPredicate);
@@ -323,10 +320,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
 
         List<String> initialLiterals = new ArrayList<String>();
 
-        //TODO may be only add locations that I actually use
-        for (PDDLObjectInstance locInstance : locationsToConstants.values()) {
-            problem.addObject(locInstance);
-        }
+        Set<Loc> usefulLocations = new HashSet<Loc>();
 
         // body - related state
         for (int i = 0; i < 2; i++) {
@@ -334,7 +328,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
             problem.addObject(bodyConstants[i]);
                     
             initialLiterals.add(atPredicate.stringAfterSubstitution(bodyConstants[i], locationsToConstants.get(bodyPair.getBodyInfo(i).loc)));
-
+            usefulLocations.add(bodyPair.getBodyInfo(i).loc);
             //High health -> I should withstand two shots
             if (bodyPair.getBodyInfo(i).health >= env.defs.shootDamage * 2) {
                 initialLiterals.add(highHealthPredicate.stringAfterSubstitution(bodyConstants[i]));
@@ -347,9 +341,6 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         for (int opp = 0; opp < 2; opp++) {
             problem.addObject(opponentConstants[opp]);            
             
-            for (Loc uncoveredLoc : opponentData[opp].uncoveredNavpoints) {
-                initialLiterals.add(uncoveredByOpponentPredicate.stringAfterSubstitution(locationsToConstants.get(uncoveredLoc), opponentConstants[opp]));
-            }
             //Low health -> I expect them to fall for a single shot, even if they heal a little
             if (env.bodyInfos.get(opponentIds[opp]).health < env.defs.shootDamage - env.defs.healPerRound) {
                 initialLiterals.add(opponentLowHealthPredicate.stringAfterSubstitution(opponentConstants[opp]));
@@ -391,12 +382,14 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
 
                 if (nearestAttackPoint != null) {
                     initialLiterals.add(attackPointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestAttackPoint), bodyConstants[bodyId], opponentConstants[opp]));
+                    usefulLocations.add(nearestAttackPoint);
                 }
                 if (nearestVantage != null) {
                     if(!nearestVantage.equals(nearestAttackPoint)){
                         initialLiterals.add(attackPointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp]));                        
                     }
                     initialLiterals.add(vantagePointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp]));
+                    usefulLocations.add(nearestVantage);
                 }
                 if (nearestSafeVantage != null) {
                     if(!nearestAttackPoint.equals(nearestAttackPoint)){
@@ -406,6 +399,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
                         initialLiterals.add(vantagePointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp]));
                     }
                     initialLiterals.add(vantagePointSafePredicate.stringAfterSubstitution(locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp]));
+                    usefulLocations.add(nearestSafeVantage);
                 }
                 
 
@@ -418,6 +412,20 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
             }
         }
 
+        for (Loc usefulLocation : usefulLocations) {
+            problem.addObject(locationsToConstants.get(usefulLocation));
+        }
+        
+        for (int opp = 0; opp < 2; opp++) {
+            problem.addObject(opponentConstants[opp]);            
+            
+            for (Loc uncoveredLoc : opponentData[opp].uncoveredNavpoints) {
+                if(usefulLocations.contains(uncoveredLoc)){
+                    initialLiterals.add(uncoveredByOpponentPredicate.stringAfterSubstitution(locationsToConstants.get(uncoveredLoc), opponentConstants[opp]));
+                }
+            }
+        }        
+        
 
 
         problem.setInitialLiterals(initialLiterals);
@@ -455,6 +463,12 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
             ActionDescription action = actionsFromPlanner.poll();
             boolean requiresSync = false;
 
+            if (actionsMatch(action, winByDefense)) {
+                actionsForBodies.get(0).add(new CGRoleDefensive(simulationEnv, 0));
+                actionsForBodies.get(1).add(new CGRoleDefensive(simulationEnv, 1));
+                break;
+            }             
+            
             int bodyIndex = constantToBodyIndex(action.getParameters().get(0));
             int otherBodyIndex = 1 - bodyIndex;
             int bodyId = bodyIds[bodyIndex];
@@ -478,11 +492,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
                 int opponentId = opponentConstantToBodyIndex(action.getParameters().get(1));
                 actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, opponentId, 1));
             } */
-            else if (actionsMatch(action, winByDefense)) {
-                actionsForBodies.get(bodyIndex).add(new CGRoleDefensive(simulationEnv, bodyId));
-                actionsForBodies.get(otherBodyIndex).add(new CGRoleDefensive(simulationEnv, otherBodyInfo.id));
-                requiresSync = true;
-            } else if (actionsMatch(action, winBySafeDoubleFireAction)) {
+            else if (actionsMatch(action, winBySafeDoubleFireAction)) {
                 int opponentId = opponentConstantToBodyIndex(action.getParameters().get(1));
                 actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, opponentId, 1));
                 actionsForBodies.get(otherBodyIndex).add(new CGRoleAggressive(simulationEnv, otherBodyInfo.id, opponentId, 0));
