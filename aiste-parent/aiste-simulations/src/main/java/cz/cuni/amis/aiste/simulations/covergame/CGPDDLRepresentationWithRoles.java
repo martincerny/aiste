@@ -285,8 +285,8 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         domain.addFunction(new PDDLFunction("total-cost"));        
         
         
-        //domain.addAction(moveSafeAction);
-        domain.addAction(moveRecklessAction);
+        domain.addAction(moveSafeAction);
+        //domain.addAction(moveRecklessAction);
         domain.addAction(winByDefense);
         domain.addAction(winByRecklessFireAction);
         domain.addAction(winBySafeDoubleFireAction);
