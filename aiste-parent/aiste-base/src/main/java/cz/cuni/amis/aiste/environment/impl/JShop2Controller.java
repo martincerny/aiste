@@ -126,11 +126,16 @@ public class JShop2Controller extends AbstractPlanningController<JSHOP2, IJShop2
         }
     }
 
+    @Override
+    protected IJShop2Problem createProblem() {
+        return representation.getProblem(body, goalForPlanning);
+    }
+
     
     
     @Override
-    protected IFutureWithListeners<Plan> startPlanningProcess() {
-        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, representation.getProblem(body, goalForPlanning));
+    protected IFutureWithListeners<Plan> startPlanningProcess(IJShop2Problem problem) {
+        final JShop2PlanningProcess planningProcess = new JShop2PlanningProcess(jshop, problem);
         final JShop2PlanningFuture future = new JShop2PlanningFuture(planningProcess);
         currentBestPlanCost = Double.POSITIVE_INFINITY;
         lastBestPlanCost = Double.POSITIVE_INFINITY;

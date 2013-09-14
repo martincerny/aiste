@@ -108,8 +108,15 @@ public class Planning4JController extends AbstractPlanningController<PDDLDomain,
     }
 
     @Override
-    protected IFutureWithListeners<IPlanningResult> startPlanningProcess() {
-        return planner.planAsync(domainProvider, new PDDLObjectProblemProvider(representation.getProblem(getBody(), goalForPlanning)));
+    protected PDDLProblem createProblem() {
+        return representation.getProblem(getBody(), goalForPlanning);
+    }
+
+    
+    
+    @Override
+    protected IFutureWithListeners<IPlanningResult> startPlanningProcess(PDDLProblem problem) {
+        return planner.planAsync(domainProvider, new PDDLObjectProblemProvider(problem));
     }
 
     @Override

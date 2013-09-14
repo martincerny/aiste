@@ -80,7 +80,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
             //if runtime logging headers from subclass are empty, keep it empty
             this.runtimeLoggingHeaders = runtimeLoggingHeaders;
         }
-        this.controllerParametersHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass","representation"), controllerParametersHeaders);
+        this.controllerParametersHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass"), controllerParametersHeaders, new LoggingHeaders("representation"));
         this.controllerParametersValues = ListConcatenation.concatenate(Collections.<Object>singletonList(getClass().getSimpleName()), controllerParameterValues);
         
         this.logIdentifier = new ClassLogIdentifier(getClass());
