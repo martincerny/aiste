@@ -70,7 +70,11 @@ public class Experiments {
         File plannersDirectory = new File(".");
         //The planner is extracted (only if it does not exist yet) and exec permissions are set under Linux
         for(ItSimplePlannerInformation info : infos){
-            plannerManager.extractAndPreparePlanner(plannersDirectory, info);
+            if(info.getName().toLowerCase().contains("probe")){
+                plannerManager.extractAndPreparePlanner(new File("/home/martin_cerny/seq-sat-probe"), info);   
+            } else {
+                plannerManager.extractAndPreparePlanner(plannersDirectory, info);
+            }
         }
         
         List<IAgentController> controllers = new ArrayList<IAgentController>();
