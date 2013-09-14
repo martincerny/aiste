@@ -79,6 +79,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
     PDDLPredicate winPredicate;
 
     PDDLPredicate atPredicate;
+    PDDLPredicate locationAccessiblePredicate;
 
     PDDLPredicate highHealthPredicate;
 
@@ -89,6 +90,8 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
     PDDLPredicate attackPointPredicate;
 
     PDDLPredicate uncoveredByOpponentPredicate;
+    PDDLPredicate opponentCanShootAtPredicate;
+    PDDLPredicate canSupressOpponentAtPredicate;
 
     PDDLPredicate opponentLowHealthPredicate;
 
@@ -130,8 +133,8 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         constantsToLocations = new HashMap<String, Loc>();
 
 
-        bodyConstants = new PDDLObjectInstance[] { new PDDLObjectInstance("body_1", bodyType), new PDDLObjectInstance("body_2", bodyType) };
-        opponentConstants = new PDDLObjectInstance[] { new PDDLObjectInstance("opponent_1", opponentType), new PDDLObjectInstance("opponent_2", opponentType) };
+        bodyConstants = new PDDLObjectInstance[] { new PDDLObjectInstance("body_0", bodyType), new PDDLObjectInstance("body_1", bodyType) };
+        opponentConstants = new PDDLObjectInstance[] { new PDDLObjectInstance("opponent_0", opponentType), new PDDLObjectInstance("opponent_1", opponentType) };
         
         for (Loc location : env.defs.navGraph.keySet()) {
             PDDLObjectInstance locInstance = new PDDLObjectInstance("loc_" + location.x + "_" + location.y, locationType);
@@ -141,10 +144,13 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
 
         winPredicate = new PDDLPredicate("win");
         atPredicate = new PDDLPredicate("at", new PDDLParameter("b", bodyType), new PDDLParameter("loc", locationType));
+        locationAccessiblePredicate = new PDDLPredicate("accessible", new PDDLParameter("b", bodyType), new PDDLParameter("loc", locationType));
         highHealthPredicate = new PDDLPredicate("high_health", new PDDLParameter("b", bodyType));
         vantagePointPredicate = new PDDLPredicate("vantage_point", new PDDLParameter("loc", locationType), new PDDLParameter("b", bodyType), new PDDLParameter("op", opponentType));
         vantagePointSafePredicate = new PDDLPredicate("vantage_point_safe", new PDDLParameter("loc", locationType), new PDDLParameter("b", bodyType), new PDDLParameter("op", opponentType));
         attackPointPredicate = new PDDLPredicate("attack_point", new PDDLParameter("loc", locationType), new PDDLParameter("b", bodyType), new PDDLParameter("op", opponentType));
+        opponentCanShootAtPredicate = new PDDLPredicate("opponent_can_shot_at", new PDDLParameter("loc", locationType), new PDDLParameter("op", opponentType));
+        canSupressOpponentAtPredicate = new PDDLPredicate("can_supress_opponent_at", new PDDLParameter("loc", locationType), new PDDLParameter("op", opponentType));
 
         uncoveredByOpponentPredicate = new PDDLPredicate("uncovered_by_opponent", new PDDLParameter("loc", locationType), new PDDLParameter("op", opponentType));
         opponentLowHealthPredicate = new PDDLPredicate("opponent_low_health", new PDDLParameter("op", opponentType));
@@ -161,10 +167,14 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         moveSafeAction.setPreconditionList(
                 "not (= ?b1 ?b2)",
                 atPredicate.stringAfterSubstitution("?b1", "?b1_loc" ),
-                atPredicate.stringAfterSubstitution("?b2", "?b2_loc" )
+                locationAccessiblePredicate.stringAfterSubstitution("?b1", "?target_loc"),
+                atPredicate.stringAfterSubstitution("?b2", "?b2_loc" ),
+                canSupressOpponentAtPredicate.stringAfterSubstitution("?b2_loc", "?op"),
+                getCoveredCondition("?b2_loc")                
         );
         moveSafeAction.setPositiveEffects(
-                atPredicate.stringAfterSubstitution("?b1", "?target_loc" )                
+                atPredicate.stringAfterSubstitution("?b1", "?target_loc" ),
+                "increase (total-cost) 2"
         );
         moveSafeAction.setNegativeEffects(
                 atPredicate.stringAfterSubstitution("?b1", "?b1_loc" )
@@ -172,7 +182,23 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         
         
         
-        //moveRecklessAction = new PDDLSimpleAction("move_reckless", parameters);
+        moveRecklessAction = new PDDLSimpleAction("move_reckless", 
+                new PDDLParameter("b1", bodyType), 
+                new PDDLParameter("target_loc", locationType),
+                new PDDLParameter("b1_loc", locationType)
+        );
+        
+        moveRecklessAction.setPreconditionList(
+                atPredicate.stringAfterSubstitution("?b1", "?b1_loc" ),
+                locationAccessiblePredicate.stringAfterSubstitution("?b1", "?target_loc")
+        );
+        moveRecklessAction.setPositiveEffects(
+                atPredicate.stringAfterSubstitution("?b1", "?target_loc" ),
+                "increase (total-cost) 5"
+        );
+        moveRecklessAction.setNegativeEffects(
+                atPredicate.stringAfterSubstitution("?b1", "?b1_loc" )
+        );
         
         winByDefense = new PDDLSimpleAction("win_by_defense");
         winByDefense.setPositiveEffects("increase (total-cost) 30", winPredicate.stringAfterSubstitution());
@@ -286,13 +312,14 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         
         
         domain.addAction(moveSafeAction);
-        //domain.addAction(moveRecklessAction);
+        domain.addAction(moveRecklessAction);
         domain.addAction(winByDefense);
         domain.addAction(winByRecklessFireAction);
         domain.addAction(winBySafeDoubleFireAction);
         domain.addAction(winBySafeFireAction);
         
         domain.addPredicate(atPredicate);
+        domain.addPredicate(locationAccessiblePredicate);
         domain.addPredicate(uncoveredByOpponentPredicate);
         domain.addPredicate(attackPointPredicate);
         domain.addPredicate(vantagePointPredicate);
@@ -300,6 +327,8 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         domain.addPredicate(winPredicate);
         domain.addPredicate(highHealthPredicate);
         domain.addPredicate(opponentLowHealthPredicate);
+        domain.addPredicate(canSupressOpponentAtPredicate);
+        domain.addPredicate(opponentCanShootAtPredicate);        
 
        
         return domain;
@@ -328,6 +357,8 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
             problem.addObject(bodyConstants[i]);
                     
             initialLiterals.add(atPredicate.stringAfterSubstitution(bodyConstants[i], locationsToConstants.get(bodyPair.getBodyInfo(i).loc)));
+            initialLiterals.add(locationAccessiblePredicate.stringAfterSubstitution(bodyConstants[i], locationsToConstants.get(bodyPair.getBodyInfo(i).loc)));
+            
             usefulLocations.add(bodyPair.getBodyInfo(i).loc);
             //High health -> I should withstand two shots
             if (bodyPair.getBodyInfo(i).health >= env.defs.shootDamage * 2) {
@@ -372,7 +403,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
 
                 Loc nearestAttackPoint = null;
                 int nearestAttackDistance = Integer.MAX_VALUE;
-                for (Loc attackPoint : opponentData[opp].visibleNavpoints) {
+                for (Loc attackPoint : opponentData[opp].possibleAttackNavpoints) {
                     int distance = fixedMapFloydWarshall.getPathCost(bodyLoc, attackPoint);
                     if (distance < nearestAttackDistance && getPossibleUncoveredShots(bodyLoc, attackPoint, opponentData) == 0) {
                         nearestAttackPoint = attackPoint;
@@ -382,6 +413,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
 
                 if (nearestAttackPoint != null) {
                     initialLiterals.add(attackPointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestAttackPoint), bodyConstants[bodyId], opponentConstants[opp]));
+                    initialLiterals.add(locationAccessiblePredicate.stringAfterSubstitution(bodyConstants[bodyId], locationsToConstants.get(nearestAttackPoint)));
                     usefulLocations.add(nearestAttackPoint);
                 }
                 if (nearestVantage != null) {
@@ -389,6 +421,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
                         initialLiterals.add(attackPointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp]));                        
                     }
                     initialLiterals.add(vantagePointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp]));
+                    initialLiterals.add(locationAccessiblePredicate.stringAfterSubstitution(bodyConstants[bodyId], locationsToConstants.get(nearestVantage)));
                     usefulLocations.add(nearestVantage);
                 }
                 if (nearestSafeVantage != null) {
@@ -399,6 +432,7 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
                         initialLiterals.add(vantagePointPredicate.stringAfterSubstitution(locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp]));
                     }
                     initialLiterals.add(vantagePointSafePredicate.stringAfterSubstitution(locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp]));
+                    initialLiterals.add(locationAccessiblePredicate.stringAfterSubstitution(bodyConstants[bodyId], locationsToConstants.get(nearestSafeVantage)));
                     usefulLocations.add(nearestSafeVantage);
                 }
                 
@@ -413,17 +447,20 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         }
 
         for (Loc usefulLocation : usefulLocations) {
-            problem.addObject(locationsToConstants.get(usefulLocation));
+            PDDLObjectInstance locationConstant = locationsToConstants.get(usefulLocation);
+            problem.addObject(locationConstant);
+            for (int opp = 0; opp < 2; opp++) {
+                if(opponentData[opp].uncoveredNavpoints.contains(usefulLocation)){
+                    initialLiterals.add(uncoveredByOpponentPredicate.stringAfterSubstitution(locationConstant, opponentConstants[opp]));
+                }                            
+                
+            }
         }
         
         for (int opp = 0; opp < 2; opp++) {
             problem.addObject(opponentConstants[opp]);            
             
-            for (Loc uncoveredLoc : opponentData[opp].uncoveredNavpoints) {
-                if(usefulLocations.contains(uncoveredLoc)){
-                    initialLiterals.add(uncoveredByOpponentPredicate.stringAfterSubstitution(locationsToConstants.get(uncoveredLoc), opponentConstants[opp]));
-                }
-            }
+            
         }        
         
 
@@ -554,4 +591,11 @@ public class CGPDDLRepresentationWithRoles extends AbstractCGPlanningRepresentat
         }
         return possibleUncoveredShots;
     }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "PDDL_With_Roles";
+    }
+    
+    
 }

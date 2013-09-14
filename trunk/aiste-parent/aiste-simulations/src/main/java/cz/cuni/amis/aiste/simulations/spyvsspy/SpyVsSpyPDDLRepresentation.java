@@ -470,6 +470,10 @@ public class SpyVsSpyPDDLRepresentation extends AbstractSpyVsSpyPlanningRepresen
         }
     }
  
+    @Override
+    public String getLoggableRepresentation() {
+        return "PDDL_Default";
+    }
     
     
 }

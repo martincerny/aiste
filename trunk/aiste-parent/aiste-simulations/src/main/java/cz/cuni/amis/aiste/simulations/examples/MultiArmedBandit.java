@@ -102,6 +102,11 @@ public class MultiArmedBandit extends AbstractModelLessRepresentableSynchronized
     public Collection<IntegerAction> getPossibleActions(IAgentType agentType) {
         return theActions;
     }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "Default";
+    }
     
     
 }

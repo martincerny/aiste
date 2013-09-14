@@ -75,12 +75,12 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
         
     public AbstractAgentController(ILoggingHeaders runtimeLoggingHeaders, ILoggingHeaders controllerParametersHeaders, List<Object> controllerParameterValues) {
         if(runtimeLoggingHeaders.getColumnCount() > 0){
-            this.runtimeLoggingHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass", "step"), runtimeLoggingHeaders);
+            this.runtimeLoggingHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass", "representation",  "step"), runtimeLoggingHeaders);
         } else {
             //if runtime logging headers from subclass are empty, keep it empty
             this.runtimeLoggingHeaders = runtimeLoggingHeaders;
         }
-        this.controllerParametersHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass"), controllerParametersHeaders);
+        this.controllerParametersHeaders = LoggingHeadersConcatenation.concatenate(new LoggingHeaders("controllerClass","representation"), controllerParametersHeaders);
         this.controllerParametersValues = ListConcatenation.concatenate(Collections.<Object>singletonList(getClass().getSimpleName()), controllerParameterValues);
         
         this.logIdentifier = new ClassLogIdentifier(getClass());
@@ -102,6 +102,13 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
         metrics.reset();
     }
 
+    @Override
+    public REPRESENTATION getCurrentEnvironmentRepresentation() {
+        return representation;
+    }
+
+    
+    
     /**
      * Act for this agent's body.
      * @param action 
@@ -158,7 +165,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
 
     @Override
     public List<Object> getPerExperimentLoggingData() {
-        return new ListConcatenation<Object>(controllerParametersValues, metrics.getValues());
+        return new ListConcatenation<Object>(controllerParametersValues, Collections.<Object>singletonList(representation.getLoggableRepresentation()), metrics.getValues());
     }
 
     @Override
@@ -172,7 +179,7 @@ public abstract class AbstractAgentController<ACTION extends IAction, REPRESENTA
      */
     protected void logRuntime(Object ... values){
         if(runtimeLoggingOutput != null){
-            runtimeLoggingOutput.logData(Arrays.asList(new Object[] {getClass().getSimpleName(), environment.getTimeStep()}), Arrays.asList(values));        
+            runtimeLoggingOutput.logData(Arrays.asList(new Object[] {getClass().getSimpleName(),representation.getLoggableRepresentation(),  environment.getTimeStep()}), Arrays.asList(values));        
         }
     }
     

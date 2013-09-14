@@ -320,6 +320,12 @@ public class SpyVsSpyReactiveRepresentation extends AbstractSpyVsSpyRepresentati
             return false;
         }
     }
+    
+    @Override
+    public String getLoggableRepresentation() {
+        return "Reactive";
+    }
+    
 
     private abstract class ABreadthFirstSearchAStarGoal implements IPFGoal<Integer>{
 

@@ -99,6 +99,12 @@ public class SimpleFPS extends AbstractStateVariableRepresentableSynchronizedEnv
     }
 
     @Override
+    public String getLoggableRepresentation() {
+        return "Default";
+    }
+    
+    
+    @Override
     public Map<? extends IAgentType, ? extends IAgentInstantiationDescriptor> getInstantiationDescriptors() {
         return Collections.singletonMap(SimpleFPSAgentType.getInstance(), new AgentInstantiationDescriptor(minPlayers, maxPlayers));
     }

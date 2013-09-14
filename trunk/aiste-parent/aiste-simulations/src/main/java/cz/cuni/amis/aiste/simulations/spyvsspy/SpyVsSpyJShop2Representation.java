@@ -400,5 +400,9 @@ public class SpyVsSpyJShop2Representation extends AbstractSpyVsSpyPlanningRepres
 
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "JSHOP2_Default";
+    }
         
 }
