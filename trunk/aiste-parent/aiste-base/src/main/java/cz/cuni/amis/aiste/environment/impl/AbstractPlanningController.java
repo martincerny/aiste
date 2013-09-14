@@ -83,9 +83,9 @@ implements IFutureListener<PLANNING_RESULT>
     }
 
     protected void getNextReactivePlanFromCurrentPlan() {
-        timeSpentTranslating.taskStarted();
+        timeSpentTranslatingFromPlanner.taskStarted();
         activePlannerActionReactivePlan = representation.translateAction(currentPlan, body);
-        timeSpentTranslating.taskFinished();
+        timeSpentTranslatingFromPlanner.taskFinished();
     }
 
 
@@ -97,7 +97,9 @@ implements IFutureListener<PLANNING_RESULT>
 
  
     protected TimeMeasuringMetric timeSpentPlanning;
-    protected TimeMeasuringMetric timeSpentTranslating;
+    protected TimeMeasuringMetric timeSpentTranslatingFromPlanner;
+    protected TimeMeasuringMetric timeSpentTranslatingToPlanner;
+    protected TimeMeasuringMetric timeSpentStartingPlanner;
     protected TimeMeasuringMetric timeSpentValidating;
     
     protected IncrementalMetric numPlannerExecutions;
@@ -150,8 +152,12 @@ implements IFutureListener<PLANNING_RESULT>
          */
         timeSpentPlanning = new TimeMeasuringMetric("planningTime");
         metrics.addMetric(timeSpentPlanning);
-        timeSpentTranslating = new TimeMeasuringMetric("translatingTime");
-        metrics.addMetric(timeSpentTranslating);
+        timeSpentTranslatingFromPlanner = new TimeMeasuringMetric("translatingFromPlannerTime");
+        metrics.addMetric(timeSpentTranslatingFromPlanner);
+        timeSpentTranslatingToPlanner = new TimeMeasuringMetric("translatingToPlannerTime");
+        metrics.addMetric(timeSpentTranslatingToPlanner);
+        timeSpentStartingPlanner = new TimeMeasuringMetric("startingPlannerTime");
+        metrics.addMetric(timeSpentStartingPlanner);
         timeSpentValidating = new TimeMeasuringMetric("validatingTime");
         metrics.addMetric(timeSpentValidating);
         
@@ -594,7 +600,8 @@ implements IFutureListener<PLANNING_RESULT>
         }
     }
 
-    protected abstract IFutureWithListeners<PLANNING_RESULT> startPlanningProcess();
+    protected abstract PROBLEM createProblem();
+    protected abstract IFutureWithListeners<PLANNING_RESULT> startPlanningProcess(PROBLEM problem);
 
     protected final void startPlanning() {
         cancelPlanFutureIfRunning();
@@ -611,7 +618,12 @@ implements IFutureListener<PLANNING_RESULT>
             planFuture.removeFutureListener(this);
         }
         
-        planFuture = startPlanningProcess();
+        timeSpentTranslatingToPlanner.taskStarted();
+        PROBLEM problem = createProblem();
+        timeSpentTranslatingToPlanner.taskFinished();
+        timeSpentStartingPlanner.taskStarted();
+        planFuture = startPlanningProcess(problem);
+        timeSpentStartingPlanner.taskFinished();
 
         //for the unlikely event that the future completes before startPlanningProcess() returns 
         if(!planFuture.isDone()){
