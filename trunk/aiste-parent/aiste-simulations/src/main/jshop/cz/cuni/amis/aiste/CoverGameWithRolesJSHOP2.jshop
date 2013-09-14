@@ -147,8 +147,12 @@ Defend          ( () )
     ( (body ?body) (at_vantage_point ?body ?opponent) )
 )
 
-(:- (attack_position_with_cost ?loc ?body ?opponent 0)
+(:- (attack_point_with_cost ?loc ?body ?opponent 0)
     ( (vantage_point_safe ?loc ?body ?opponent) )
+)
+
+(:- (attack_point_with_cost ?loc ?body ?opponent 2)
+    ( (vantage_point ?loc ?body ?opponent) )
 )
 
 (:- (attack_point_with_cost ?loc ?body ?opponent 3)

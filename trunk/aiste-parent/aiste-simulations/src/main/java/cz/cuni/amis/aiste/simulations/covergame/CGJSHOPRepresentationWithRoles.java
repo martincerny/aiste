@@ -236,12 +236,6 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                     }
                 }
                 
-                if(nearestVantage != null){
-                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT, createTermList(jshop, locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp])));                    
-                }
-                if(nearestSafeVantage != null){
-                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT_SAFE, createTermList(jshop, locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp])));
-                }
                 
                 Loc nearestAttackPoint = null;
                 int nearestAttackDistance = Integer.MAX_VALUE;                
@@ -255,6 +249,22 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                 
                 if(nearestAttackPoint != null){
                     initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_ATTACK_POINT, createTermList(jshop, locationsToConstants.get(nearestAttackPoint), bodyConstants[bodyId], opponentConstants[opp])));                    
+                }
+                if(nearestVantage != null){
+/*                    if(!nearestVantage.equals(nearestAttackPoint)){
+                        initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_ATTACK_POINT, createTermList(jshop, locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp])));                                            
+                    }*/
+                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT, createTermList(jshop, locationsToConstants.get(nearestVantage), bodyConstants[bodyId], opponentConstants[opp])));                    
+                }
+                if(nearestSafeVantage != null){
+                    /*
+                    if(!nearestSafeVantage.equals(nearestAttackPoint)){
+                        initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_ATTACK_POINT, createTermList(jshop, locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp])));
+                    }
+                    if(!nearestSafeVantage.equals(nearestVantage)){
+                        initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT, createTermList(jshop, locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp])));
+                    }*/
+                    initialState.add(new Predicate(CoverGameWithRolesJSHOP2.CONST_VANTAGE_POINT_SAFE, createTermList(jshop, locationsToConstants.get(nearestSafeVantage), bodyConstants[bodyId], opponentConstants[opp])));
                 }
                 
                 
@@ -328,12 +338,12 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_AGGRESSIVE : {
                     int opponentId = opponentConstantToBodyIndex(info, body);
-                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, 0, opponentId));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, opponentId, 0));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_AGGRESSIVE_RECKLESS : {
                     int opponentId = opponentConstantToBodyIndex(info, body);
-                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, 1, opponentId));
+                    actionsForBodies.get(bodyIndex).add(new CGRoleAggressive(simulationEnv, bodyId, opponentId, 1));
                     break;
                 } 
                 case CoverGameWithRolesJSHOP2.PRIMITIVE_DEFENSIVE : {
