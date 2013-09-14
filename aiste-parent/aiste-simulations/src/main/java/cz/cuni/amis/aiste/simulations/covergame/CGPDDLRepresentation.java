@@ -65,7 +65,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     PDDLObjectInstance opponentInstances[];
     
     PDDLPredicate uncoveredByOpponentPredicate;
-    PDDLPredicate visibleByOpponentPredicate;
+    PDDLPredicate opponentVisiblePredicate;
     PDDLPredicate vantagePointPredicate;
     PDDLPredicate winPredicate;
         
@@ -115,7 +115,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
 
         opponentAtPredicate = new PDDLPredicate("opponent_at",new PDDLParameter("o", opponentType),  new PDDLParameter("loc", navPointType));
         uncoveredByOpponentPredicate = new PDDLPredicate("uncovered_by_opponent", new PDDLParameter("o", opponentType), new PDDLParameter("loc", navPointType));            
-        visibleByOpponentPredicate = new PDDLPredicate("visible_by_opponent", new PDDLParameter("o", opponentType), new PDDLParameter("loc", navPointType));            
+        opponentVisiblePredicate = new PDDLPredicate("opponent_visible", new PDDLParameter("o", opponentType), new PDDLParameter("loc", navPointType));            
         vantagePointPredicate = new PDDLPredicate("vantage_point", new PDDLParameter("o", opponentType), new PDDLParameter("loc", navPointType));            
         
         winPredicate = new PDDLPredicate("win");
@@ -135,8 +135,8 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                 bodyPDDLs[1].partialCoverPredicate.stringAfterSubstitution(),
                 bodyPDDLs[0].bodyAtPredicate.stringAfterSubstitution("?loc0"),
                 bodyPDDLs[1].bodyAtPredicate.stringAfterSubstitution("?loc1"),
-                visibleByOpponentPredicate.stringAfterSubstitution("?op0", "?loc0"),
-                visibleByOpponentPredicate.stringAfterSubstitution("?op1", "?loc1")
+                opponentVisiblePredicate.stringAfterSubstitution("?op0", "?loc0"),
+                opponentVisiblePredicate.stringAfterSubstitution("?op1", "?loc1")
                 );
         if(forceBodyAlternation){
             holdPositionAction.addPrecondition(body_0_turn.stringAfterSubstitution());
@@ -177,7 +177,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         
         domain.addPredicate(uncoveredByOpponentPredicate);        
         domain.addPredicate(opponentAtPredicate);
-        domain.addPredicate(visibleByOpponentPredicate);        
+        domain.addPredicate(opponentVisiblePredicate);        
         domain.addPredicate(vantagePointPredicate);
         domain.addPredicate(winPredicate);
         
@@ -242,8 +242,8 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
             for(Loc uncoveredLoc : opponentData[i].uncoveredNavpoints){
                 initialState.add(uncoveredByOpponentPredicate.stringAfterSubstitution(opponentInstances[i], navPointInstances.get(uncoveredLoc)));
             }
-            for(Loc visibleLoc : opponentData[i].visibleNavpoints){
-                initialState.add(visibleByOpponentPredicate.stringAfterSubstitution(opponentInstances[i], navPointInstances.get(visibleLoc)));
+            for(Loc visibleLoc : opponentData[i].possibleAttackNavpoints){
+                initialState.add(opponentVisiblePredicate.stringAfterSubstitution(opponentInstances[i], navPointInstances.get(visibleLoc)));
             }
             for(Loc vantageLoc : opponentData[i].navpointsInvalidatingCover){
                 initialState.add(vantagePointPredicate.stringAfterSubstitution(opponentInstances[i], navPointInstances.get(vantageLoc)));
@@ -459,6 +459,12 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
     }
     
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "PDDL_Straightforward" + (forceBodyAlternation ? "_Alterning" : "");
+    }
+    
+    
     class OneBodyPDDL {
 
         PDDLPredicate bodyAtPredicate;
@@ -587,7 +593,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                     otherBody.canSupressPredicate.stringAfterSubstitution(),
                     bodyAtPredicate.stringAfterSubstitution("?my_loc"),
                     otherBody.bodyAtPredicate.stringAfterSubstitution("?other_loc"),
-                    visibleByOpponentPredicate.stringAfterSubstitution(supressedOpponent.getNameForPDDL(), "?other_loc"),
+                    opponentVisiblePredicate.stringAfterSubstitution(supressedOpponent.getNameForPDDL(), "?other_loc"),
                     vantagePointPredicate.stringAfterSubstitution("?target", "?my_loc"),
                     PDDLOperators.makeNot(uncoveredByOpponentPredicate.stringAfterSubstitution(otherOpponent, "?my_loc")),
                     PDDLOperators.makeNot(uncoveredByOpponentPredicate.stringAfterSubstitution(otherOpponent, "?other_loc"))                   
@@ -605,7 +611,7 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
                     otherBody.canSupressPredicate.stringAfterSubstitution(),
                     bodyAtPredicate.stringAfterSubstitution("?from"),
                     otherBody.bodyAtPredicate.stringAfterSubstitution("?other_loc"),
-                    visibleByOpponentPredicate.stringAfterSubstitution(supressedOpponent.getNameForPDDL(), "?other_loc"),
+                    opponentVisiblePredicate.stringAfterSubstitution(supressedOpponent.getNameForPDDL(), "?other_loc"),
                     adjacentPredicate.stringAfterSubstitution("?from", "?to"),
                     PDDLOperators.makeNot(uncoveredByOpponentPredicate.stringAfterSubstitution(otherOpponent, "?from")),
                     PDDLOperators.makeNot(uncoveredByOpponentPredicate.stringAfterSubstitution(otherOpponent, "?other_loc"))                   
@@ -625,5 +631,6 @@ public class CGPDDLRepresentation extends AbstractCGPlanningRepresentation<PDDLD
         
         
     }
+
     
 }

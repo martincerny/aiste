@@ -239,7 +239,7 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
                 
                 Loc nearestAttackPoint = null;
                 int nearestAttackDistance = Integer.MAX_VALUE;                
-                for(Loc attackPoint : opponentData[opp].visibleNavpoints){
+                for(Loc attackPoint : opponentData[opp].shootableNavpoints){
                     int distance = fixedMapFloydWarshall.getPathCost(bodyLoc, attackPoint);
                     if(distance < nearestAttackDistance && getPossibleUncoveredShots(bodyLoc, attackPoint, opponentData) == 0){
                         nearestAttackPoint = attackPoint;
@@ -395,6 +395,11 @@ public class CGJSHOPRepresentationWithRoles extends AbstractCGPlanningRepresenta
             }
         }
         return possibleUncoveredShots;
+    }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "JSHOP_With_Roles";
     }
 
     

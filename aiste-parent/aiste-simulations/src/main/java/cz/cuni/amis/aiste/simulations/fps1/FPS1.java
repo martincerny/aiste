@@ -452,6 +452,12 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
         
     }
     
+    @Override
+    public String getLoggableRepresentation() {
+        return "Default";
+    }
+    
+    
     static class StaticDefs {
         int maxPlayers;        
         
@@ -539,4 +545,6 @@ public class FPS1 extends AbstractSynchronizedEnvironment<FPS1Action> implements
         
         
     }
+
+    
 }

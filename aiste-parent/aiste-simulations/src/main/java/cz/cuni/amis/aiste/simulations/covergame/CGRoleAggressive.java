@@ -100,7 +100,7 @@ public class CGRoleAggressive extends CGRolePlan {
 
             @Override
             public boolean isGoalReached(Loc actualNode) {
-                return env.getOpponentTeamData(bodyInfo.getTeamId()).allVisibleNavPoints.contains(actualNode);
+                return env.getOpponentTeamData(bodyInfo.getTeamId()).allPossibleAttackNavPoints.contains(actualNode);
             }
 
             @Override

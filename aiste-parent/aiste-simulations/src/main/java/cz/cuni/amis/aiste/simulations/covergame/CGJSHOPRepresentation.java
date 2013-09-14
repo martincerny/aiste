@@ -302,6 +302,11 @@ public class CGJSHOPRepresentation extends AbstractCGPlanningRepresentation<JSHO
         
         return new SequencePlan<CGPairAction>(pairActions);
     }
+
+    @Override
+    public String getLoggableRepresentation() {
+        return "JSHOP_Default";
+    }
     
     
 }

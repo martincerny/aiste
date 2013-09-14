@@ -41,6 +41,12 @@ public interface IAgentController<ACTION extends IAction, REPRESENTATION extends
     void init(IEnvironment<ACTION> environment, REPRESENTATION representation, AgentBody body, long stepDelay);
     
     /**
+     * Return the representation the agent works with (the one last set by {@link #init(cz.cuni.amis.aiste.environment.IEnvironment, cz.cuni.amis.aiste.environment.IEnvironmentRepresentation, cz.cuni.amis.aiste.environment.AgentBody, long) }).
+     * @return 
+     */
+    REPRESENTATION getCurrentEnvironmentRepresentation();
+    
+    /**
      * Called once, when the simulation starts. If the agent has its own thread of execution,
      * it should be started here. The simulation does not start before this method returns. Time taken 
      */

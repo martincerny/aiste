@@ -1329,4 +1329,10 @@ public class KeyLockMaze extends AbstractStateVariableRepresentableSynchronizedE
 			System.err.println("Print failed with message: " + e.getMessage());
 		}
 	}
+        
+    @Override
+    public String getLoggableRepresentation() {
+        return "Default";
+    }
+        
 }

@@ -58,6 +58,7 @@ public class Experiments {
         if(ItSimpleUtils.getOperatingSystem() == EPlannerPlatform.LINUX){
              infos = new ItSimplePlannerInformation[] {
                     PlannersPackUtils.getSGPlan6(),
+                    PlannersPackUtils.getProbe(),
                     PlannersPackUtils.getMetricFF(),
                 };
         } else {
@@ -87,8 +88,8 @@ public class Experiments {
         environments.add(new CoverGame(CGMapReader.readMap(Test.class.getResourceAsStream("/cg_map_security.txt"))));
 
 
-        List<Long> stepDelays = Arrays.asList(new Long[]{100L, 500L, 1000L});        
-        int maxSteps = 500;
+        List<Long> stepDelays = Arrays.asList(new Long[]{100L, 500L, 1000L, 2000L});        
+        int maxSteps = 20;
         
         IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("CoverGameComplexPreliminary", environments, controllers, stepDelays, maxSteps, 5 /* Five repetitions */);
 

@@ -118,7 +118,7 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         registerRepresentation(this);
         registerRepresentation(new CGPDDLRepresentation(this, true));        
-        //registerRepresentation(new CGPDDLRepresentation(this, false));        
+        registerRepresentation(new CGPDDLRepresentation(this, false));        
         registerRepresentation(new CGJSHOPRepresentationWithRoles(this));        
         //registerRepresentation(new CGJSHOPRepresentation(this));        
         registerRepresentation(new CGPDDLRepresentationWithRoles(this));        
@@ -564,20 +564,24 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         
         for(int i = 0; i < ids.length; i++){
             opponentData[i] = new OpponentData();
-            Loc oponentLocation = bodyInfos.get(ids[i]).loc;
+            Loc opponentLocation = bodyInfos.get(ids[i]).loc;
             for(Loc navPoint : defs.navGraph.keySet()){
-                if(isVisible(navPoint, oponentLocation)){
-                    opponentData[i].visibleNavpoints.add(navPoint);
-                    if(!isCovered(navPoint, oponentLocation)){
+                if( isVisible(navPoint, opponentLocation)){
+                    opponentData[i].possibleAttackNavpoints.add(navPoint);
+                    if(!isCovered(navPoint, opponentLocation)){
                         opponentData[i].navpointsInvalidatingCover.add(navPoint);
                     }
-                    if(!isCovered(oponentLocation, navPoint)){
+                }
+                if (isVisible(opponentLocation, navPoint)){
+                    opponentData[i].shootableNavpoints.add(navPoint);
+                    if(!isCovered(opponentLocation, navPoint)){
                         opponentData[i].uncoveredNavpoints.add(navPoint);
                     }
                 }
             }
             data.allUncoveredNavPoints.addAll(opponentData[i].uncoveredNavpoints);            
-            data.allVisibleNavPoints.addAll(opponentData[i].visibleNavpoints);            
+            data.allShootableNavPoints.addAll(opponentData[i].shootableNavpoints);            
+            data.allPossibleAttackNavPoints.addAll(opponentData[i].possibleAttackNavpoints);            
         }
         
         lastOpponentTeamDataEvalStep.set(teamNo, getTimeStep());
@@ -725,6 +729,13 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         logger.debug(infoBuilder.toString());
     }
 
+    @Override
+    public String getLoggableRepresentation() {
+        return "Default";
+    }
+
+    
+    
     
     static class CGBodyInfo {
         final int id;
@@ -939,7 +950,8 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
     protected static class OpponentTeamData {
         OpponentData [] opponentData;
         Set<Loc> allUncoveredNavPoints = new HashSet<Loc>();        
-        Set<Loc> allVisibleNavPoints = new HashSet<Loc>();        
+        Set<Loc> allShootableNavPoints = new HashSet<Loc>();        
+        Set<Loc> allPossibleAttackNavPoints = new HashSet<Loc>();        
     }
         
     protected static class OpponentData {
@@ -949,9 +961,14 @@ public class CoverGame extends AbstractSynchronizedEnvironment<CGPairAction> imp
         Set<Loc> uncoveredNavpoints = new HashSet<Loc>();
         
         /**
-         * Navpoints that are visible to oponent (and oponent is visible from there)
+         * Navpoints the opponent can shoot at
          */
-        List<Loc> visibleNavpoints = new ArrayList<Loc>();
+        List<Loc> shootableNavpoints = new ArrayList<Loc>();
+
+        /**
+         * Navpoints the opponent can be shot from
+         */
+        List<Loc> possibleAttackNavpoints = new ArrayList<Loc>();
         
         /**
          * Navpoints from which the oponent has no cover

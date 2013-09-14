@@ -175,7 +175,7 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
         @Override
         public ILoggingHeaders getRuntimeLoggingHeaders() {            
             return new LoggingHeadersConcatenation(environment.getPerExperimentLoggingHeaders(), 
-                    new LoggingHeaders("controller", "opponentController", "reward", "rank"), 
+                    new LoggingHeaders("controller","representation", "opponentController","opponentRepresentation", "reward", "rank"), 
                     environment.getPerAgentAndExperimentLoggingHeaders());            
         }
 
@@ -200,7 +200,9 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
             runtimeLoggingOutput.logData(ListConcatenation.concatenate(environment.getPerExperimentLoggingData(), 
                     Arrays.asList(new Object[] { 
                         result0.getController().getLoggableRepresentation(),
+                        result0.getController().getCurrentEnvironmentRepresentation().getLoggableRepresentation(),
                         result1.getController().getLoggableRepresentation(),
+                        result1.getController().getCurrentEnvironmentRepresentation().getLoggableRepresentation(),
                         result0.getTotalReward(),
                         rank0
                     }),
@@ -209,7 +211,9 @@ public class AisteExperimentRunner extends AbstractExperimentRunner<AisteExperim
             runtimeLoggingOutput.logData(ListConcatenation.concatenate(environment.getPerExperimentLoggingData(), 
                     Arrays.asList(new Object[] { 
                         result1.getController().getLoggableRepresentation(),
+                        result1.getController().getCurrentEnvironmentRepresentation().getLoggableRepresentation(),
                         result0.getController().getLoggableRepresentation(),
+                        result0.getController().getCurrentEnvironmentRepresentation().getLoggableRepresentation(),
                         result1.getTotalReward(),
                         rank1
                     }),

@@ -23,5 +23,5 @@ package cz.cuni.amis.aiste.environment;
  * @author Martin Cerny
  */
 public interface IEnvironmentRepresentation {
-    
+    public String getLoggableRepresentation();
 }
