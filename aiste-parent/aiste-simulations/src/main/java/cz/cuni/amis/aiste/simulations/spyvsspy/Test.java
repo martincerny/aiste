@@ -142,11 +142,13 @@ public class Test {
                 plannerToTestDomain = new ExternalPlanner( new ItSimplePlannerExecutor(plannerToTestInfo, plannerBinariesDirectory));;
         }
 
-        double[] attackSuccessProbabilities = {0, 0.1,0.3,0.5};
+        //double[] attackSuccessProbabilities = {0, 0.1,0.3,0.5};
+        double[] attackSuccessProbabilities = {0.3};
         
         Random rand = new Random(969813546L);
+        int envsPerSize = 15;
         for(double attackSuccessProbability : attackSuccessProbabilities){
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < envsPerSize; i++) {
                 SpyVsSpyEnvironmentDefinition envDef;
                 try {
 
@@ -163,7 +165,7 @@ public class Test {
                     continue;
                 }
             }
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < envsPerSize; i++) {
                 SpyVsSpyEnvironmentDefinition envDef;
                 try {
 
@@ -181,7 +183,7 @@ public class Test {
                 }
             }
 
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < envsPerSize; i++) {
                 SpyVsSpyEnvironmentDefinition envDef;
                 try {
 
@@ -202,7 +204,7 @@ public class Test {
 
         List<Long> stepDelays = Arrays.asList(new Long[]{ 100L, 500L, 1000L});        
         
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ComplexPreliminary_2", environments, controllers, stepDelays, 100);
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("SpyVsSpyComplex", environments, controllers, stepDelays, 100);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(rand.nextLong());        
