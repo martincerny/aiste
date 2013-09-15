@@ -539,7 +539,7 @@ implements IFutureListener<PLANNING_RESULT>
                     currentReactivePlan = simulableRepresentaion.translateActionForSimulation(environmentCopy, currentPlanCopy, body);
                 }
             } while(!currentPlanCopy.isEmpty() || !currentReactivePlan.getStatus().isFinished());                            
-            boolean isGoalState = simulableRepresentaion.isGoalState(body, goal);
+            boolean isGoalState = simulableRepresentaion.isGoalState(environmentCopy, body, goal);
             if(!isGoalState){
                 logger.debug("Plan invalid because the final state is not goal.");                
             }

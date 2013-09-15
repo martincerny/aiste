@@ -98,20 +98,20 @@ public abstract class AbstractSpyVsSpyRepresentation implements IActionFailureRe
     }
     
     
-    public boolean isGoalState(AgentBody body, SpyVsSpyPlanningGoal goal) {
-        SpyVsSpyBodyInfo info = environment.bodyInfos.get(body.getId());
+    public boolean isGoalState(SpyVsSpy simulationEnv, AgentBody body, SpyVsSpyPlanningGoal goal) {
+        SpyVsSpyBodyInfo info = simulationEnv.bodyInfos.get(body.getId());
         switch (goal.getType()) {
             case DIRECT_WIN: {
-                if (info.locationIndex != environment.defs.destination) {
+                if (info.locationIndex != simulationEnv.defs.destination) {
                     return false;
                 }
-                if (info.itemsCarried.size() != environment.defs.numItemTypes) {
+                if (info.itemsCarried.size() != simulationEnv.defs.numItemTypes) {
                     return false;
                 }
                 return true;
             }
             case KILL_OPONENT: {
-                return environment.agentsKilledThisRound.contains(environment.getAllBodies().get(goal.getParameter()));
+                return simulationEnv.agentsKilledThisRound.contains(simulationEnv.getAllBodies().get(goal.getParameter()));
             }
             case GET_ARMED: {
                 return info.numWeapons > 0;

@@ -46,15 +46,15 @@ public abstract class AbstractCGPlanningRepresentation <DOMAIN, PROBLEM, PLANNER
     
     
     @Override
-    public boolean isGoalState(AgentBody body, CGPlanningGoal goal) {
+    public boolean isGoalState(CoverGame simulationEnv, AgentBody body, CGPlanningGoal goal) {
         //If no action has failed, I only need to check expected damage
 /*        for(int bodyIndex = 0; bodyIndex < 2; bodyIndex++){
-            double worstCaseShots = env.getMarkerData(body).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex];
-            double expectedWorstCaseDamage = env.defs.shootDamage * worstCaseShots;
-            if(expectedWorstCaseDamage > env.bodyPairs.get(body.getId()).getBodyInfo(bodyIndex).health){
+            double worstCaseShots = simulationEnv.getMarkerData(body).expectedWorstCaseShotsReceivedSinceMarker[bodyIndex];
+            double expectedWorstCaseDamage = simulationEnv.defs.shootDamage * worstCaseShots;
+            if(expectedWorstCaseDamage > simulationEnv.bodyPairs.get(body.getId()).getBodyInfo(bodyIndex).health){
                 return false;
             }
-            if(env.getMarkerData(body).maxShotProbabilitySinceMarker[bodyIndex] > 0.6){
+            if(simulationEnv.getMarkerData(body).maxShotProbabilitySinceMarker[bodyIndex] > 0.6){
                 return false;
             }
         }*/

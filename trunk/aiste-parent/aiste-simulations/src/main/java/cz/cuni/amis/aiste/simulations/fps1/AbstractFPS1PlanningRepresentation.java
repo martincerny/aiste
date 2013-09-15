@@ -29,7 +29,7 @@ import java.util.List;
 public abstract class AbstractFPS1PlanningRepresentation <DOMAIN, PROBLEM, PLANNER_ACTION>  implements ISimulablePlanningRepresentation<DOMAIN, PROBLEM, PLANNER_ACTION, FPS1Action, FPS1, FPS1PlanningGoal>{
 
     @Override
-    public boolean isGoalState(AgentBody body, FPS1PlanningGoal goal) {
+    public boolean isGoalState(FPS1 env, AgentBody body, FPS1PlanningGoal goal) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

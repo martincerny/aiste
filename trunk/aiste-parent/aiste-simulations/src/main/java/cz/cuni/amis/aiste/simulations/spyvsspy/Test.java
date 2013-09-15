@@ -200,9 +200,9 @@ public class Test {
             }
         }
 
-        List<Long> stepDelays = Arrays.asList(new Long[]{50L, 100L, 500L, 1000L});        
+        List<Long> stepDelays = Arrays.asList(new Long[]{ 100L, 500L, 1000L});        
         
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ComplexPreliminary", environments, controllers, stepDelays, 100);
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("ComplexPreliminary_2", environments, controllers, stepDelays, 100);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory());
         experimentRunner.setRandomSeed(rand.nextLong());        

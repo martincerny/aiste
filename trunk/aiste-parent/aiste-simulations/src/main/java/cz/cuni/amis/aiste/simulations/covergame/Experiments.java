@@ -44,12 +44,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author Martin Cerny
  */
 public class Experiments {
+   private final static Logger logger = Logger.getLogger(Experiments.class);
+    
   public static void main(String args[]) throws IOException {
 
     PlannerListManager plannerManager = PlannersPackUtils.getPlannerListManager();
@@ -93,13 +96,36 @@ public class Experiments {
 
 
         List<Long> stepDelays = Arrays.asList(new Long[]{100L, 500L, 1000L, 2000L});        
-        int maxSteps = 20;
+        int maxSteps = 200;
         
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite("CoverGameComplexPreliminary", environments, controllers, stepDelays, maxSteps, 5 /* Five repetitions */);
+        
+        int start;
+        int count;
+        String suiteName = "CoverGameComplexPreliminary";
+        boolean startAndCountSet;
+        if(args.length >= 2){
+            start = Integer.parseInt(args[0]);
+            count = Integer.parseInt(args[1]);
+            logger.info("Starting at " + start + " running for " + count);            
+            suiteName += "_" + start + "_for_" + count;
+            startAndCountSet = true;                    
+       } else {
+            start = 0;
+            count = 0;
+            startAndCountSet = false;
+        }
+        
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite(suiteName , environments, controllers, stepDelays, maxSteps, 5 /* Five repetitions */);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(), maxSteps);
         experimentRunner.setRandomSeed(554853636L);        
-        ExperimentUtils.runSuiteSingleThreaded(suite, experimentRunner);
+        
+        if(startAndCountSet){
+            ExperimentUtils.runSuiteSingleThreaded(suite, experimentRunner, start, count);                        
+        } 
+        else {
+            ExperimentUtils.runSuiteSingleThreaded(suite, experimentRunner);            
+        }
         
     }    
 }
