@@ -54,10 +54,56 @@ public class AisteExperimentUtils {
                     for (Object representation1 : env.getRepresentations()) {
                         if (controller1.getRepresentationClass().isAssignableFrom(representation1.getClass())) {
                             for (IAgentController controller2 : controllers) {
-                                if (controller1 == controller2) {
+                                for (Object representation2 : env.getRepresentations()) {
+                                    if (controller2.getRepresentationClass().isAssignableFrom(representation2.getClass())) {
+                                        if (controller1 == controller2 && representation1 == representation2) {
+                                            continue;
+                                        }
+                                        List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
+                                            new AgentExecutionDescriptor(agentType, controller1, (IEnvironmentRepresentation) representation1),
+                                            new AgentExecutionDescriptor(agentType, controller2, (IEnvironmentRepresentation) representation2)
+                                        });
+/*                                        List<IAgentExecutionDescriptor> descriptors2 = Arrays.asList(new IAgentExecutionDescriptor[]{
+                                            new AgentExecutionDescriptor(agentType, controller2, (IEnvironmentRepresentation) representation2),
+                                            new AgentExecutionDescriptor(agentType, controller1, (IEnvironmentRepresentation) representation1),});
+*/
+                                        for (long stepDelay : stepDelays) {
+                                            long timeout = (stepsToTimeout + 5) * stepDelay + 1000/* Just a little reserve for startup and shutdown*/;
+                                            experiments.add(new AisteExperiment(env, descriptors, stepDelay, timeout));
+  //                                          experiments.add(new AisteExperiment(env, descriptors2, stepDelay, timeout));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return new ExperimentSuite<AisteExperiment>(name, experiments);
+    }
+    
+    public static IExperimentSuite<AisteExperiment> createAllPossiblePairwiseCombinationsSuiteHack(String name, List<? extends IEnvironment> environments, List<? extends IAgentController> controllers, List<Long> stepDelays, long stepsToTimeout, int numRepetitions){
+        List<AisteExperiment> experiments = new ArrayList<AisteExperiment>();        
+        for (int i = 0; i < numRepetitions; i++) {
+            for (IEnvironment env : environments) {
+                if (env.getInstantiationDescriptors().size() != 1) {
+                    throw new AisteException("Single agent type expected");
+                }
+                IAgentType agentType = (IAgentType) env.getInstantiationDescriptors().keySet().iterator().next();
+
+
+                for (IAgentController controller1 : controllers) {
+                    for (Object representation1 : env.getRepresentations()) {
+                        if (controller1.getRepresentationClass().isAssignableFrom(representation1.getClass())) {
+                            for (IAgentController controller2 : controllers) {
+                                if (controller1 != controller2) {
                                     continue;
                                 }
                                 for (Object representation2 : env.getRepresentations()) {
+                                    if(representation1 == representation2){
+                                        continue;
+                                    }
                                     if (controller2.getRepresentationClass().isAssignableFrom(representation2.getClass())) {
                                         List<IAgentExecutionDescriptor> descriptors = Arrays.asList(new IAgentExecutionDescriptor[]{
                                             new AgentExecutionDescriptor(agentType, controller1, (IEnvironmentRepresentation) representation1),
@@ -82,4 +128,5 @@ public class AisteExperimentUtils {
         }
         return new ExperimentSuite<AisteExperiment>(name, experiments);
     }
+    
 }

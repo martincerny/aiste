@@ -646,6 +646,10 @@ implements IFutureListener<PLANNING_RESULT>
             return;
         }
         
+        if (fwl.isDone()) {
+            timeSpentPlanning.taskFinished();
+        }
+        
         acquireDeliberationLock();
         try {
             //to avoid concurrency issues, all actions are executed on method parameter and not on the class field copy of plan future
@@ -761,7 +765,6 @@ implements IFutureListener<PLANNING_RESULT>
             }
 
             if (fwl.isDone()) {
-                timeSpentPlanning.taskFinished();
                 fwl.removeFutureListener(this);
                 planFuture = null;
             }

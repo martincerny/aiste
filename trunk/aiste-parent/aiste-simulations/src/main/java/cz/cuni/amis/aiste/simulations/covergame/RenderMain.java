@@ -28,6 +28,7 @@ public class RenderMain {
     public static void main(String []args) throws IOException {
         String mapName = "cg_map_simple";
         CoverGame.StaticDefs defs = CGMapReader.readMap(Test.class.getResourceAsStream("/" + mapName+  ".txt"));
-        new CGMapRenderer(true,true).renderMap(defs, new File("./" + mapName + ".png"));
+        new CGMapRenderer(false,false).renderMap(defs, new File("./" + mapName + "_36.png"));
+        //new CGMapRenderer(true,true).renderLegend(new File("./legend.png"));
     }
 }

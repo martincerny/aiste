@@ -67,6 +67,8 @@ public class Experiments {
         } else {
              infos = new ItSimplePlannerInformation[] {
                 PlannersPackUtils.getMetricFF(),
+                PlannersPackUtils.getMetricFF(),
+                PlannersPackUtils.getMetricFF(),
              };
         }
 
@@ -101,7 +103,7 @@ public class Experiments {
         
         int start;
         int count;
-        String suiteName = "CoverGameComplexPreliminary";
+        String suiteName = "CoverGameComplexPreliminary_Fill";
         boolean startAndCountSet;
         if(args.length >= 2){
             start = Integer.parseInt(args[0]);
@@ -115,7 +117,8 @@ public class Experiments {
             startAndCountSet = false;
         }
         
-        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite(suiteName , environments, controllers, stepDelays, maxSteps, 5 /* Five repetitions */);
+//        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuite(suiteName , environments, controllers, stepDelays, maxSteps, 2 /* Five repetitions */);
+        IExperimentSuite<AisteExperiment> suite = AisteExperimentUtils.createAllPossiblePairwiseCombinationsSuiteHack(suiteName , environments, controllers, stepDelays, maxSteps, 2 /* Five repetitions */);
 
         AisteExperimentRunner experimentRunner = new AisteExperimentRunner(new DefaultEnvironmentExecutorFactory(), maxSteps);
         experimentRunner.setRandomSeed(554853636L);        
