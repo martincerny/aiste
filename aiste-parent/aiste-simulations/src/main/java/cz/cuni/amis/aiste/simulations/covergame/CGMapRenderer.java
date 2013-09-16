@@ -32,7 +32,7 @@ import org.apache.log4j.Logger;
  * @author Martin
  */
 public class CGMapRenderer {
-    private static final int TILE_SIZE = 20;
+    private static final int TILE_SIZE = 36;
     private static final float STROKE_WIDTH = 2;
     private static final int COVER_WIDTH = 2;
     private static final int NAVPOINT_WIDTH = 2;
@@ -94,6 +94,64 @@ public class CGMapRenderer {
     
     protected void drawNavPoint(Graphics2D g, int xPixels, int yPixels){
         g.drawOval(xPixels + (TILE_SIZE / 2) - (NAVPOINT_WIDTH / 2), yPixels  + (TILE_SIZE / 2) - (NAVPOINT_WIDTH / 2), NAVPOINT_WIDTH, NAVPOINT_WIDTH);
+    }
+
+    private static final int LEGEND_VERTICAL_SPACE = TILE_SIZE;
+    private static final int LEGEND_HORIZONTAL_SPACE = TILE_SIZE * 5;
+    
+    public void drawStringToLegendGrid(Graphics2D g, String s, int x, int y){
+        // get metrics from the graphics
+        FontMetrics metrics = g.getFontMetrics(g.getFont());
+        // get the height of a line of text in this
+        // font and render context
+        int fontHgt = metrics.getHeight();
+        int fontAddY = (TILE_SIZE + fontHgt) / 2;
+     
+        g.drawString(s, x * (TILE_SIZE + LEGEND_HORIZONTAL_SPACE) + TILE_SIZE + (TILE_SIZE / 2), y * (TILE_SIZE + LEGEND_VERTICAL_SPACE) + fontAddY);
+    }
+    
+    
+    public void renderLegend(File output) throws IOException {
+        int legendTileWidth = (TILE_SIZE + LEGEND_HORIZONTAL_SPACE);
+        int legendTileHeight = TILE_SIZE + LEGEND_VERTICAL_SPACE;
+        int fullWidth = 4 * legendTileWidth;
+        int fullHeight = 2 * legendTileHeight;
+        BufferedImage img = new BufferedImage(fullWidth, fullHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = (Graphics2D)img.getGraphics();
+        
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(Color.BLACK);
+        g.setBackground(Color.WHITE);
+        g.clearRect(0, 0, fullWidth, fullHeight);        
+
+        
+        
+        drawImpassableSquare(g, 1 * legendTileWidth, 1 * legendTileHeight);
+        drawStringToLegendGrid(g, "Impassable", 1, 1);
+        
+        drawImpassableCover(g, 2 * legendTileWidth, 1 * legendTileHeight);
+        drawStringToLegendGrid(g, "Impassable & 4-sides cover", 2, 1);
+        
+        drawNavPoint(g, 0 * legendTileWidth, 1 * legendTileHeight);
+        drawStringToLegendGrid(g, "Nav. point", 0, 1);
+
+        drawSpawningLocation(g, 0 * legendTileWidth, 0);
+        drawStringToLegendGrid(g, "Spawn point", 0, 0);
+        
+        
+        
+        drawHorizontalAndVerticalCover(g, 1 * legendTileWidth, 0 * legendTileHeight);
+        drawStringToLegendGrid(g, "4-sides cover", 1, 0);
+
+        drawHorizontalCover(g, 2 * legendTileWidth, 0 * legendTileHeight);
+        drawStringToLegendGrid(g, "Horizontal cover", 2, 0);
+        
+        drawVerticalCover(g, 3 * legendTileWidth, 0 * legendTileHeight);
+        drawStringToLegendGrid(g, "Vertical cover", 3, 0);
+        
+        ImageIO.write(img, "png", output);
+        logger.info("Map written to " + output.getAbsolutePath());
+        
     }
     
     public void renderMap(CoverGame.StaticDefs defs, File output) throws IOException {
