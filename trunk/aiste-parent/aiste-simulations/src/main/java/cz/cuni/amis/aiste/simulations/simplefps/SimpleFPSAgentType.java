@@ -22,15 +22,18 @@ import cz.cuni.amis.aiste.environment.impl.SimpleAgentType;
  * Simple FPS has only one agent type, this one.
  * @author 
  */
-public class SimpleFPSAgentType extends SimpleAgentType {
+public class SimpleFPSAgentType extends SimpleAgentType 
+{
 
     private static SimpleFPSAgentType instance = new SimpleFPSAgentType();
     
-    private SimpleFPSAgentType() {
+    SimpleFPSAgentType() 
+    {
         super("DefaultSimpleFPSAgent");
     }
 
-    public static SimpleFPSAgentType getInstance() {
+    public static SimpleFPSAgentType getInstance() 
+    {
         return instance;
     }
     

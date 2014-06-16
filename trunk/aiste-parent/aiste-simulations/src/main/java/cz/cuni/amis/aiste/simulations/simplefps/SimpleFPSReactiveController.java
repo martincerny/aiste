@@ -25,10 +25,12 @@ import cz.cuni.amis.pathfinding.alg.astar.AStar;
  *
  * @author 
  */
-public class SimpleFPSReactiveController extends AbstractAgentController<SimpleFPSAction, SimpleFPS> {
+public class SimpleFPSReactiveController extends AbstractAgentController<SimpleFPSAction, SimpleFPS> 
+{
 
     @Override
-    public void init(IEnvironment<SimpleFPSAction> environment, SimpleFPS representation, AgentBody body, long stepDelay) {
+    public void init(IEnvironment<SimpleFPSAction> environment, SimpleFPS representation, AgentBody body, long stepDelay) 
+    {
         super.init(environment, representation, body, stepDelay);
         //prepare everything you need in here
     }
@@ -36,7 +38,8 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
 
 
     @Override
-    public void onSimulationStep(double reward) {
+    public void onSimulationStep(double reward) 
+    {
         super.onSimulationStep(reward);
         //zde proved logiku agenta, muzes pouzivat libovolne vereje metody SimpleFPS - tvuj agent nemusi byt vubec obecny
         //reward je odmena za posledni provedeny tah
@@ -50,17 +53,20 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
     }
 
     @Override
-    public void shutdown() {
+    public void shutdown() 
+    {
         super.shutdown();
     }
 
     @Override
-    public Class getRepresentationClass() {
+    public Class getRepresentationClass() 
+    {
         return SimpleFPS.class;
     }
 
     @Override
-    public String getLoggableRepresentation() {
+    public String getLoggableRepresentation() 
+    {
         return "SimpleFPSReactive";
                 
     }

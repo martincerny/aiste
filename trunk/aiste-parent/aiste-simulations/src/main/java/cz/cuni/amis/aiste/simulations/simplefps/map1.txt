@@ -1,0 +1,91 @@
+<map>
+	<nodes>
+		<node id="n1">
+			<items>
+				<item>w2</item>
+			</items>
+			<spawnable/>
+			<passages>
+				<pass tonode="n2">
+					<length>MED</length>
+				</pass>
+				<pass tonode="n4">
+					<length>LOW</length>
+				</pass>
+			</passages>
+		</node>
+		<node id="n2">
+			<items>
+				<item>m</item>
+			</items>
+			<passages>
+				<pass tonode="n1">
+					<length>MED</length>
+				</pass>
+				<pass tonode="n4">
+					<length>HIGH</length>
+				</pass>
+				<pass tonode="n3">
+					<length>MED</length>
+				</pass>
+				<pass tonode="n5">
+					<length>MED</length>
+				</pass>
+				<pass tonode="n6">
+					<length>LOW</length>
+				</pass>
+			</passages>
+		</node>
+		<node id="n3">
+			<items>
+				<item>w1</item>
+			</items>
+			<spawnable/>
+			<passages>
+				<pass tonode="n2">
+					<length>MED</length>
+				</pass>
+			</passages>
+		</node>
+		<node id="n4">
+			<items>
+				<item>n</item>
+			</items>
+			<passages>
+				<pass tonode="n1">
+					<length>LOW</length>
+				</pass>
+				<pass tonode="n2">
+					<length>HIGH</length>
+				</pass>
+			</passages>
+		</node>
+		<node id="n5">
+			<items>
+				<item>n</item>
+			</items>
+			<spawnable/>
+			<passages>
+				<pass tonode="n2">
+					<length>MED</length>
+				</pass>
+				<pass tonode="n6">
+					<length>HIGH</length>
+				</pass>
+			</passages>
+		</node>
+		<node id="n6">
+			<items>
+				<item>w3</item>
+			</items>
+			<passages>
+				<pass tonode="n5">
+					<length>HIGH</length>
+				</pass>
+				<pass tonode="n2">
+					<length>LOW</length>
+				</pass>
+			</passages>
+		</node>
+	</nodes>
+</map>
