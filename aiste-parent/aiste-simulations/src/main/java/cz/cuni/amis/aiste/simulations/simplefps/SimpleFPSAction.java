@@ -22,12 +22,14 @@ import cz.cuni.amis.aiste.environment.IAction;
  *
  * @author 
  */
-public class SimpleFPSAction implements IAction{
+public class SimpleFPSAction implements IAction
+{
 
     //TODO add data neccessary for action here
     
     @Override
-    public String getLoggableRepresentation() {
+    public String getLoggableRepresentation() 
+    {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     

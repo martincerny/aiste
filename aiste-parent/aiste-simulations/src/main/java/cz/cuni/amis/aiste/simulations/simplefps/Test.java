@@ -16,26 +16,41 @@
  */
 package cz.cuni.amis.aiste.simulations.simplefps;
 
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.execution.IEnvironmentExecutionResult;
 import cz.cuni.amis.aiste.execution.impl.AgentExecutionDescriptor;
 import cz.cuni.amis.aiste.execution.impl.SynchronuousEnvironmentExecutor;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Scanner;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
+
+
 
 /**
  *
  * @author Martin Cerny
  */
-public class Test {
-    public static void main(String args[]){
-        SimpleFPS fpsEnvironment = new SimpleFPS();
+public class Test 
+{
+    static int maxSteps = 50;
+    static int minP = 2;
+    static int maxP = 2;
+    static String testmap = "/map1.txt";      
+    
+    public static void main(String args[]) throws FileNotFoundException, ParserConfigurationException, SAXException, IOException
+    {
+        SimpleFPS fpsEnvironment = new SimpleFPS(minP, maxP, testmap);
         SimpleFPSReactiveController player1 = new SimpleFPSReactiveController();
         SimpleFPSReactiveController player2 = new SimpleFPSReactiveController();
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
         executor.setEnvironment(fpsEnvironment);
-        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player1, fpsEnvironment));
-        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player2, fpsEnvironment));
+        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player1, (IEnvironmentRepresentation) fpsEnvironment));
+        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player2, (IEnvironmentRepresentation) fpsEnvironment));
         
-        IEnvironmentExecutionResult result = executor.executeEnvironment(50 /*Max steps*/);
+        IEnvironmentExecutionResult result = executor.executeEnvironment(maxSteps);
         
         System.out.println("Results: ");
         System.out.println("Player1: "+ result.getAgentResults().get(0).getTotalReward());
