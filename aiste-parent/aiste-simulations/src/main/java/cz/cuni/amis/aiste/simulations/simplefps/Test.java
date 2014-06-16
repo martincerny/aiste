@@ -42,13 +42,13 @@ public class Test
     public static void main(String args[]) throws FileNotFoundException, ParserConfigurationException, SAXException, IOException
     {
         SimpleFPS fpsEnvironment = new SimpleFPS(minP, maxP, testmap);
-        SimpleFPSReactiveController player1 = new SimpleFPSReactiveController();
+        SimpleFPSReactiveController player1 = new SimpleFPSReactiveController();        
         SimpleFPSReactiveController player2 = new SimpleFPSReactiveController();
         
         SynchronuousEnvironmentExecutor executor = new SynchronuousEnvironmentExecutor();
         executor.setEnvironment(fpsEnvironment);
-        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player1, (IEnvironmentRepresentation) fpsEnvironment));
-        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player2, (IEnvironmentRepresentation) fpsEnvironment));
+        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player1, fpsEnvironment));
+        executor.addAgentController(new AgentExecutionDescriptor(SimpleFPSAgentType.getInstance(), player2, fpsEnvironment));
         
         IEnvironmentExecutionResult result = executor.executeEnvironment(maxSteps);
         

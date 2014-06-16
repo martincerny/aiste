@@ -26,6 +26,22 @@ public class SimpleFPSAction implements IAction
 {
 
     //TODO add data neccessary for action here
+    enum ActionType
+    {
+        MOVE, SHOOT, RESPAWN, PICKUPITEM, FINDPATH; //mozno budu dalsie ! :)
+    }
+    
+    ActionType whatToDo;
+    ItemType weapon;
+    String moveTo;
+    
+    SimpleFPSAction(ActionType doThis, ItemType weapon, String moveTarget)
+    {
+        this.whatToDo = doThis;
+        this.weapon = weapon;
+        this.moveTo = moveTarget;
+    }
+    
     
     @Override
     public String getLoggableRepresentation() 
