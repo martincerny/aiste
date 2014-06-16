@@ -20,22 +20,17 @@ import cz.cuni.amis.aiste.environment.AgentBody;
 import cz.cuni.amis.aiste.environment.AgentInstantiationException;
 import cz.cuni.amis.aiste.environment.IAgentInstantiationDescriptor;
 import cz.cuni.amis.aiste.environment.IAgentType;
-import cz.cuni.amis.aiste.environment.IStateVariable;
-import cz.cuni.amis.aiste.environment.impl.AbstractStateVariableRepresentableSynchronizedEnvironment;
+import cz.cuni.amis.aiste.environment.IEnvironmentRepresentation;
 import cz.cuni.amis.aiste.environment.impl.AbstractSynchronizedEnvironment;
 import cz.cuni.amis.aiste.environment.impl.AgentInstantiationDescriptor;
-import cz.cuni.amis.aiste.environment.impl.EnumStateVariable;
-import cz.cuni.amis.aiste.environment.impl.SimpleAgentType;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Scanner;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -67,13 +62,13 @@ class Weapon extends Item
     //3 druhy zbrani podla ID (W1, W2, W3)
     // pistol (low dmg, high acc, med range)
     // shotgun (high dmg, low acc, low range)
-    // bazooka (high dmg, med acc, high range)
+    // bazooka (high dmg, low acc, high range)
     String damage;
     String accuracy;
     String range;
     String ID;
     
-    void Weapon(String dmg, String acc, String ran, String ID)
+    Weapon(String dmg, String acc, String ran, String ID)
     {
         this.damage = dmg;
         this.accuracy = acc;
@@ -87,7 +82,7 @@ class Medikit extends Item
     // LOW = 25hp, MED = 50hp, HIGH = 100hp
     String restoresHP;
     
-    void Medikit(String rest)
+    Medikit(String rest)
     {
         this.restoresHP = rest;
     }
@@ -118,6 +113,8 @@ class Passage
     //abstrakcia
     String length;    
     
+    //doplnit ID chodby - do XML dokumentu a parsovat ho, cize doplnit kod do parsera vstupu
+    
     Passage(String toNode, String length)
     {
         this.toNode = toNode;
@@ -126,18 +123,21 @@ class Passage
 }
 
 
-public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction> 
+public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction> implements IEnvironmentRepresentation
 {
 
     private int minPlayers;
     private int maxPlayers;
-    private String mapLocation;    
-    private ArrayList<Node1> map;        
+    private String mapLocation;  
+    public static int players;
+    public ArrayList<Node1> map;        
     
     /**
      * Informace o jednotlivych agentech. Indexem je id {@link AgentBody#id}
      */
     private List<SimpleFPSBodyInfo> bodyInfos;
+    ArrayList<Weapon> weapons;
+    Medikit medikit;
     
     public SimpleFPS(int minP, int maxP, String mapLoc) throws FileNotFoundException, ParserConfigurationException, SAXException, IOException 
     {
@@ -151,36 +151,31 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction>
         System.out.println("Starting map parser - please wait.");
         map = XMLMapParser(mapLocation);
         System.out.println("Map " + mapLoc + " was succesfully loaded.");
-        simpleMapReview(map);                       
+        simpleMapReview(map); 
         
+        //zapuzdrit vytvaranie predmetov fciou
+        System.out.println("");
+        System.out.println("Creating weapons and medikit.");
+        weapons = new ArrayList<Weapon>();
         
-        //Map<SimpleFPSAgentType, AgentInstantiationDescriptor> volaco = (Map<SimpleFPSAgentType, AgentInstantiationDescriptor>) getInstantiationDescriptors();
+        Weapon weapon1 = new Weapon("LOW", "HIGH", "MED", "w1"); //pistol                        
+        Weapon weapon2 = new Weapon("HIGH", "LOW", "LOW", "w2"); //shotgun
+        Weapon weapon3 = new Weapon("HIGH", "LOW", "HIGH", "w3"); //bazooka
+        medikit = new Medikit("HIGH"); //restores full health (health := HIGH)    
+        weapons.add(weapon1);
+        weapons.add(weapon2);
+        weapons.add(weapon3);                       
+        System.out.println("Items succesfully created.");
+        System.out.println("");          
+                        
+         bodyInfos = new ArrayList<SimpleFPSBodyInfo>();                                   
+         createAgentBodies();
+        //v tomto bode mame vyrobene tela pre hracov/agentov                                                                         
+        //este im nastavime pozicie podla mapy (spawnable roomz)
+        initSpawnAgents();
+         
         
-        
-         bodyInfos = new ArrayList<SimpleFPSBodyInfo>(); 
-         int number = rand.nextInt((maxPlayers - minPlayers) + 1) + minPlayers;
-         for(int i = 0; i < number; ++i)
-         {
-             SimpleFPSAgentType agentType = new SimpleFPSAgentType();
-             
-             AgentBody telo = createAgentBodyInternal(agentType);
-         }
-        
-        
-        //potom z List musime rozbabrat na state values
-        //tu rozoberieme list(y) na state values a ulozime ako kazu nizsie
-        
-        //TODO: prostredi se musi umet reprezentovat pomoci sady state variables, to jsou vlastne pary jmeno-hodnota
-        //protoze prostredi je obecne, budes je muset mit v nejakych kolekcich, asi listech nebo mapach, jak se ti to bude hodit
-        //promenne pro veci jako zdravi nebo naboje je potreba pro tuhle reprezentaci diskretizovat (napr. DEAD, LOW, INJURED, HEALTHY)
-        //itemsAtLocations = new ArrayList<IStateVariable>();
-        //EnumStateVariable newVariable = new EnumStateVariable("ItemAtLocation1", ItemType.class); //jsou tez IntegerStateVariable, pripadne si muzes udelat i vlastni typy
-        //itemsAtLocations.add(newVariable);
-        
-        //promennou je potreba zaregistrovat u parent tridy
-        //addStateVariable(newVariable);
-        //a nastavit ji (a v prubehu simulace udrzovat) hodnotu
-        //setStateVariableValue(newVariable, ItemType.WEAPON_1);       
+        System.out.println("SAFE POINT REACHED !");
     }
     
     ArrayList<Node1> XMLMapParser(String mapLocation) throws FileNotFoundException, ParserConfigurationException, SAXException, IOException
@@ -297,13 +292,66 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction>
         System.out.println("Simple map review terminated ~");
     }
     
+    void createAgentBodies()
+    {
+        int number = rand.nextInt((maxPlayers - minPlayers) + 1) + minPlayers;  
+        players = number;
+        System.out.println("Creating agent bodies now ~");
+         for(int i = 0; i < number; ++i)
+         {                          
+             AgentBody tempBody = createAgentBodyInternal(SimpleFPSAgentType.getInstance());
+             System.out.println("Agent " + tempBody.getId() + " was succesfully created.");
+         }
+         System.out.println("Agent bodies created ~");
+    }
+    
+    void initSpawnAgents()
+    {
+        System.out.println("Agents will now pick their spawn points.");
+        for(int agent = 0; agent < bodyInfos.size(); ++agent)
+        {
+            for(int room = 0; room < map.size(); ++room)
+            {
+                boolean canSpawnHere = true;
+                
+                //pozrieme, ci je room spawnable
+                if(map.get(room).spawnable)
+                {
+                    //toto ale nestaci !
+                    //musime pozriet, ci predosli agenti uz neplanuju sem spawning !
+                    for(int i = 0; i < agent; ++i)
+                    {
+                        //do tejto podmienky vlezieme, ak sme nasli agenta ktory sa sem chce spawnovat
+                        if(bodyInfos.get(i).position.equals(map.get(room).ID))
+                        {
+                            //tento spawnpoint je obsadeny
+                            canSpawnHere = false;
+                        }
+                    }
+                    //zistil som, ci je spawn point obsadeny
+                    if(canSpawnHere)
+                    {
+                        bodyInfos.get(agent).position = map.get(room).ID;
+                        System.out.println("Agent " + bodyInfos.get(agent).body.getId() + " will spawn in room " + map.get(room).ID);
+                        break; //uz nema vyznam dalej iterovat forcyklus, pretoze sme nasli spawn
+                    }                        
+                    else
+                    {
+                        //nemozem sem spawnovat, preto len vynulujem flag
+                        canSpawnHere = true;
+                    }
+                }
+            }
+        }
+        System.out.println("All agents picked their spawn points ~");
+    }
     
     @Override
     protected Map<AgentBody, Double> nextStepInternal(Map<AgentBody, SimpleFPSAction> actionsToPerform) 
     {
         
         // informace o prostredi dostanu od agenta takto:
-        //bodyInfos.get(body.getId())
+        //bodyInfos.get(body.getId());        
         
         //krok simulace vraci reward, ktery dostali agenti za provedene akce
         //v nasem pripade je reward +1 za zabiti oponenta, jinak 0 (tj. klasicky frag count)
@@ -318,13 +366,7 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction>
             throw new AgentInstantiationException("Illegal agent type");
         }
         AgentBody newBody = new AgentBody(bodyInfos.size() /*nove id v rade*/, type);
-        bodyInfos.add(new SimpleFPSBodyInfo(newBody));
-        
-        //cokoliv dalsiho potrebujes, dopis sem (a smaz tento bordel :-)
-        /*if(true)
-        {            
-            throw new UnsupportedOperationException("Not supported yet.");
-        }*/
+        bodyInfos.add(new SimpleFPSBodyInfo(newBody));                
         
         return newBody;
     }
@@ -354,6 +396,21 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction>
         String ammo3;
         String health; 
         String position;
+        
+        int stepsToGoal;
+        //indikuje, kolko tahov je nutne urobit pre nejaky goal
+        //napriklad, agent s rychlostou LOW sa chce presunut cez chodbu MED
+        //LOW < MED => stepsToGoal = 2 (LOW + LOW = MED)
+        //ak by bola chodba HIGH, tak stepsToGoal = 4 (4*LOW = HIGH)
+        int stepsNeeded;
+        //tato premena uchova povodnu hodnotu
+        //napriklad speed LOW a chodba MED = 2 steps
+        //stepsToGoal indikuje, za kolko krokov tam budem
+        //tato indikuje, kolko mi to celkovo trva
+        //to preto, lebo v polke prehodim position na cielovu miestnost
+        //a do polky som akoby v doterajsej miestnosti
+        //potrebujem si teda nejako overit, ci uz nie som za polovickou
+        //to overenie urobim porovnanim s touto hodnotou
 
         public SimpleFPSBodyInfo(AgentBody body) 
         {
@@ -380,6 +437,8 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction>
             this.ammo3 = "EMPTY";
             this.health = "FULL";
             this.position = "";
+            this.stepsToGoal = 0;
+            this.stepsNeeded = 0;
         }
         
         void setPosition(String pos)
@@ -392,4 +451,126 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction>
             return this.position;
         }
     }
+    
+    public void pickUpItem(ItemType item, int agentID)
+    {
+        switch(item)
+        {
+            case WEAPON_1:
+                bodyInfos.get(agentID).ammo1 = "HIGH";
+                break;
+            case WEAPON_2:
+                bodyInfos.get(agentID).ammo2 = "HIGH";
+                break;
+            case WEAPON_3:
+                bodyInfos.get(agentID).ammo3 = "HIGH";
+                break;
+            case MEDIKIT:
+                
+                if(medikit.restoresHP.equalsIgnoreCase("HIGH"))
+                {                    
+                    bodyInfos.get(agentID).health = "HIGH";
+                }
+                else 
+                if(medikit.restoresHP.equalsIgnoreCase("MED"))
+                {
+                    bodyInfos.get(agentID).health = "MED";   
+                }
+                else
+                if(medikit.restoresHP.equalsIgnoreCase("LOW"))
+                {
+                    bodyInfos.get(agentID).health = "LOW"; 
+                }
+                break;
+        }
+    }
+
+    public void respawn(int agentID)
+    {
+        for(int room = 0; room < map.size(); ++room)
+        {
+            boolean canSpawnHere = true;
+
+            //pozrieme, ci je room spawnable
+            if(map.get(room).spawnable)
+            {
+                //toto ale nestaci !
+                //musime pozriet, ci predosli agenti uz neplanuju sem spawning !
+                for(int i = 0; i < agentID; ++i)
+                {
+                    //do tejto podmienky vlezieme, ak sme nasli agenta ktory sa sem chce spawnovat
+                    if(bodyInfos.get(i).position.equals(map.get(room).ID))
+                    {
+                        //tento spawnpoint je obsadeny
+                        canSpawnHere = false;
+                    }
+                }
+                //zistil som, ci je spawn point obsadeny
+                if(canSpawnHere)
+                {
+                    bodyInfos.get(agentID).position = map.get(room).ID;
+                    System.out.println("Agent " + bodyInfos.get(agentID).body.getId() + " will respawn in room " + map.get(room).ID);
+                    break; //uz nema vyznam dalej iterovat forcyklus, pretoze sme nasli spawn
+                }                        
+                else
+                {
+                    //nemozem sem spawnovat, preto len vynulujem flag
+                    canSpawnHere = true;
+                }
+            }
+        }
+    }
+    
+    public void moveAgent(int agentID)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public String getAgentInfo(int agentID, String aspect)
+    {
+        if(aspect.equalsIgnoreCase("ammo1"))
+        {
+            return bodyInfos.get(agentID).ammo1;
+        }
+        else
+        if(aspect.equalsIgnoreCase("ammo2"))
+        {
+            return bodyInfos.get(agentID).ammo2;
+        }
+        else
+        if(aspect.equalsIgnoreCase("ammo3"))
+        {
+            return bodyInfos.get(agentID).ammo3;
+        }
+        else
+        if(aspect.equalsIgnoreCase("health"))
+        {
+            return bodyInfos.get(agentID).health;
+        }
+        else
+        if(aspect.equalsIgnoreCase("position"))
+        {
+            return bodyInfos.get(agentID).position;
+        }
+        else
+        if(aspect.equalsIgnoreCase("speed"))
+        {
+            return bodyInfos.get(agentID).speed;
+        }
+        else
+        if(aspect.equalsIgnoreCase("stepsNeeded"))
+        {
+            return Integer.toString(bodyInfos.get(agentID).stepsNeeded);
+        }
+        else
+        if(aspect.equalsIgnoreCase("stepsToGoal"))
+        {
+            return Integer.toString(bodyInfos.get(agentID).stepsToGoal);
+        } 
+        
+        return "Unknown input !";
+    }
+    
 }
+
+
