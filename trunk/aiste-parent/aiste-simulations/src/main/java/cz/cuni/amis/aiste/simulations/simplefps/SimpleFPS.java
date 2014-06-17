@@ -396,6 +396,7 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction> 
         String ammo3;
         String health; 
         String position;
+        String travelingTo;
         
         int stepsToGoal;
         //indikuje, kolko tahov je nutne urobit pre nejaky goal
@@ -439,6 +440,7 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction> 
             this.position = "";
             this.stepsToGoal = 0;
             this.stepsNeeded = 0;
+            this.travelingTo = "";
         }
         
         void setPosition(String pos)
@@ -566,7 +568,12 @@ public class SimpleFPS extends AbstractSynchronizedEnvironment<SimpleFPSAction> 
         if(aspect.equalsIgnoreCase("stepsToGoal"))
         {
             return Integer.toString(bodyInfos.get(agentID).stepsToGoal);
-        } 
+        }
+        else
+        if(aspect.equalsIgnoreCase("travel"))
+        {
+            return bodyInfos.get(agentID).travelingTo;
+        }
         
         return "Unknown input !";
     }

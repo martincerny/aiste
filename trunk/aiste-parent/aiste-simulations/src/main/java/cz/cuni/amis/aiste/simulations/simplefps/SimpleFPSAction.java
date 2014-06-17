@@ -34,12 +34,14 @@ public class SimpleFPSAction implements IAction
     ActionType whatToDo;
     ItemType weapon;
     String moveTo;
+    int shootOnID;
     
-    SimpleFPSAction(ActionType doThis, ItemType weapon, String moveTarget)
+    SimpleFPSAction(ActionType doThis, ItemType weapon, String moveTarget, int shootingOn)
     {
         this.whatToDo = doThis;
         this.weapon = weapon;
         this.moveTo = moveTarget;
+        this.shootOnID = shootingOn;
     }
     
     
