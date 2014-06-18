@@ -28,7 +28,7 @@ public class SimpleFPSAction implements IAction
     //TODO add data neccessary for action here
     enum ActionType
     {
-        MOVE, SHOOT, RESPAWN, PICKUPITEM, FINDPATH; //mozno budu dalsie ! :)
+        MOVE, SHOOT, RESPAWN, PICKUPITEM; //mozno budu dalsie ! :)
     }
     
     ActionType whatToDo;
@@ -42,6 +42,11 @@ public class SimpleFPSAction implements IAction
         this.weapon = weapon;
         this.moveTo = moveTarget;
         this.shootOnID = shootingOn;
+    }
+    
+    SimpleFPSAction()
+    {
+        
     }
     
     

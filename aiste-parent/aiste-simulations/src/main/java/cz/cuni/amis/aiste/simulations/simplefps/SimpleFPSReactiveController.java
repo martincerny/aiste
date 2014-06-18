@@ -65,12 +65,16 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
     {
         super.onSimulationStep(reward);                                
         
+        System.out.println("Agent " + body.getId() + " is thinking about his next move.");
+        
         String ammo1status = representation.getAgentInfo(body.getId(), "ammo1");
         String ammo2status = representation.getAgentInfo(body.getId(), "ammo2");
         String ammo3status = representation.getAgentInfo(body.getId(), "ammo3");
         String healthStatus = representation.getAgentInfo(body.getId(), "health");
         String position = representation.getAgentInfo(body.getId(), "position");
-        String travelingTo = representation.getAgentInfo(body.getId(), "traveling");        
+        String travelingTo = representation.getAgentInfo(body.getId(), "travel");    
+        String stepsToGoal = representation.getAgentInfo(body.getId(), "stepsToGoal");
+        String failedToEngage = representation.getAgentInfo(body.getId(), "failed");    
         boolean enemyAlert = false;
         //zistim si, co sa nachadza v susednych izbach
         //Map< Map< toNode, itemThere>, Lenght>
@@ -82,7 +86,7 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         //je to pekne info, kedze zarhna to, kam ide chodba, co je na druhej strane a este aj dlzku chodby
         //dlzku chodby pouzije agent pri pohybe aj pri vybere zbrane pri strelbe
         
-        enemyAlert = enemyInNeiborhood(neiborhood);     
+        enemyAlert = enemyInNeiborhood(neiborhood, position);     
         //skusim testovat, ci iny agenti nemaju position nastaveny na mojho suseda
         //ak ano, zapnem flag enemyAlert
         
@@ -103,6 +107,7 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         if(healthStatus.equalsIgnoreCase("EMPTY"))
         {
             act(new SimpleFPSAction(ActionType.RESPAWN, ItemType.NOTHING, "", -1));
+            System.out.println("Agent " + body.getId() + "'s soul: I need new body\n ~");
             //sme mrtvi - preto poziadame system o respawn;
             return;
         }
@@ -110,15 +115,21 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         if(!travelingTo.isEmpty()) //niekam cestujeme
         {
             act(new SimpleFPSAction(ActionType.MOVE, ItemType.NOTHING, travelingTo, -1));
+            System.out.println("Agent " + body.getId() + ": I will continue this direction\n ~");
+            System.out.println("Agent " + body.getId() + ": My destination is " + travelingTo + "\n ~");
+            System.out.println("Agent " + body.getId() + ": It will take another " + stepsToGoal + " steps.\n ~");
             //agent si len poziada o posun !
             //to, ci je za polkou chodby a teda zmenu pozicie
             //bude riadit SimpleFPS - cize prostredie
             return;
         }
-        //3. vidime nepriatela
-        else
-        if(enemyAlert) //vidime nepriatela, udaje o nom uz mame
+        //3. vidime nepriatela        
+        if(enemyAlert && failedToEngage.equalsIgnoreCase("nofailed")) //vidime nepriatela, udaje o nom uz mame
         {
+            //failedToEngage je poistka - ak som predtym chcel strielat, ale zbran mala maly dosah
+            //je jasne, ze by to dopadlo rovnako. preto skusim nieco ine ako opat
+            //strielat zo zbrane s kratkym dosahom
+            
             //identifikujeme nepriatela
             //budeme blbo strielat na prveho na ktoreho nazime
             //v enemyID uz mame ID nepriatela, ktoreho sme zbadali
@@ -127,14 +138,14 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
             //budeme strielat !
             //je nutne si zvolit zbran !
             //zbran si volime podla dlzky chodby
-            if(chooseWeapon(neiborhood, ammo1status, ammo2status, ammo3status)) 
+            if(chooseWeapon(neiborhood, ammo1status, ammo2status, ammo3status, position)) 
             {
-                //tato metodka rozhodne o zbrani a zaroven odosle potrebnu ziadost o akciu                                                                      
+                //tato metodka rozhodne o zbrani a zaroven odosle potrebnu ziadost o akciu     
+                System.out.println("Agent " + body.getId() + ": Enemy spoted at " + enemyPos + "\n ~");
                 return;
             }
                 
-        }
-        else
+        }        
         //4. pozrieme sa na svoje zdravie
         //v podmienke je slusne otestovat aj to, ci nie sme mrtvi - co je ale zbytocne
         //ak by sme boli mrtvi, nedostaneme sa sem cez prvy if
@@ -146,10 +157,10 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
             if(findMedikit(neiborhood, position))
             {
                 //metoda sa o vsetko postara a tiez poziada prostredie o potrebne akcie
+                System.out.println("Agent " + body.getId() + ": I need a medikit immediatelly\n ~");
                 return;
             }
-        } 
-        else
+        }         
         //5. pozrieme sa na zasobniky a ked nie su plne, skusime najst prvu neplnu zbran
         if(!ammo1status.equalsIgnoreCase("HIGH") || !ammo2status.equalsIgnoreCase("HIGH") || !ammo3status.equalsIgnoreCase("HIGH"))
         {
@@ -163,10 +174,11 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
                 {
                     //metoda sa postarala o najdenie zbrane a pripadne zadanie prikazov
                     //vsetko prebehlo v poriadku
+                    System.out.println("Agent " + body.getId() + ": I need ammunition to my pistol\n ~");
                     return;
                 }                
             }
-            else
+            
             if(!ammo2status.equalsIgnoreCase("HIGH"))
             {
                 //brokovnia nie je plne nabita
@@ -175,10 +187,11 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
                 {
                     //metoda sa postarala o najdenie zbrane a pripadne zadanie prikazov
                     //vsetko prebehlo v poriadku
+                    System.out.println("Agent " + body.getId() + ": I need ammunition to my shotgun\n ~");
                     return;
                 }  
             }
-            else
+            
             if(!ammo3status.equalsIgnoreCase("HIGH"))
             {
                 //bazuka nie je plne nabita
@@ -187,20 +200,19 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
                 {
                     //metoda sa postarala o najdenie zbrane a pripadne zadanie prikazov
                     //vsetko prebehlo v poriadku
+                    System.out.println("Agent " + body.getId() + ": I need ammunition to my bazooka\n ~");
                     return;
                 }  
             }        
         }
-        //Final: vsetko je OK - nahodne zvolime suseda a poziadame o presun
-        else
-        {
-            Random rand = new Random();
-            int whichOne = rand.nextInt((neiborhood.size() - 1) + 1);
-                        
-            String target = neiborhood.get(whichOne).second.first;
-            act(new SimpleFPSAction(ActionType.MOVE, ItemType.NOTHING, target, -1));
-            //return; //tu uz return ani netreba volat. :)
-        }                               
+        //Final: vsetko je OK - nahodne zvolime suseda a poziadame o presun        
+        Random rand = new Random();
+        int whichOne = rand.nextInt((neiborhood.size() - 1) + 1);
+
+        String target = neiborhood.get(whichOne).second.first;
+        act(new SimpleFPSAction(ActionType.MOVE, ItemType.NOTHING, target, -1));
+        System.out.println("Agent " + body.getId() + ": I will relocate myself to room " + target + " \n ~");
+        //return; //tu uz return ani netreba volat. :)                                       
     }
     
     
@@ -263,8 +275,44 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         return neiborhood;
     }        
     
-    private boolean enemyInNeiborhood(ArrayList<Tuple<String, Tuple<String, ItemType>>> neiborhood)
+    private boolean enemyInNeiborhood(ArrayList<Tuple<String, Tuple<String, ItemType>>> neiborhood, String position)
     {
+        //toto skontroluje, ci nepriatel nie je v rovnakej miestnosti ako agent
+        for(int room = 0; room < representation.map.size(); ++room)
+        {
+            if(representation.map.get(room).ID.equalsIgnoreCase(position))
+            {
+                //nasli sme nasu izbu, podobne ako dole pozrieme vsetkych agentov, ci tu nejaky nesedi
+                for(int j = 0; j < SimpleFPS.players; ++j)
+                {
+                    if(j == body.getId())
+                    {
+                        //nema vyznam nieco robit so sebou samym
+                        continue;
+                    }
+                    else
+                    {
+                        String enemyPos = representation.getAgentInfo(j, "position");
+                        if(position.equalsIgnoreCase(enemyPos))
+                        {    
+                            if(!representation.getAgentInfo(j, "health").equalsIgnoreCase(ValueType.EMPTY.toString())) 
+                            {   //tato podmienka zaisti, ze nebudem strielat do mrtvoly co pri mne lezi                                
+                                
+                                //nepriatel !!!!!!
+                                this.enemyID = j;
+                                this.enemyPos = enemyPos;
+                                //enemyPos == position
+                                return true;
+                            }
+                            else return false;
+                        }
+                    }                                
+
+                }
+            }
+        }
+        
+        //toto skontroluje, ci nie je v susedstve nepriatel
         for(int i = 0; i < neiborhood.size(); ++i)
         {
             for(int j = 0; j < SimpleFPS.players; ++j)
@@ -293,95 +341,126 @@ public class SimpleFPSReactiveController extends AbstractAgentController<SimpleF
         return false;
     }
     
-    private boolean chooseWeapon(ArrayList<Tuple<String, Tuple<String, ItemType>>> neiborhood, String ammo1status, String ammo2status, String ammo3status)
+    private boolean chooseWeapon(ArrayList<Tuple<String, Tuple<String, ItemType>>> neiborhood, String ammo1status, String ammo2status, String ammo3status, String position)
     {
-        for(int i = 0; i < neiborhood.size(); ++i)
+        if(position.equalsIgnoreCase(enemyPos))
         {
-            if(neiborhood.get(i).second.first.equalsIgnoreCase(this.enemyPos))
+            //najlepsie bude brokovnica !
+            //potom pistol a napokon bazuka
+            if(!ammo2status.equalsIgnoreCase("EMPTY"))
             {
-                if(neiborhood.get(i).first.equalsIgnoreCase("LOW"))
-                {
-                    if(!ammo2status.equalsIgnoreCase("EMPTY"))
-                    {
-                        act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
-                        //strielam brokovnicou
-                        return true;
-                    }
-                    else
-                    {
-                        //brokovnica ma malo nabojov
-                        //vyberiem si prvu zbran s nabojmi a strielam
-                        if(!ammo1status.equalsIgnoreCase("EMPTY"))
-                        {
-                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
-                            return true;
-                        }
-                        else
-                        if(!ammo3status.equalsIgnoreCase("EMPTY"))
-                        {
-                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
-                            return true;
-                        }
-                    }                        
-                }
-                //podobne pre zvysne dlzky a zbranove kombinacie
-                else
-                if(neiborhood.get(i).first.equalsIgnoreCase("MED"))
-                {
-                    if(!ammo1status.equalsIgnoreCase("EMPTY"))
-                    {
-                        act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
-                        //strielam pistolou
-                        return true;
-                    }
-                    else
-                    {
-                        //pistol ma malo nabojov
-                        //vyberiem si prvu zbran s nabojmi a strielam
-                        if(!ammo2status.equalsIgnoreCase("EMPTY"))
-                        {
-                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
-                            return true;
-                        }
-                        else
-                        if(!ammo3status.equalsIgnoreCase("EMPTY"))
-                        {
-                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
-                            return true;
-                        }
-                    }    
-                }
-                else
-                if(neiborhood.get(i).first.equalsIgnoreCase("HIGH"))
-                {
-                    if(!ammo3status.equalsIgnoreCase("EMPTY"))
-                    {
-                        act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
-                        //strielam bazukou
-                        return true;
-                    }
-                    else
-                    {
-                        //bazuka ma malo nabojov
-                        //vyberiem si prvu zbran s nabojmi a strielam
-                        if(!ammo1status.equalsIgnoreCase("EMPTY"))
-                        {
-                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
-                            return true;
-                        }
-                        else
-                        if(!ammo2status.equalsIgnoreCase("EMPTY"))
-                        {
-                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
-                            return true;
-                        }
-                    }    
-                }
-
-                break; //vsetko je nastavene, nema zmysel prezerat dalsie chodby
+                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
+                //strielam brokovnicou
+                return true;
             }
-        }  
-        
+            else
+            {
+                //brokovnica ma malo nabojov
+                //vyberiem si prvu zbran s nabojmi a strielam
+                if(!ammo1status.equalsIgnoreCase("EMPTY"))
+                {
+                    act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
+                    return true;
+                }
+                else
+                if(!ammo3status.equalsIgnoreCase("EMPTY"))
+                {
+                    act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
+                    return true;
+                }
+            }  
+            
+        }
+        else
+        {   //sem si vleziem, ak nepriatel nesedi v mojej izbe
+            for(int i = 0; i < neiborhood.size(); ++i)
+            {
+                if(neiborhood.get(i).second.first.equalsIgnoreCase(this.enemyPos))
+                {
+                    if(neiborhood.get(i).first.equalsIgnoreCase("LOW"))
+                    {
+                        if(!ammo2status.equalsIgnoreCase("EMPTY"))
+                        {
+                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
+                            //strielam brokovnicou
+                            return true;
+                        }
+                        else
+                        {
+                            //brokovnica ma malo nabojov
+                            //vyberiem si prvu zbran s nabojmi a strielam
+                            if(!ammo1status.equalsIgnoreCase("EMPTY"))
+                            {
+                                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
+                                return true;
+                            }
+                            else
+                            if(!ammo3status.equalsIgnoreCase("EMPTY"))
+                            {
+                                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
+                                return true;
+                            }
+                        }                        
+                    }
+                    //podobne pre zvysne dlzky a zbranove kombinacie
+                    else
+                    if(neiborhood.get(i).first.equalsIgnoreCase("MED"))
+                    {
+                        if(!ammo1status.equalsIgnoreCase("EMPTY"))
+                        {
+                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
+                            //strielam pistolou
+                            return true;
+                        }
+                        else
+                        {
+                            //pistol ma malo nabojov
+                            //vyberiem si prvu zbran s nabojmi a strielam
+                            if(!ammo2status.equalsIgnoreCase("EMPTY"))
+                            {
+                                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
+                                return true;
+                            }
+                            else
+                            if(!ammo3status.equalsIgnoreCase("EMPTY"))
+                            {
+                                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
+                                return true;
+                            }
+                        }    
+                    }
+                    else
+                    if(neiborhood.get(i).first.equalsIgnoreCase("HIGH"))
+                    {
+                        if(!ammo3status.equalsIgnoreCase("EMPTY"))
+                        {
+                            act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_3, "", this.enemyID));
+                            //strielam bazukou
+                            return true;
+                        }
+                        else
+                        {
+                            //bazuka ma malo nabojov
+                            //vyberiem si prvu zbran s nabojmi a strielam
+                            if(!ammo1status.equalsIgnoreCase("EMPTY"))
+                            {
+                                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_1, "", this.enemyID));
+                                return true;
+                            }
+                            else
+                            if(!ammo2status.equalsIgnoreCase("EMPTY"))
+                            {
+                                act(new SimpleFPSAction(ActionType.SHOOT, ItemType.WEAPON_2, "", this.enemyID));
+                                return true;
+                            }
+                        }    
+                    }
+
+                    break; //vsetko je nastavene, nema zmysel prezerat dalsie chodby
+                }
+            } 
+        }
+        System.out.println("Agent " + body.getId() + ": Weapon is dry !");
         return false; //strielat by som chcel !... ale nemam nakoniec cim :(
     }
     
