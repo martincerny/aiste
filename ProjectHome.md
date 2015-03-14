@@ -1,0 +1,1 @@
+The aim of the project is to create a set of dynamic test environments that are able to represent themselves in several formalism so that different action selection methodologies can be compared against each other. We plan to include: STRIPS planning, HTN planning, Reinforcement learning, reactive approaches and possibly others.
